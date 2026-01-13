@@ -1,0 +1,154 @@
+[gd_scene load_steps=2 format=3 uid="uid://d2b5jup5kn48t"]
+
+[ext_resource type="Script" uid="uid://bbbx11fj3ef25" path="res://scripts/game/TestBoard.gd" id="GDScript_1"]
+
+[node name="TestBoard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("GDScript_1")
+
+[node name="MainLayout" type="VBoxContainer" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 12.0
+offset_top = 12.0
+offset_right = -12.0
+offset_bottom = -12.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="PanelContainer" parent="MainLayout"]
+custom_minimum_size = Vector2(0, 60)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MainLayout/Header"]
+layout_mode = 2
+
+[node name="HeaderContent" type="HBoxContainer" parent="MainLayout/Header/MarginContainer"]
+layout_mode = 2
+alignment = 1
+
+[node name="Title" type="Label" parent="MainLayout/Header/MarginContainer/HeaderContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 22
+text = "MODO PRUEBA – TABLERO"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="MainLayout/Header/MarginContainer/HeaderContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_font_sizes/font_size = 14
+text = "Estado: Preparado"
+horizontal_alignment = 1
+
+[node name="GameArea" type="HBoxContainer" parent="MainLayout"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayerSide" type="VBoxContainer" parent="MainLayout/GameArea"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DeckArea" type="VBoxContainer" parent="MainLayout/GameArea/PlayerSide"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DeckLabel" type="Label" parent="MainLayout/GameArea/PlayerSide/DeckArea"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "MAZO"
+horizontal_alignment = 1
+
+[node name="DeckSlot" type="PanelContainer" parent="MainLayout/GameArea/PlayerSide/DeckArea"]
+custom_minimum_size = Vector2(120, 180)
+layout_mode = 2
+
+[node name="DeckCenter" type="CenterContainer" parent="MainLayout/GameArea/PlayerSide/DeckArea/DeckSlot"]
+layout_mode = 2
+
+[node name="DeckCount" type="Label" parent="MainLayout/GameArea/PlayerSide/DeckArea/DeckSlot/DeckCenter"]
+layout_mode = 2
+text = "40"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="GraveyardArea" type="VBoxContainer" parent="MainLayout/GameArea/PlayerSide"]
+layout_mode = 2
+size_flags_vertical = 2
+
+[node name="GraveyardLabel" type="Label" parent="MainLayout/GameArea/PlayerSide/GraveyardArea"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "CEMENTERIO"
+horizontal_alignment = 1
+
+[node name="GraveyardSlot" type="PanelContainer" parent="MainLayout/GameArea/PlayerSide/GraveyardArea"]
+custom_minimum_size = Vector2(120, 160)
+layout_mode = 2
+
+[node name="Battlefield" type="VBoxContainer" parent="MainLayout/GameArea"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="OpponentZones" type="GridContainer" parent="MainLayout/GameArea/Battlefield"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+columns = 5
+
+[node name="OpponentZoneHint" type="Label" parent="MainLayout/GameArea/Battlefield/OpponentZones"]
+layout_mode = 2
+text = "ZONAS OPONENTE"
+horizontal_alignment = 1
+
+[node name="PlayerZones" type="GridContainer" parent="MainLayout/GameArea/Battlefield"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+columns = 5
+
+[node name="PlayerZoneHint" type="Label" parent="MainLayout/GameArea/Battlefield/PlayerZones"]
+layout_mode = 2
+text = "ZONAS JUGADOR"
+horizontal_alignment = 1
+
+[node name="HandArea" type="VBoxContainer" parent="MainLayout/GameArea/Battlefield"]
+custom_minimum_size = Vector2(0, 220)
+layout_mode = 2
+size_flags_vertical = 2
+
+[node name="HandLabel" type="Label" parent="MainLayout/GameArea/Battlefield/HandArea"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "MANO DEL JUGADOR"
+horizontal_alignment = 1
+
+[node name="HandSlot" type="PanelContainer" parent="MainLayout/GameArea/Battlefield/HandArea"]
+custom_minimum_size = Vector2(0, 180)
+layout_mode = 2
+
+[node name="HandContainer" type="Control" parent="MainLayout/GameArea/Battlefield/HandArea/HandSlot"]
+layout_mode = 2
+
+[node name="Footer" type="HBoxContainer" parent="MainLayout"]
+custom_minimum_size = Vector2(0, 50)
+layout_mode = 2
+alignment = 1
+
+[node name="BackButton" type="Button" parent="MainLayout/Footer"]
+layout_mode = 2
+text = "VOLVER"
+
+[node name="ClearButton" type="Button" parent="MainLayout/Footer"]
+layout_mode = 2
+text = "LIMPIAR"
+
+[node name="ReloadButton" type="Button" parent="MainLayout/Footer"]
+layout_mode = 2
+text = "RECARGAR"
