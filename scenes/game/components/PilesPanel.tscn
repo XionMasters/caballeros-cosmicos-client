@@ -1,0 +1,27 @@
+[gd_scene load_steps=2 format=3 uid="uid://xy8mdk5rntul2hc3"]
+
+[ext_resource type="Script" path="res://scripts/game/components/PilesPanel.gd" id="1_pqrst"]
+
+[node name="PilesPanel" type="Control"]
+layout_mode = 3
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 0.0
+anchors_bottom = 0.0
+custom_minimum_size = Vector2(150, 200)
+script = ExtResource("1_pqrst")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+
+[node name="YomotsuLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Yomotsu: 0"
+
+[node name="CositosLabel" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+text = "Cositos: 0"

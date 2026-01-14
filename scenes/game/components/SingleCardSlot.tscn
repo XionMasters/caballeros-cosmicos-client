@@ -1,0 +1,25 @@
+[gd_scene load_steps=2 format=3 uid="uid://dj7jnj5ryxg1bw3p"]
+
+[ext_resource type="Script" path="res://scripts/game/components/SingleCardSlot.gd" id="1_abcde"]
+
+[node name="SingleCardSlot" type="Control"]
+layout_mode = 3
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 0.0
+anchors_bottom = 0.0
+custom_minimum_size = Vector2(140, 200)
+script = ExtResource("1_abcde")
+
+[node name="CardContainer" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_left = 0.0
+anchors_top = 0.0
+anchors_right = 1.0
+anchors_bottom = 1.0
+
+[node name="Label" type="Label" parent="CardContainer"]
+layout_mode = 2
+text = "Slot"
+horizontal_alignment = 1
+vertical_alignment = 1
