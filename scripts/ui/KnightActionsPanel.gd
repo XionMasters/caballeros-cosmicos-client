@@ -1,6 +1,6 @@
 # KnightActionsPanel.gd
 # Panel de acciones disponibles para caballeros en el campo
-extends PanelContainer
+extends Control
 
 signal action_selected(action: String, target_slot: Node)
 
