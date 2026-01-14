@@ -2,7 +2,7 @@
 
 [ext_resource type="Script" uid="uid://bhmwx01dxwb2w" path="res://scripts/cards/CardDisplay.gd" id="1_card"]
 
-[node name="CardDisplay" type="PanelContainer"]
+[node name="CardDisplay" type="Control"]
 custom_minimum_size = Vector2(120, 168)
 script = ExtResource("1_card")
 
