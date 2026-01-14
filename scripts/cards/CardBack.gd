@@ -1,7 +1,7 @@
 # CardBack.gd
 # Componente visual para el dorso de la carta (oponente, deck, etc.)
 # Usa la textura pre-cargada por CardsManager
-extends PanelContainer
+extends Control
 class_name CardBack
 
 @onready var back_image: TextureRect = $BackImage

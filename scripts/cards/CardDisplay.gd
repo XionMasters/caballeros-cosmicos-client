@@ -1,7 +1,7 @@
 # CardDisplay.gd
 # Visual + Interactive component for cards with professional drag-and-drop
 # Integrates DraggableObject state machine logic directly
-extends PanelContainer
+extends Control
 class_name CardDisplay
 
 # ===== STATE MACHINE (From DraggableObject) =====
