@@ -145,7 +145,13 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 				print("[UserManager] 💰 Monedas: ", profile.currency)
 				profile_loaded.emit(profile)
 			else:
-				push_error("[UserManager] Error al obtener perfil: " + error)
+				# Verificar si es token expirado
+				if data is Dictionary and data.get("code") == "TOKEN_EXPIRED":
+					print("[UserManager] ⚠️ Token expirado, limpiando sesión...")
+					SessionManager.clear_session()
+					AuthManager.emit_auth_error("Token expirado. Por favor, vuelva a iniciar sesión.")
+				else:
+					push_error("[UserManager] Error al obtener perfil: " + error)
 		
 		"update_profile_field":
 			if success and data:
@@ -154,7 +160,13 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 					profile_updated.emit(current_profile)
 					print("[UserManager] ✅ Perfil actualizado")
 			else:
-				push_error("[UserManager] Error al actualizar perfil: " + error)
+				# Verificar si es token expirado
+				if data is Dictionary and data.get("code") == "TOKEN_EXPIRED":
+					print("[UserManager] ⚠️ Token expirado, limpiando sesión...")
+					SessionManager.clear_session()
+					AuthManager.emit_auth_error("Token expirado. Por favor, vuelva a iniciar sesión.")
+				else:
+					push_error("[UserManager] Error al actualizar perfil: " + error)
 		
 		_:
 			pass

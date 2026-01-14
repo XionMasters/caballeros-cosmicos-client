@@ -8,6 +8,7 @@ signal registration_successful(user_profile: UserProfile)
 signal registration_failed(error: String)
 signal logout_completed()
 signal instance_conflict(username: String)  # Emitir si hay otra sesión abierta
+signal session_expired()  # Nueva señal para token expirado
 
 var auth_token: String = ""
 var is_authenticated: bool = false
@@ -360,3 +361,11 @@ func _connect_websocket() -> void:
 		var ws_manager = get_node("/root/WebSocketManager")
 		if ws_manager.has_method("connect_to_server"):
 			ws_manager.connect_to_server(auth_token)
+
+
+func emit_auth_error(error: String) -> void:
+	"""Emitir error de autenticación (ej: token expirado)"""
+	print("[AuthManager] ❌ Error de autenticación: %s" % error)
+	login_failed.emit(error)
+	session_expired.emit()
+	logout()  # Forzar logout
