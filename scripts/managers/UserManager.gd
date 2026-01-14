@@ -148,7 +148,6 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 				# Verificar si es token expirado
 				if data is Dictionary and data.get("code") == "TOKEN_EXPIRED":
 					print("[UserManager] ⚠️ Token expirado, limpiando sesión...")
-					SessionManager.clear_session()
 					AuthManager.emit_auth_error("Token expirado. Por favor, vuelva a iniciar sesión.")
 				else:
 					push_error("[UserManager] Error al obtener perfil: " + error)
@@ -163,7 +162,6 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 				# Verificar si es token expirado
 				if data is Dictionary and data.get("code") == "TOKEN_EXPIRED":
 					print("[UserManager] ⚠️ Token expirado, limpiando sesión...")
-					SessionManager.clear_session()
 					AuthManager.emit_auth_error("Token expirado. Por favor, vuelva a iniciar sesión.")
 				else:
 					push_error("[UserManager] Error al actualizar perfil: " + error)
