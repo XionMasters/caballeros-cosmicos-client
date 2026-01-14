@@ -95,6 +95,13 @@ func _on_match_found(data: Dictionary) -> void:
 	# Emitir phase_changed para UI
 	if game_state.current_phase:
 		phase_changed.emit(game_state.current_phase.to_upper())
+	
+	# 🧪 Si es test_mode, navegar directamente a GameBoard
+	# (MatchSearch._on_match_found() solo se ejecuta si se busca desde MatchSearch)
+	if is_test_mode:
+		print("[MatchManager] 🧪 Test Mode: Navegando a GameBoard...")
+		await get_tree().create_timer(0.5).timeout
+		get_tree().change_scene_to_file("res://scenes/game/GameBoard.tscn")
 
 
 func _preload_match_images() -> void:
