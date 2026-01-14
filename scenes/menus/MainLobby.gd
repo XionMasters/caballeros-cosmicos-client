@@ -141,8 +141,10 @@ func _on_match_pressed():
 	get_tree().change_scene_to_file("res://scenes/menus/MatchSearch.tscn")
 
 func _on_test_pressed():
-	# Navegar al tablero de prueba
-	get_tree().change_scene_to_file("res://scenes/test/TestBoard.tscn")
+	# Solicitar partida de prueba (test_mode)
+	print("[MainLobby] 🧪 Solicitando partida TEST")
+	MatchManager.is_test_mode = true  # Asegurar que se setea test_mode
+	MatchManager.start_test_match()  # Enviar solicitud al servidor
 
 func _on_logout_pressed():
 	if has_node("/root/AuthManager"):

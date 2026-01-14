@@ -16,6 +16,7 @@ signal match_ended(result: Dictionary)
 var current_match: Dictionary = {}  # SOLO metadata: id, players, mode, result
 var game_state: GameState = null     # ESTADO REAL: cartas, vida, zonas, todo jugable
 var is_in_match: bool = false
+var is_test_mode: bool = false  # True si se solicitó test_match, False si es multiplayer normal
 
 # Señal para cambios de fase (desacoplamiento de UI)
 signal phase_changed(phase: String)
@@ -234,6 +235,7 @@ func start_test_match() -> void:
 	Responsable: WebSocketManager (envía al servidor)
 	"""
 	print("🎭 [MatchManager] Pidiendo partida TEST al servidor...")
+	is_test_mode = true  # Marcar que esta es una partida de prueba
 	
 	# WebSocketManager maneja la comunicación WebSocket
 	# Internamente envia evento al servidor

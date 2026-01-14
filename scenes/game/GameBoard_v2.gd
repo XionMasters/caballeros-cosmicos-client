@@ -5,7 +5,8 @@ extends Control
 # ============================================================================
 # CONFIGURACIÓN (Exportada - Editable en Inspector Godot)
 # ============================================================================
-@export var enable_test_mode: bool = false  # Cambiar a true para jugar contra ti mismo
+# NOTA: is_test_mode ahora se setea automáticamente desde MatchManager
+# según si se solicitó request_test_match() (test) o search_match() (normal)
 
 # ============================================================================
 # REFERENCIAS A COMPONENTES PRINCIPALES
@@ -84,8 +85,9 @@ func _ready() -> void:
 	
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	
-	# Establecer modo de prueba desde la configuración exportada
-	is_test_mode = enable_test_mode
+	# Obtener modo de prueba desde MatchManager
+	# (se setea automáticamente: request_test_match() = true, search_match() = false)
+	is_test_mode = MatchManager.is_test_mode
 	
 	# Crear BoardRenderer con referencias a todos los slots
 	board_renderer = BoardRenderer.new(
