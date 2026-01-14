@@ -42,10 +42,10 @@ func _ready() -> void:
 # ============================================================================
 # MÉTODOS PÚBLICOS - SETUP
 # ============================================================================
-func setup(name: String, life: int, cosmos: int, avatar_url: String = "") -> void:
+func setup(player_name: String, life: int, cosmos: int, avatar_url: String = "") -> void:
 	"""Configurar la zona inicial"""
 	if status_panel:
-		status_panel.setup(name, life, cosmos, avatar_url)
+		status_panel.setup(player_name, life, cosmos, avatar_url)
 
 
 # ============================================================================
