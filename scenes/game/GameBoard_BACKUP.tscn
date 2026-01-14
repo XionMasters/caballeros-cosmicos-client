@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://x8rkkqcbi6c7"]
+[gd_scene load_steps=10 format=3 uid="uid://c3p8cgk4ii20n"]
 
 [ext_resource type="Script" uid="uid://u5g2lessracx" path="res://scenes/game/GameBoard.gd" id="1_jk4ld"]
 [ext_resource type="Script" uid="uid://ii8ll01h1wmf" path="res://scripts/game/CardSlot.gd" id="2_slot"]
