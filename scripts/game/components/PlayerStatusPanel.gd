@@ -6,10 +6,7 @@ class_name PlayerStatusPanel
 # ============================================================================
 # REFERENCIAS A NODOS
 # ============================================================================
-@onready var avatar_texture = $VBoxContainer/AvatarTexture
-@onready var player_name_label = $VBoxContainer/PlayerNameLabel
-@onready var life_label = $VBoxContainer/StatsContainer/LifeLabel
-@onready var cosmos_label = $VBoxContainer/StatsContainer/CosmosLabel
+@onready var avatar_display: AvatarDisplay = $VBoxContainer/AvatarDisplay
 
 # ============================================================================
 # PARÁMETROS
@@ -38,79 +35,76 @@ func _ready() -> void:
 # ============================================================================
 # MÉTODOS PÚBLICOS
 # ============================================================================
-func setup(name: String, life: int, cosmos: int, avatar_url: String = "") -> void:
-	"""Configurar el panel inicial"""
-	player_name = name
+func setup(player_name: String, life: int, cosmos: int, user_id: String = "") -> void:
+	"""Configurar panel con datos del jugador y cargar avatar desde servidor"""
+	self.player_name = player_name
 	current_life = life
 	current_cosmos = cosmos
+	player_id = user_id
 	
-	_update_display()
+	# Setup inicial del avatar sin textura (se cargará en async)
+	avatar_display.setup(player_name, life, cosmos, null)
 	
-	if not avatar_url.is_empty():
-		_load_avatar(avatar_url)
-
+	# Si hay user_id, cargar avatar del servidor
+	if not user_id.is_empty():
+		_load_avatar_from_server(user_id)
 
 func update_life(new_life: int) -> void:
-	"""Actualizar vida"""
 	current_life = new_life
-	if life_label:
-		life_label.text = "❤️ %d" % current_life
-
+	avatar_display.update_health(new_life)
 
 func update_cosmos(new_cosmos: int) -> void:
-	"""Actualizar cosmos/mana"""
 	current_cosmos = new_cosmos
-	if cosmos_label:
-		cosmos_label.text = "✨ %d" % current_cosmos
-
+	avatar_display.update_cosmos(new_cosmos)
 
 func update_both(new_life: int, new_cosmos: int) -> void:
-	"""Actualizar ambas métricas"""
-	update_life(new_life)
-	update_cosmos(new_cosmos)
+	current_life = new_life
+	current_cosmos = new_cosmos
 
+	avatar_display.update_health(new_life)
+	avatar_display.update_cosmos(new_cosmos)
 
 # ============================================================================
 # MÉTODOS PRIVADOS
 # ============================================================================
 func _update_display() -> void:
 	"""Actualizar todos los labels"""
-	if player_name_label:
-		player_name_label.text = player_name
-	
 	update_life(current_life)
 	update_cosmos(current_cosmos)
 
-
-func _load_avatar(url: String) -> void:
-	"""Cargar avatar desde URL (async)"""
-	if not avatar_texture:
-		return
+func _load_avatar_from_server(user_id: String) -> void:
+	"""Cargar avatar del servidor para un usuario específico"""
+	var api_url = GameConfig.API_URL
+	var http = HTTPRequest.new()
+	add_child(http)
 	
-	print("[PlayerStatusPanel] Cargando avatar: %s" % url)
+	http.request_completed.connect(func(_result, response_code, _headers, body):
+		if response_code == 200:
+			var json = JSON.new()
+			if json.parse(body.get_string_from_utf8()) == OK:
+				var data = json.data
+				var avatar = data.get("avatar", {})
+				var image_url = avatar.get("image_url", "")
+				
+				if not image_url.is_empty():
+					_load_avatar_image(image_url)
+		http.queue_free()
+	)
 	
-	# Usar CardsManager si está disponible para reutilizar caché
-	if CardsManager:
-		CardsManager.fetch_image(url, _on_avatar_loaded)
-	else:
-		# Fallback a carga directa
-		var http_request = HTTPRequest.new()
-		add_child(http_request)
-		http_request.request_completed.connect(_on_http_request_completed.bind(avatar_texture))
-		http_request.request(url)
+	http.request(api_url + "/profile/user/" + user_id)
 
-
-func _on_avatar_loaded(texture: Texture2D) -> void:
-	"""Callback cuando el avatar se carga"""
-	if avatar_texture:
-		avatar_texture.texture = texture
-		print("[PlayerStatusPanel] ✅ Avatar cargado")
-
-
-func _on_http_request_completed(result, response_code, headers, body, texture_rect):
-	"""Callback de HTTP request directo"""
-	if response_code == 200:
-		var image = Image.new()
-		image.load_png_from_buffer(body)
-		var texture = ImageTexture.create_from_image(image)
-		texture_rect.texture = texture
+func _load_avatar_image(image_url: String) -> void:
+	"""Cargar imagen de avatar desde URL"""
+	var http = HTTPRequest.new()
+	add_child(http)
+	
+	http.request_completed.connect(func(_result, response_code, _headers, body):
+		if response_code == 200:
+			var image = Image.new()
+			if image.load_png_from_buffer(body) == OK or image.load_jpg_from_buffer(body) == OK:
+				var texture = ImageTexture.create_from_image(image)
+				avatar_display.setup(player_name, current_life, current_cosmos, texture)
+		http.queue_free()
+	)
+	
+	http.request(image_url)

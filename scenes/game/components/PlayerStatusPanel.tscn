@@ -1,42 +1,16 @@
-[gd_scene load_steps=2 format=3 uid="uid://c8ylpdjowkzymph8gk2d"]
+[gd_scene load_steps=3 format=3 uid="uid://bvmtnk4qe67i0"]
 
-[ext_resource type="Script" path="res://scripts/game/components/PlayerStatusPanel.gd" id="1_w3xkg"]
+[ext_resource type="Script" uid="uid://bwcm3jn8bjkjh" path="res://scripts/game/components/PlayerStatusPanel.gd" id="1_w3xkg"]
+[ext_resource type="PackedScene" uid="uid://b7qm8xrw7qaa" path="res://scenes/components/common/AvatarDisplay.tscn" id="2_wf082"]
 
 [node name="PlayerStatusPanel" type="Control"]
-layout_mode = 3
-anchors_left = 0.0
-anchors_top = 0.0
-anchors_right = 0.0
-anchors_bottom = 0.0
 custom_minimum_size = Vector2(200, 250)
+layout_mode = 3
+anchors_preset = 0
 script = ExtResource("1_w3xkg")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 1
-anchors_left = 0.0
-anchors_top = 0.0
-anchors_right = 1.0
-anchors_bottom = 1.0
 
-[node name="AvatarTexture" type="TextureRect" parent="VBoxContainer"]
+[node name="AvatarDisplay" parent="VBoxContainer" instance=ExtResource("2_wf082")]
 layout_mode = 2
-size_flags_vertical = 3
-expand_ignore_size = true
-
-[node name="PlayerNameLabel" type="Label" parent="VBoxContainer"]
-layout_mode = 2
-text = "Jugador"
-theme_override_font_sizes/font_size = 16
-
-[node name="StatsContainer" type="HBoxContainer" parent="VBoxContainer"]
-layout_mode = 2
-
-[node name="LifeLabel" type="Label" parent="VBoxContainer/StatsContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "❤️ 12"
-
-[node name="CosmosLabel" type="Label" parent="VBoxContainer/StatsContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "✨ 0"

@@ -42,7 +42,6 @@ func _ready() -> void:
 	# Inicializar partida
 	_initialize_match()
 
-
 func _initialize_match() -> void:
 	"""Inicializar la partida una sola vez"""
 	current_match = MatchManager.current_match

@@ -101,7 +101,8 @@ func _on_match_found(data: Dictionary) -> void:
 	if is_test_mode:
 		print("[MatchManager] 🧪 Test Mode: Navegando a GameBoard...")
 		await get_tree().create_timer(0.5).timeout
-		get_tree().change_scene_to_file("res://scenes/game/GameBoard.tscn")
+		# get_tree().change_scene_to_file("res://scenes/game/GameBoard.tscn")
+		get_tree().change_scene_to_file("res://scenes/match/GameMatch.tscn")
 
 
 func _preload_match_images() -> void:
