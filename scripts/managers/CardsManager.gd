@@ -262,6 +262,53 @@ func get_card_texture(card_id: String) -> ImageTexture:
 	return _image_cache.get(card_id, null)
 
 
+func get_default_card_back() -> ImageTexture:
+	"""Obtener el dorso de carta por defecto
+	
+	Prioridad:
+	1. Si ya está cacheado, devolverlo
+	2. Si existe localmente en assets, cargarlo
+	3. Si no, crear una textura de color sólido como fallback
+	"""
+	# Si ya está cacheado, devolverlo
+	if _card_back_texture != null:
+		return _card_back_texture
+	
+	# Intentar cargar desde archivo local (pre-descargado del servidor)
+	var local_path = "res://assets/cards/card_back.png"
+	if ResourceLoader.exists(local_path):
+		_card_back_texture = load(local_path)
+		return _card_back_texture
+	
+	# Fallback: crear una textura de color sólido mientras se carga
+	# Crear imagen 120x168 con color gris oscuro
+	var fallback_image = Image.create(120, 168, false, Image.FORMAT_RGB8)
+	fallback_image.fill(Color(0.2, 0.2, 0.25, 1.0))  # Gris oscuro
+	
+	_card_back_texture = ImageTexture.create_from_image(fallback_image)
+	
+	# En paralelo, intentar descargar la mejor versión del servidor
+	if not _is_loading_card_back:
+		_is_loading_card_back = true
+		_load_card_back_from_server()
+	
+	return _card_back_texture
+
+
+func _load_card_back_from_server() -> void:
+	"""Cargar dorso de carta desde el servidor y cachear"""
+	ApiClient.get_image_with_callback(
+		GameConfig.API_URL + "/assets/cards/card_back.png",
+		func(image: Image) -> void:
+			if image:
+				_card_back_texture = ImageTexture.create_from_image(image)
+				card_back_loaded.emit(_card_back_texture)
+				print("[CardsManager] ✅ Dorso de carta cargado del servidor")
+			_is_loading_card_back = false,
+		"default_card_back"
+	)
+
+
 func get_cache_info() -> Dictionary:
 	"""Obtener información de debug del cache"""
 	var size_mb = 0.0
