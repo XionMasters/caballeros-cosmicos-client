@@ -74,37 +74,33 @@ func _update_display() -> void:
 
 func _load_avatar_from_server(user_id: String) -> void:
 	"""Cargar avatar del servidor para un usuario específico"""
-	var api_url = GameConfig.API_URL
-	var http = HTTPRequest.new()
-	add_child(http)
+	var callback = func(success: bool, data: Variant, error: String) -> void:
+		if success and data is Dictionary:
+			var avatar = data.get("avatar", {})
+			var image_url = avatar.get("image_url", "")
+			
+			if not image_url.is_empty():
+				_load_avatar_image(image_url)
+		else:
+			print("[PlayerStatusPanel] Error cargando avatar: ", error)
 	
-	http.request_completed.connect(func(_result, response_code, _headers, body):
-		if response_code == 200:
-			var json = JSON.new()
-			if json.parse(body.get_string_from_utf8()) == OK:
-				var data = json.data
-				var avatar = data.get("avatar", {})
-				var image_url = avatar.get("image_url", "")
-				
-				if not image_url.is_empty():
-					_load_avatar_image(image_url)
-		http.queue_free()
+	ApiClient.get_request_with_callback(
+		"/profile/user/" + user_id,
+		"load_avatar_%s" % user_id,
+		callback,
+		false  # No requiere autenticación
 	)
-	
-	http.request(api_url + "/profile/user/" + user_id)
 
 func _load_avatar_image(image_url: String) -> void:
 	"""Cargar imagen de avatar desde URL"""
-	var http = HTTPRequest.new()
-	add_child(http)
+	var callback = func(success: bool, image: Texture2D) -> void:
+		if success and image:
+			avatar_display.setup(player_name, current_life, current_cosmos, image)
+		else:
+			print("[PlayerStatusPanel] Error cargando imagen de avatar")
 	
-	http.request_completed.connect(func(_result, response_code, _headers, body):
-		if response_code == 200:
-			var image = Image.new()
-			if image.load_png_from_buffer(body) == OK or image.load_jpg_from_buffer(body) == OK:
-				var texture = ImageTexture.create_from_image(image)
-				avatar_display.setup(player_name, current_life, current_cosmos, texture)
-		http.queue_free()
+	ApiClient.get_image_with_callback(
+		image_url,
+		callback,
+		"avatar_image_%s" % player_name
 	)
-	
-	http.request(image_url)
