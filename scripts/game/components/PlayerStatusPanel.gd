@@ -93,6 +93,19 @@ func _load_avatar_from_server(user_id: String) -> void:
 
 func _load_avatar_image(image_url: String) -> void:
 	"""Cargar imagen de avatar desde URL"""
+	# Si la URL es completa (http://...), extraer solo la ruta
+	var path = image_url
+	if image_url.starts_with("http://") or image_url.starts_with("https://"):
+		# Extraer la ruta después del dominio
+		# Formato: http://localhost:3000/api/profile/avatar/...
+		# Queremos: /api/profile/avatar/...
+		var parts = image_url.split("://", true)
+		if parts.size() > 1:
+			var after_protocol = parts[1]
+			var slash_pos = after_protocol.find("/")
+			if slash_pos != -1:
+				path = after_protocol.substr(slash_pos)
+	
 	var callback = func(success: bool, image: Texture2D) -> void:
 		if success and image:
 			avatar_display.setup(player_name, current_life, current_cosmos, image)
@@ -100,7 +113,7 @@ func _load_avatar_image(image_url: String) -> void:
 			print("[PlayerStatusPanel] Error cargando imagen de avatar")
 	
 	ApiClient.get_image_with_callback(
-		image_url,
+		path,
 		callback,
 		"avatar_image_%s" % player_name
 	)
