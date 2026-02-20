@@ -1,0 +1,279 @@
+[gd_scene load_steps=6 format=3 uid="uid://cw8x4y51aa1b2"]
+
+[ext_resource type="Script" uid="uid://ch11nc1o8r28q" path="res://menus/lobby/MainLobby.gd" id="1_main_lobby"]
+[ext_resource type="Script" uid="uid://b6vjr8utexa78" path="res://ui/ChatPanel.gd" id="2_chat_panel"]
+[ext_resource type="Script" uid="uid://vnjps8vkik5w" path="res://ui/OnlineUsersList.gd" id="3_users_list"]
+[ext_resource type="PackedScene" uid="uid://b2qw4o775im4n" path="res://menus/lobby/MatchSearchButton.tscn" id="4_qffja"]
+[ext_resource type="PackedScene" uid="uid://bkwqxojyefudc" path="res://menus/lobby/MatchTestButton.tscn" id="5_fpjcq"]
+
+[node name="MainLobby" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_main_lobby")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.1, 0.1, 0.15, 1)
+
+[node name="MainContainer" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="Header" type="PanelContainer" parent="MainContainer"]
+layout_mode = 2
+
+[node name="HeaderContent" type="HBoxContainer" parent="MainContainer/Header"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="MainContainer/Header/HeaderContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 24
+text = "âš”ï¸ Caballeros CÃ³smicos"
+vertical_alignment = 1
+
+[node name="Spacer" type="Control" parent="MainContainer/Header/HeaderContent"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="UserInfo" type="HBoxContainer" parent="MainContainer/Header/HeaderContent"]
+layout_mode = 2
+
+[node name="UsernameLabel" type="Label" parent="MainContainer/Header/HeaderContent/UserInfo"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ðŸ‘¤ Usuario"
+vertical_alignment = 1
+
+[node name="VSeparator" type="VSeparator" parent="MainContainer/Header/HeaderContent/UserInfo"]
+layout_mode = 2
+
+[node name="CoinsLabel" type="Label" parent="MainContainer/Header/HeaderContent/UserInfo"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ðŸ’° 1000"
+vertical_alignment = 1
+
+[node name="TopArea" type="HBoxContainer" parent="MainContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 4.0
+
+[node name="ChatPanel" type="PanelContainer" parent="MainContainer/TopArea"]
+custom_minimum_size = Vector2(700, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 3.0
+script = ExtResource("2_chat_panel")
+
+[node name="MarginContainer" type="MarginContainer" parent="MainContainer/TopArea/ChatPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainContainer/TopArea/ChatPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="ChatTitle" type="Label" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "ðŸ’¬ Chat Global"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MessagesScroll" type="ScrollContainer" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+follow_focus = true
+
+[node name="MessagesContainer" type="VBoxContainer" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer/MessagesScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="InputPanel" type="HBoxContainer" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="MessageInput" type="LineEdit" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer/InputPanel"]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Escribe un mensaje..."
+max_length = 500
+
+[node name="SendButton" type="Button" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer/InputPanel"]
+layout_mode = 2
+text = "Enviar"
+
+[node name="Separator" type="VSeparator" parent="MainContainer/TopArea"]
+layout_mode = 2
+
+[node name="MiddlePanel" type="VBoxContainer" parent="MainContainer/TopArea"]
+custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_stretch_ratio = 1.5
+
+[node name="NewsPanel" type="PanelContainer" parent="MainContainer/TopArea/MiddlePanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MainContainer/TopArea/MiddlePanel/NewsPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainContainer/TopArea/MiddlePanel/NewsPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="NewsTitle" type="Label" parent="MainContainer/TopArea/MiddlePanel/NewsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 20
+text = "ðŸ“° Novedades"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MainContainer/TopArea/MiddlePanel/NewsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="NewsScroll" type="ScrollContainer" parent="MainContainer/TopArea/MiddlePanel/NewsPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="NewsContent" type="RichTextLabel" parent="MainContainer/TopArea/MiddlePanel/NewsPanel/MarginContainer/VBoxContainer/NewsScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+bbcode_enabled = true
+text = "[center][b]Â¡Bienvenido a Caballeros CÃ³smicos![/b][/center]
+
+[color=yellow]ðŸŽ® Ãšltima actualizaciÃ³n:[/color]
+â€¢ Sistema de chat en tiempo real
+â€¢ Nueva interfaz de menÃº principal
+â€¢ IntegraciÃ³n con el sistema de mazos
+
+[color=cyan]ðŸ“¢ PrÃ³ximamente:[/color]
+â€¢ Nuevos sobres de cartas
+â€¢ Torneos semanales
+â€¢ Sistema de ranking
+
+[color=lime]ðŸ’Ž Evento especial:[/color]
+Â¡ObtÃ©n 500 monedas gratis al registrarte!"
+scroll_following = true
+
+[node name="Separator2" type="VSeparator" parent="MainContainer/TopArea"]
+layout_mode = 2
+
+[node name="RightPanel" type="VBoxContainer" parent="MainContainer/TopArea"]
+custom_minimum_size = Vector2(250, 0)
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="OnlineUsersPanel" type="PanelContainer" parent="MainContainer/TopArea/RightPanel"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MainContainer/TopArea/RightPanel/OnlineUsersPanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 10
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 10
+theme_override_constants/margin_bottom = 10
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MainContainer/TopArea/RightPanel/OnlineUsersPanel/MarginContainer"]
+layout_mode = 2
+script = ExtResource("3_users_list")
+
+[node name="UsersTitle" type="Label" parent="MainContainer/TopArea/RightPanel/OnlineUsersPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "ðŸ‘¥ Usuarios en lÃ­nea (0)"
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MainContainer/TopArea/RightPanel/OnlineUsersPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="UsersScroll" type="ScrollContainer" parent="MainContainer/TopArea/RightPanel/OnlineUsersPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="UsersList" type="VBoxContainer" parent="MainContainer/TopArea/RightPanel/OnlineUsersPanel/MarginContainer/VBoxContainer/UsersScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="HSeparator" type="HSeparator" parent="MainContainer"]
+layout_mode = 2
+
+[node name="NavigationBar" type="PanelContainer" parent="MainContainer"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+
+[node name="MarginContainer" type="MarginContainer" parent="MainContainer/NavigationBar"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 10
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 10
+
+[node name="NavButtons" type="HBoxContainer" parent="MainContainer/NavigationBar/MarginContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="LibraryButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
+custom_minimum_size = Vector2(120, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ðŸ“š ColecciÃ³n"
+
+[node name="ProfileButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
+custom_minimum_size = Vector2(120, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ðŸ‘¤ Perfil"
+
+[node name="ShopButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
+custom_minimum_size = Vector2(120, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ðŸ›’ Tienda"
+
+[node name="DecksButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
+custom_minimum_size = Vector2(120, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ðŸŽ´ Mazos"
+
+[node name="MatchButton2" parent="MainContainer/NavigationBar/MarginContainer/NavButtons" instance=ExtResource("4_qffja")]
+layout_mode = 2
+
+[node name="TestButton" parent="MainContainer/NavigationBar/MarginContainer/NavButtons" instance=ExtResource("5_fpjcq")]
+layout_mode = 2
+
+[node name="ChatButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
+custom_minimum_size = Vector2(120, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+disabled = true
+text = "ðŸ’¬ Chat"
+
+[node name="LogoutButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
+custom_minimum_size = Vector2(120, 70)
+layout_mode = 2
+theme_override_font_sizes/font_size = 16
+text = "ðŸšª Salir"

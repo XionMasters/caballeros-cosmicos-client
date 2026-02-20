@@ -1,0 +1,23 @@
+[gd_scene load_steps=3 format=3 uid="uid://bkwqxojyefudc"]
+
+[ext_resource type="Script" uid="uid://78akwdqxrp14" path="res://menus/lobby/match_test_button.gd" id="1_5hk8t"]
+[ext_resource type="Texture2D" uid="uid://donakodglk7oc" path="res://assets/ui-icons/text-círculocarga.png" id="2_2tbrm"]
+
+[node name="MatchTestButton" type="Button"]
+text = "ðŸ§ª Test"
+script = ExtResource("1_5hk8t")
+
+[node name="Spinner" type="TextureRect" parent="."]
+visible = false
+layout_mode = 0
+texture = ExtResource("2_2tbrm")
+expand_mode = 3
+
+[node name="StatusLabel" type="Label" parent="."]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 43.0
+offset_right = 67.0
+offset_bottom = 66.0
+horizontal_alignment = 1
+vertical_alignment = 1

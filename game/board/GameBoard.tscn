@@ -1,0 +1,224 @@
+[gd_scene load_steps=7 format=3 uid="uid://x8rkkqcbi6c7"]
+
+[ext_resource type="Script" uid="uid://bi3jj7evldscr" path="res://game/board/GameBoard.gd" id="1_gameboard"]
+[ext_resource type="Script" uid="uid://d088db5s632au" path="res://data/DeckDisplay.gd" id="4_deckdisplay"]
+[ext_resource type="PackedScene" uid="uid://bkm3xrw8qaa" path="res://cards/CardBack.tscn" id="5_cardback"]
+[ext_resource type="Script" uid="uid://cpgavlbsn0x1c" path="res://game/hand/HandLayout.gd" id="5_omrjw"]
+[ext_resource type="PackedScene" uid="uid://c3vxy1aa01234" path="res://shared/effects/CombatAnimator.tscn" id="7_combat"]
+[ext_resource type="Script" uid="uid://ycblyfeppbyt" path="res://ui/KnightActionsPanel.gd" id="8_actions"]
+
+[node name="GameBoard" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_gameboard")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.15, 0.15, 0.2, 1)
+
+[node name="MainContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 10
+
+[node name="LeftColumn" type="VBoxContainer" parent="MainContainer"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="OpponentDeck" type="VBoxContainer" parent="MainContainer/LeftColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DeckPile" type="Control" parent="MainContainer/LeftColumn/OpponentDeck"]
+custom_minimum_size = Vector2(80, 120)
+layout_mode = 2
+tooltip_text = "Mazo Oponente"
+script = ExtResource("4_deckdisplay")
+card_back_scene = ExtResource("5_cardback")
+
+[node name="Spacer" type="Control" parent="MainContainer/LeftColumn"]
+custom_minimum_size = Vector2(0, 100)
+layout_mode = 2
+
+[node name="PlayerDeck" type="VBoxContainer" parent="MainContainer/LeftColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+theme_override_constants/separation = 5
+alignment = 1
+
+[node name="DeckPile" type="Control" parent="MainContainer/LeftColumn/PlayerDeck"]
+custom_minimum_size = Vector2(80, 120)
+layout_mode = 2
+tooltip_text = "Tu Mazo"
+script = ExtResource("4_deckdisplay")
+card_back_scene = ExtResource("5_cardback")
+
+[node name="CenterColumn" type="VBoxContainer" parent="MainContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+theme_override_constants/separation = 5
+
+[node name="OpponentZone" parent="MainContainer/CenterColumn" instance=ExtResource("3_opponentzone")]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="OpponentHand" type="Control" parent="MainContainer/CenterColumn/OpponentZone"]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("5_omrjw")
+metadata/_custom_type_script = "uid://cpgavlbsn0x1c"
+
+[node name="PlayerZone" parent="MainContainer/CenterColumn" instance=ExtResource("2_playerzone")]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayerHand" type="Control" parent="MainContainer/CenterColumn/PlayerZone"]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("5_omrjw")
+metadata/_custom_type_script = "uid://cpgavlbsn0x1c"
+
+[node name="RightColumn" type="VBoxContainer" parent="MainContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+theme_override_constants/separation = 10
+alignment = 1
+
+[node name="ScenarioContainer" type="Control" parent="MainContainer/RightColumn"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+
+[node name="ScenarioSlot" type="Control" parent="MainContainer/RightColumn/ScenarioContainer"]
+custom_minimum_size = Vector2(140, 200)
+layout_mode = 1
+anchors_preset = 0
+offset_left = -70.0
+offset_top = -100.0
+offset_right = 70.0
+offset_bottom = 100.0
+
+[node name="PanelContainer" type="PanelContainer" parent="MainContainer/RightColumn/ScenarioContainer/ScenarioSlot"]
+layout_mode = 1
+
+[node name="Label" type="Label" parent="MainContainer/RightColumn/ScenarioContainer/ScenarioSlot/PanelContainer"]
+layout_mode = 2
+text = "Scenario"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="UILayer" type="CanvasLayer" parent="."]
+
+[node name="StatsOverlay" type="Control" parent="UILayer"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="TurnLabel" type="Label" parent="UILayer/StatsOverlay"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = 200.0
+offset_bottom = 50.0
+theme_override_font_sizes/font_size = 20
+text = "Turno: 1"
+
+[node name="PhaseLabel" type="Label" parent="UILayer/StatsOverlay"]
+layout_mode = 0
+offset_left = 20.0
+offset_top = 55.0
+offset_right = 200.0
+offset_bottom = 85.0
+theme_override_font_sizes/font_size = 16
+text = "Fase: Main"
+
+[node name="EndTurnButton" type="Button" parent="UILayer"]
+offset_left = 20.0
+offset_top = 100.0
+offset_right = 150.0
+offset_bottom = 140.0
+text = "End Turn"
+
+[node name="KnightActionsPanel" type="Control" parent="UILayer"]
+layout_mode = 3
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -250.0
+offset_bottom = 400.0
+grow_horizontal = 0
+grow_vertical = 0
+script = ExtResource("8_actions")
+
+[node name="CardDetailOverlay" type="Control" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+
+[node name="ColorRect" type="ColorRect" parent="CardDetailOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.5)
+
+[node name="CardDetailPanel" type="PanelContainer" parent="CardDetailOverlay"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -200.0
+offset_top = -300.0
+offset_right = 200.0
+offset_bottom = 300.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="CardDetailOverlay/CardDetailPanel"]
+layout_mode = 2
+
+[node name="CardTexture" type="TextureRect" parent="CardDetailOverlay/CardDetailPanel/VBoxContainer"]
+layout_mode = 2
+stretch_mode = 3
+
+[node name="CloseButton" type="Button" parent="CardDetailOverlay/CardDetailPanel/VBoxContainer"]
+layout_mode = 2
+text = "Cerrar"
+
+[node name="EffectsLayer" type="CanvasLayer" parent="."]
+
+[node name="CombatAnimator" parent="EffectsLayer" instance=ExtResource("7_combat")]
+

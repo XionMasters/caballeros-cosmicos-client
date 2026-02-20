@@ -1,0 +1,189 @@
+[gd_scene load_steps=7 format=3 uid="uid://cqhcm66m33h6w"]
+
+[ext_resource type="Script" uid="uid://dr6rbg7s4qae4" path="res://game/match/game_match.gd" id="1_cacvx"]
+[ext_resource type="PackedScene" uid="uid://bvmtnk4qe67i0" path="res://game/status/PlayerStatusPanel.tscn" id="2_cacvx"]
+[ext_resource type="Script" uid="uid://c7bu28fua8t8s" path="res://game/hand/HandLayout.gd" id="3_kk4i8"]
+[ext_resource type="Script" uid="uid://bawtj0kxtha3n" path="res://data/DeckDisplay.gd" id="3_toc0o"]
+[ext_resource type="PackedScene" uid="uid://bkm3xrw8qaa" path="res://cards/CardBack.tscn" id="4_nhra7"]
+[ext_resource type="Script" uid="uid://43lk65ww7agb" path="res://game/match/MatchOptionsMenu.gd" id="5_match"]
+
+[node name="GameMatch" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1_cacvx")
+
+[node name="Background" type="ColorRect" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0.15, 0.15, 0.2, 1)
+
+[node name="RootColumns" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 0
+
+[node name="LeftColumn" type="Control" parent="RootColumns"]
+layout_mode = 2
+size_flags_horizontal = 4
+
+[node name="LeftStack" type="VBoxContainer" parent="RootColumns/LeftColumn"]
+layout_mode = 1
+anchors_preset = 9
+anchor_bottom = 1.0
+offset_right = 200.0
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="OpponentPanel" parent="RootColumns/LeftColumn/LeftStack" instance=ExtResource("2_cacvx")]
+layout_mode = 2
+
+[node name="OpponentDeck" type="Control" parent="RootColumns/LeftColumn/LeftStack"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+script = ExtResource("3_toc0o")
+card_back_scene = ExtResource("4_nhra7")
+
+[node name="Spacer" type="Control" parent="RootColumns/LeftColumn/LeftStack"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="PlayerDeck" type="Control" parent="RootColumns/LeftColumn/LeftStack"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+script = ExtResource("3_toc0o")
+card_back_scene = ExtResource("4_nhra7")
+
+[node name="PlayerPanel" parent="RootColumns/LeftColumn/LeftStack" instance=ExtResource("2_cacvx")]
+layout_mode = 2
+
+[node name="CenterColumn" type="VBoxContainer" parent="RootColumns"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/separation = 0
+
+[node name="OpponentHand" type="VBoxContainer" parent="RootColumns/CenterColumn"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="HandLayout" type="Control" parent="RootColumns/CenterColumn/OpponentHand"]
+layout_mode = 2
+script = ExtResource("3_kk4i8")
+
+[node name="OpponentCardsZone" type="VBoxContainer" parent="RootColumns/CenterColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="OpponentKnights" type="VBoxContainer" parent="RootColumns/CenterColumn"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="Spacer" type="Control" parent="RootColumns/CenterColumn"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="PlayerKnights" type="VBoxContainer" parent="RootColumns/CenterColumn"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="PlayerCardsZone" type="VBoxContainer" parent="RootColumns/CenterColumn"]
+custom_minimum_size = Vector2(0, 200)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="PlayerHand" type="VBoxContainer" parent="RootColumns/CenterColumn"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 0
+
+[node name="HandLayout" type="Control" parent="RootColumns/CenterColumn/PlayerHand"]
+layout_mode = 2
+script = ExtResource("3_kk4i8")
+
+[node name="RightColumn" type="VBoxContainer" parent="RootColumns"]
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_constants/separation = 0
+
+[node name="TopRightPanel" type="PanelContainer" parent="RootColumns/RightColumn"]
+custom_minimum_size = Vector2(0, 64)
+layout_mode = 2
+
+[node name="HBoxContainer" type="HBoxContainer" parent="RootColumns/RightColumn/TopRightPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+alignment = 2
+
+[node name="EndTurnButton" type="Button" parent="RootColumns/RightColumn/TopRightPanel/HBoxContainer"]
+modulate = Color(1, 1, 1, 0.8)
+custom_minimum_size = Vector2(42, 42)
+layout_mode = 2
+tooltip_text = "Pasar turno al rival"
+
+[node name="MenuButton" type="MenuButton" parent="RootColumns/RightColumn/TopRightPanel/HBoxContainer"]
+layout_mode = 2
+text = "⋮"
+flat = false
+script = ExtResource("5_match")
+
+[node name="OpponentEmpty" type="VBoxContainer" parent="RootColumns/RightColumn"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 3
+
+[node name="OpponentOcasion" type="VBoxContainer" parent="RootColumns/RightColumn"]
+custom_minimum_size = Vector2(150, 120)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 0
+
+[node name="OpponentAssist" type="VBoxContainer" parent="RootColumns/RightColumn"]
+custom_minimum_size = Vector2(150, 120)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 0
+
+[node name="Spacer2" type="Control" parent="RootColumns/RightColumn"]
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 3
+
+[node name="PlayerAssist" type="VBoxContainer" parent="RootColumns/RightColumn"]
+custom_minimum_size = Vector2(150, 120)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 0
+
+[node name="PlayerOcasion" type="VBoxContainer" parent="RootColumns/RightColumn"]
+custom_minimum_size = Vector2(150, 120)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 0
+
+[node name="PlayerEmpty" type="VBoxContainer" parent="RootColumns/RightColumn"]
+custom_minimum_size = Vector2(150, 0)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 3

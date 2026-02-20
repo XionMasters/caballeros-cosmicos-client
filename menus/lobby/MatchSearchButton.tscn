@@ -1,0 +1,60 @@
+[gd_scene load_steps=4 format=3 uid="uid://b2qw4o775im4n"]
+
+[ext_resource type="Script" uid="uid://clux0057kr5us" path="res://menus/lobby/match_search_button.gd" id="1_lwrlp"]
+[ext_resource type="Texture2D" uid="uid://dk01155rliodo" path="res://assets/ui-icons/ico-espadamatch.png" id="2_6shtd"]
+[ext_resource type="Texture2D" uid="uid://donakodglk7oc" path="res://assets/ui-icons/text-círculocarga.png" id="3_injbs"]
+
+[node name="MatchSearchButton" type="Control"]
+custom_minimum_size = Vector2(120, 70)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 120.0
+offset_bottom = 40.0
+script = ExtResource("1_lwrlp")
+
+[node name="Content" type="HBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 8
+alignment = 1
+
+[node name="AnimatedIcon" type="TextureRect" parent="Content"]
+layout_mode = 2
+texture = ExtResource("2_6shtd")
+expand_mode = 3
+
+[node name="StatusLabel" type="Label" parent="Content/AnimatedIcon"]
+layout_mode = 0
+offset_left = 10.0
+offset_top = 43.0
+offset_right = 67.0
+offset_bottom = 66.0
+text = "Partida"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Spinner" type="TextureRect" parent="Content"]
+visible = false
+layout_mode = 2
+texture = ExtResource("3_injbs")
+expand_mode = 3
+
+[node name="Overlay" type="ColorRect" parent="."]
+visible = false
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.25)
+
+[node name="Button" type="Button" parent="."]
+layout_mode = 0
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2

@@ -1,0 +1,3 @@
+[gd_scene load_steps=0 format=3 uid="uid://cm2hf3v5mxbkp"]
+
+[node name="CosmosParticle" type="GPUParticles2D"]

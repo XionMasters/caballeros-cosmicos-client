@@ -1,0 +1,122 @@
+[gd_scene load_steps=5 format=3 uid="uid://b7qm8xrw7qaa"]
+
+[ext_resource type="Script" uid="uid://bvdf8osqve2ke" path="res://menus/components/AvatarDisplay.gd" id="1_avatar"]
+[ext_resource type="Script" uid="uid://bs5ufks5wpa36" path="res://menus/components/gold_ring.gd" id="2_kbwyn"]
+[ext_resource type="Shader" uid="uid://b8xcf0v2l5g4c" path="res://assets/shaders/circle_mask.gdshader" id="2_v71en"]
+
+[sub_resource type="ShaderMaterial" id="ShaderMaterial_kbwyn"]
+shader = ExtResource("2_v71en")
+shader_parameter/smoothness = 0.05
+shader_parameter/circle_size = 1.0
+
+[node name="AvatarDisplay" type="Control"]
+custom_minimum_size = Vector2(140, 160)
+layout_mode = 3
+anchors_preset = 0
+offset_right = 242.0
+offset_bottom = 257.0
+script = ExtResource("1_avatar")
+
+[node name="Background" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="TurnDot" type="ColorRect" parent="."]
+visible = false
+custom_minimum_size = Vector2(18, 18)
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -36.0
+offset_top = 12.0
+offset_right = -18.0
+offset_bottom = 36.0
+grow_horizontal = 0
+color = Color(0.2, 0.55, 1, 1)
+
+[node name="VBox" type="VBoxContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 5
+
+[node name="AvatarContainer" type="CenterContainer" parent="VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AvatarCircle" type="Control" parent="VBox/AvatarContainer"]
+custom_minimum_size = Vector2(160, 160)
+layout_mode = 2
+
+[node name="GoldRing" type="Control" parent="VBox/AvatarContainer/AvatarCircle"]
+anchors_preset = 0
+offset_right = 40.0
+offset_bottom = 40.0
+script = ExtResource("2_kbwyn")
+
+[node name="HealthArc" type="Control" parent="VBox/AvatarContainer/AvatarCircle"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CosmosArc" type="Control" parent="VBox/AvatarContainer/AvatarCircle"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="AvatarImage" type="TextureRect" parent="VBox/AvatarContainer/AvatarCircle"]
+material = SubResource("ShaderMaterial_kbwyn")
+clip_contents = true
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -70.0
+offset_top = -70.0
+offset_right = 70.0
+offset_bottom = 70.0
+grow_horizontal = 2
+grow_vertical = 2
+expand_mode = 3
+stretch_mode = 6
+
+[node name="CosmosParticles" type="CPUParticles2D" parent="VBox/AvatarContainer/AvatarCircle"]
+position = Vector2(76, 117)
+emitting = false
+amount = 15
+lifetime = 0.8
+one_shot = true
+explosiveness = 0.8
+emission_shape = 1
+emission_sphere_radius = 15.0
+direction = Vector2(0, -1)
+gravity = Vector2(0, -40)
+initial_velocity_min = 60.0
+initial_velocity_max = 100.0
+angular_velocity_min = -180.0
+angular_velocity_max = 180.0
+scale_amount_min = 2.0
+scale_amount_max = 4.0
+color = Color(0.2, 0.5, 1, 1)
+
+[node name="NameLabel" type="Label" parent="VBox"]
+layout_mode = 2
+text = "Jugador"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,0 +1,254 @@
+[gd_scene load_steps=3 format=3 uid="uid://5suufcydsowj"]
+
+[ext_resource type="Script" uid="uid://bk4hjme0rl521" path="res://menus/deckbuilder/DeckBuilder.gd" id="1"]
+[ext_resource type="Script" uid="uid://ih7cq2lluhit" path="res://menus/deckbuilder/DeckPanelDropZone.gd" id="2_deck_drop"]
+
+
+
+[node name="DeckBuilder" type="Control"]
+layout_mode = 3
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+script = ExtResource("1")
+
+[node name="MarginContainer" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 20.0
+offset_top = 20.0
+offset_right = -20.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+layout_mode = 2
+
+[node name="Header" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+
+[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+text = "Volver"
+
+[node name="DeckInfo" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="DeckNameLabel" type="Label" parent="MarginContainer/VBoxContainer/Header/DeckInfo"]
+layout_mode = 2
+text = "Mi Mazo"
+horizontal_alignment = 1
+
+[node name="DeckStatsLabel" type="Label" parent="MarginContainer/VBoxContainer/Header/DeckInfo"]
+layout_mode = 2
+text = "0 cartas"
+horizontal_alignment = 1
+
+[node name="ValidationLabel" type="Label" parent="MarginContainer/VBoxContainer/Header/DeckInfo"]
+layout_mode = 2
+text = ""
+horizontal_alignment = 1
+
+[node name="SetActiveButton" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+text = "Marcar Activo"
+
+[node name="AutoGenerateButton" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+text = "Auto-Generar"
+
+[node name="SaveButton" type="Button" parent="MarginContainer/VBoxContainer/Header"]
+layout_mode = 2
+text = "Guardar"
+
+[node name="Content" type="TabContainer" parent="MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+tab_alignment = 0
+
+[node name="CartasTab" type="Control" parent="MarginContainer/VBoxContainer/Content"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="HSplitContainer" type="HSplitContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="CollectionPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/CollectionPanel"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/CollectionPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/CollectionPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Coleccion"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/CollectionPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CollectionGrid" type="GridContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/CollectionPanel/MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 3
+
+[node name="DeckPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+script = ExtResource("2_deck_drop")
+
+[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/DeckPanel"]
+layout_mode = 2
+
+[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/DeckPanel/MarginContainer"]
+layout_mode = 2
+
+[node name="Label" type="Label" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/DeckPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+text = "Mazo"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/DeckPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="DeckGrid" type="GridContainer" parent="MarginContainer/VBoxContainer/Content/CartasTab/HSplitContainer/DeckPanel/MarginContainer/VBoxContainer/ScrollContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+
+[node name="DorsoTab" type="Control" parent="MarginContainer/VBoxContainer/Content"]
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="PanelContainer" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="MarginContainer2" type="MarginContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer"]
+layout_mode = 2
+
+[node name="VBoxContainer2" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2"]
+layout_mode = 2
+
+[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2"]
+layout_mode = 2
+text = "Seleccionar Dorso del Mazo"
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+
+[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2"]
+layout_mode = 2
+
+[node name="DorsoContentContainer" type="HSplitContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="CurrentDorsoPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer"]
+custom_minimum_size = Vector2(200, 0)
+layout_mode = 2
+
+[node name="CurrentMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/CurrentDorsoPanel"]
+layout_mode = 2
+
+[node name="CurrentVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/CurrentDorsoPanel/CurrentMargin"]
+layout_mode = 2
+alignment = 1
+
+[node name="CurrentLabel" type="Label" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/CurrentDorsoPanel/CurrentMargin/CurrentVBox"]
+layout_mode = 2
+text = "Dorso Actual"
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="CurrentDorsoName" type="Label" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/CurrentDorsoPanel/CurrentMargin/CurrentVBox"]
+layout_mode = 2
+text = "Dorso ClÃ¡sico"
+theme_override_font_sizes/font_size = 12
+horizontal_alignment = 1
+
+[node name="CurrentDorsoPreview" type="TextureRect" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/CurrentDorsoPanel/CurrentMargin/CurrentVBox"]
+custom_minimum_size = Vector2(150, 225)
+layout_mode = 2
+expand_mode = 3
+stretch_mode = 5
+
+[node name="AvailableDorsosPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer"]
+layout_mode = 2
+size_flags_horizontal = 3
+
+[node name="AvailableMargin" type="MarginContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/AvailableDorsosPanel"]
+layout_mode = 2
+
+[node name="AvailableVBox" type="VBoxContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/AvailableDorsosPanel/AvailableMargin"]
+layout_mode = 2
+
+[node name="AvailableLabel" type="Label" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/AvailableDorsosPanel/AvailableMargin/AvailableVBox"]
+layout_mode = 2
+text = "Dorsos Disponibles"
+theme_override_font_sizes/font_size = 14
+horizontal_alignment = 1
+
+[node name="AvailableDorsosScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/AvailableDorsosPanel/AvailableMargin/AvailableVBox"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="AvailableDorsosGrid" type="GridContainer" parent="MarginContainer/VBoxContainer/Content/DorsoTab/PanelContainer/MarginContainer2/VBoxContainer2/DorsoContentContainer/AvailableDorsosPanel/AvailableMargin/AvailableVBox/AvailableDorsosScroll"]
+layout_mode = 2
+size_flags_horizontal = 3
+columns = 2
+
+[node name="LoadingLabel" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -100.0
+offset_top = -12.0
+offset_right = 100.0
+offset_bottom = 12.0
+grow_horizontal = 2
+grow_vertical = 2
+text = "Cargando..."
+horizontal_alignment = 1
+
+[node name="ErrorLabel" type="Label" parent="."]
+visible = false
+layout_mode = 1
+anchors_preset = 7
+anchor_left = 0.5
+anchor_top = 1.0
+anchor_right = 0.5
+anchor_bottom = 1.0
+offset_left = -200.0
+offset_top = -50.0
+offset_right = 200.0
+offset_bottom = -20.0
+grow_horizontal = 2
+grow_vertical = 0
+theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
+text = "Error"
+horizontal_alignment = 1

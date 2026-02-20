@@ -1,0 +1,74 @@
+[gd_scene format=3 uid="uid://dfoy4xdktrjcd"]
+
+[node name="KnightZone" type="Control"]
+layout_mode = 3
+anchors_preset = 0
+
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
+layout_mode = 1
+alignment = 1
+
+[node name="Slot1" type="Control" parent="HBoxContainer"]
+custom_minimum_size = Vector2(140, 200)
+layout_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/Slot1"]
+layout_mode = 1
+
+[node name="Label" type="Label" parent="HBoxContainer/Slot1/PanelContainer"]
+layout_mode = 2
+text = "Knight 1"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Slot2" type="Control" parent="HBoxContainer"]
+custom_minimum_size = Vector2(140, 200)
+layout_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/Slot2"]
+layout_mode = 1
+
+[node name="Label" type="Label" parent="HBoxContainer/Slot2/PanelContainer"]
+layout_mode = 2
+text = "Knight 2"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Slot3" type="Control" parent="HBoxContainer"]
+custom_minimum_size = Vector2(140, 200)
+layout_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/Slot3"]
+layout_mode = 1
+
+[node name="Label" type="Label" parent="HBoxContainer/Slot3/PanelContainer"]
+layout_mode = 2
+text = "Knight 3"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Slot4" type="Control" parent="HBoxContainer"]
+custom_minimum_size = Vector2(140, 200)
+layout_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/Slot4"]
+layout_mode = 1
+
+[node name="Label" type="Label" parent="HBoxContainer/Slot4/PanelContainer"]
+layout_mode = 2
+text = "Knight 4"
+horizontal_alignment = 1
+vertical_alignment = 1
+
+[node name="Slot5" type="Control" parent="HBoxContainer"]
+custom_minimum_size = Vector2(140, 200)
+layout_mode = 2
+
+[node name="PanelContainer" type="PanelContainer" parent="HBoxContainer/Slot5"]
+layout_mode = 1
+
+[node name="Label" type="Label" parent="HBoxContainer/Slot5/PanelContainer"]
+layout_mode = 2
+text = "Knight 5"
+horizontal_alignment = 1
+vertical_alignment = 1

@@ -1,0 +1,2 @@
+# MatchRepository.gd
+extends Node
