@@ -21,13 +21,13 @@ const DAMAGE_FLASH_TIME := 0.25
 const SEGMENT_GAP := deg_to_rad(10)   # espacio entre segmentos
 const SEGMENT_PADDING := deg_to_rad(0)
 
-const ARC_WIDTH = 14.0
+const ARC_WIDTH = 15.0
 const HEALTH_COLOR = Color(1.0, 0.2, 0.2, 1.0)  # Rojo
 const COSMOS_COLOR = Color(0.2, 0.5, 1.0, 1.0)  # Azul
 const BG_COLOR = Color(0.2, 0.2, 0.2, 0.3)
 
-const HEALTH_RADIUS_OFFSET = 10.0
-const COSMOS_RADIUS_OFFSET = -8.0
+const HEALTH_RADIUS_OFFSET = 26.0
+const COSMOS_RADIUS_OFFSET = HEALTH_RADIUS_OFFSET - (ARC_WIDTH + 2)
 
 func _ready():
 	health_arc.draw.connect(_draw_health_arc)
@@ -62,7 +62,7 @@ func get_cosmos_radius() -> float:
 	return get_base_radius() + COSMOS_RADIUS_OFFSET - ARC_WIDTH / 2
 
 func get_gold_radius() -> float:
-	return get_base_radius() + HEALTH_RADIUS_OFFSET + ARC_WIDTH
+	return get_base_radius() + (HEALTH_RADIUS_OFFSET - 2) + ARC_WIDTH / 2	
 
 func _process(delta):
 	if damage_flash_timer > 0.0:

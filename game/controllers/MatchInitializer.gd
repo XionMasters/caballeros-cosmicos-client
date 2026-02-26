@@ -38,9 +38,9 @@ func _init(p_deck_provider: PlayerDeckProvider, p_opponent_provider: OpponentPro
 # INICIALIZACIÓN
 # ---------------------------------------------------------
 func _ready() -> void:
-	# Escuchar eventos de MatchManager
-	MatchManager.match_started.connect(_on_match_started)
-	MatchManager.match_error.connect(_on_match_error)
+	# Escuchar eventos de MatchSessionService
+	MatchSessionService.match_started.connect(_on_match_started)
+	MatchSessionService.match_error.connect(_on_match_error)
 	
 	# Escuchar eventos de los providers
 	deck_provider.deck_provider_ready.connect(_on_deck_ready)
@@ -144,13 +144,13 @@ func _count_deck_cards(cards: Array) -> int:
 # PASO 3: SOLICITAR PARTIDA
 # ---------------------------------------------------------
 func _request_match() -> void:
-	"""Solicitar creación de partida al MatchManager"""
+	"""Solicitar creación de partida al MatchSessionService"""
 	loading.emit("Iniciando partida en servidor...")
 	print("[MatchInitializer] 3️⃣ Pidiendo partida al servidor...")
 	
-	# MatchManager maneja la comunicación WebSocket
+	# MatchSessionService maneja la comunicación WebSocket
 	# Emitirá match_started cuando el servidor responda
-	MatchManager.start_test_match()
+	MatchSessionService.start_test_match()
 
 
 # ---------------------------------------------------------

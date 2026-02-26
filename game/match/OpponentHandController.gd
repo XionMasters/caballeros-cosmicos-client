@@ -125,6 +125,19 @@ func _initialize_hand(game_state: GameState):
 
 
 # ============================================================================
+# RESET (CAMBIO DE PERSPECTIVA)
+# ============================================================================
+func reset() -> void:
+	"""Resetear estado local cuando cambia la perspectiva (TEST match)"""
+	initialized = false
+	initial_deal_done = false
+	last_hand_count = 0
+	if hand_layout:
+		hand_layout.clear_cards()
+	print("[OpponentHandController] 🔄 Reset por cambio de perspectiva")
+
+
+# ============================================================================
 # REPARTO INICIAL (LA MAGIA ✨)
 # ============================================================================
 func _start_with_empty_hand(game_state: GameState):
@@ -138,7 +151,10 @@ func _start_with_empty_hand(game_state: GameState):
 		game_state.opponent_hand_count,
 		0.5  # Delay inicial: 500ms después del jugador
 	)
-	
+
+	# Reemplazar dorsos por CardDisplay en cartas visibles (ej: DEBUG reveal)
+	_render_opponent_hand(game_state)
+
 	# Guardar estado
 	last_hand_count = game_state.opponent_hand_count
 	print("[OpponentHandController] 🎴 Reparto inicial: %d dorsos animados" % last_hand_count)
@@ -148,33 +164,31 @@ func _start_with_empty_hand(game_state: GameState):
 # RENDERIZACIÓN (SIN ANIMACIONES)
 # ============================================================================
 func _render_opponent_hand(game_state: GameState) -> void:
-	"""Renderizar el estado actual de la mano (solo pinta, no anima)"""
+	"""Renderizar mano del oponente: dorso para cartas ocultas, cara para cartas visibles"""
 	if not hand_layout:
 		return
 	
-	# Solo renderizar si la mano está vacía (dorsos nuevos ya fueron agregados por animator)
-	if hand_layout.get_cards().is_empty() and game_state.opponent_hand_count > 0:
-		var card_back_tpl = preload("res://cards/CardBack.tscn")
-		for i in range(game_state.opponent_hand_count):
+	var card_back_tpl = preload("res://cards/CardBack.tscn")
+	var card_display_tpl = preload("res://cards/CardDisplay.tscn")
+	
+	hand_layout.clear_cards()
+	
+	for card_instance in game_state.opponent_hand:
+		if card_instance.hidden or card_instance.base_data == null:
+			# Mostrar dorso
 			var card_back = card_back_tpl.instantiate()
-			
-			# Esperar y asignar textura del dorso (igual que en animador)
-			if opponent_deck:
-				var max_wait = 30
-				var wait_count = 0
-				
-				while opponent_deck.get_back_texture() == null and wait_count < max_wait:
-					var timer = get_tree().create_timer(0.1)
-					await timer.timeout
-					wait_count += 1
-				
-				if opponent_deck.get_back_texture():
-					var texture = opponent_deck.get_back_texture()
-					card_back.set_back_texture(texture)
-					print("[OpponentHandController] 🖼️ Textura del dorso asignada a dorso %d" % i)
-				else:
-					print("[OpponentHandController] ⚠️ Timeout esperando textura para dorso %d" % i)
-			
+			if opponent_deck and opponent_deck.get_back_texture():
+				card_back.set_back_texture(opponent_deck.get_back_texture())
 			hand_layout.add_card(card_back)
-		
-		print("[OpponentHandController] 🔙 Mano del oponente: %d dorsos" % game_state.opponent_hand_count)
+		else:
+			# Mostrar cara (carta visible del oponente)
+			var card_display = card_display_tpl.instantiate()
+			card_display.setup(card_instance.base_data)
+			card_display.bind_instance(card_instance)
+			hand_layout.add_card(card_display)
+			print("[OpponentHandController] 👁️ Carta visible: %s" % card_instance.base_data.name)
+	
+	print("[OpponentHandController] 🔙 Mano renderizada: %d cartas (%d visibles)" % [
+		game_state.opponent_hand.size(),
+		game_state.opponent_hand.filter(func(c): return not c.hidden).size()
+	])

@@ -25,7 +25,7 @@ const BASE_ACTIONS := {
 	Phase.END:    ["end_turn"]
 }
 
-# Acciones dinámicas (MatchManager las puede activar/desactivar)
+# Acciones dinámicas (MatchSessionService las puede activar/desactivar)
 var extra_actions: Array = []
 
 func start_player_turn():

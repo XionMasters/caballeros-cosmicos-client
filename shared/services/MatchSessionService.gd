@@ -8,7 +8,7 @@ signal match_started(state: GameState)
 signal match_state_updated(match_data: Dictionary)
 signal match_error(error_message: String)
 signal match_ended(result: Dictionary)
-signal render_complete  # ✅ Signal que GameMatch emite cuando termina de renderizar
+signal active_test_match_exists(match_id: String)  # Hay una partida TEST activa sin finalizar
 
 # ---------------------------------------------------------
 # Estado interno
@@ -26,38 +26,66 @@ signal phase_changed(phase: String)
 # ---------------------------------------------------------
 var _is_processing_update: bool = false
 var _pending_updates: Array = []
+var _is_resuming: bool = false  # True si la partida se está reanudando (no iniciar primer turno)
 
 func _ready():
 	print("🎮 MatchSessionService iniciado")
-
-
-	# Suscripción directa a eventos WebSocket de partida
+	# ⚠️ Solo suscribirse a server_event (es el único punto de entrada).
+	# match_updated y match_error son emitidos TAMBIÉN por server_event,
+	# suscribirse a ambos causaría procesamiento duplicado.
 	WebSocketManager.server_event.connect(_on_server_event)
-	WebSocketManager.match_updated.connect(_on_match_updated)
-	WebSocketManager.match_error.connect(_on_match_error)
 
 # =====================================================
 # DISPATCH PRINCIPAL DE EVENTOS DEL SERVIDOR
 # =====================================================
 func _on_server_event(event: String, data: Dictionary) -> void:
+	print('Server envia: ', event)
 	match event:
+		"match_found":
+			print("🎮 match_found recibido")
+			var mode = "test" if is_test_mode else "pvp"
+			await _initialize_match(data, mode)
 
-		"match_update", "card_played", "turn_changed":
-			# TODOS actualizan el estado de la misma forma
+		"match_update":
 			_on_match_updated(data)
 			
-			# Triggers de UI/UX según el tipo de evento
-			match event:
-				"card_played":
-					print("🃏 Carta jugada")
-				"turn_changed":
-					if data.has("phase"):
-						phase_changed.emit(data["phase"])
+		"card_played":
+			_on_match_updated(data)
+			print("🃏 Carta jugada")
+			
+		"match_error":
+			var code = data.get("code", "")
+			var msg  = data.get("message", data.get("error", "Error desconocido"))
+			_on_match_error(code, msg)
+
+		"error":
+			# El servidor manda "error" (no "match_error") cuando falla una acción  
+			# (ej: play_card rechazado). Lo redirigimos al mismo handler.
+			var code = data.get("code", "ACTION_ERROR")
+			var msg  = data.get("message", data.get("error", "Acción rechazada por el servidor"))
+			_on_match_error(code, msg)
+			
+		"turn_changed":
+			_on_match_updated(data)
+			if data.has("phase"):
+				phase_changed.emit(data["phase"])
 
 		"match_end":
 			_on_match_end(data)
 
+		"match_resumed":
+			print("♻️ [MatchSessionService] Reanudando partida...")
+			var mode = "test" if is_test_mode else "pvp"
+			await _initialize_match(data, mode)
+
+		"online_users":
+			print("Online users: Debe ser para cargar los usuario conectados al chat, no implementado en socket")
+		
+		"connected":
+			print("Connected: No se para que es este")
+
 		_:
+			print("Evento desconocido: ", event)
 			pass
 
 func start_pvp_session(data: Dictionary) -> void:
@@ -126,7 +154,7 @@ func _preload_match_images() -> void:
 		})
 	
 	if not deck_cards.is_empty():
-		print("[MatchManager] 🎴 Precargando %d imágenes de cartas..." % deck_cards.size())
+		print("[MatchSessionService] 🎴 Precargando %d imágenes de cartas..." % deck_cards.size())
 		CardsManager.preload_deck_images(deck_cards)
 
 
@@ -153,7 +181,7 @@ func _process_update_queue() -> void:
 	Garantiza que cada actualización se completa (incluyendo animaciones)
 	antes de procesar la siguiente.
 	"""
-	while _pending_updates.size() > 0:
+	while _pending_updates.size() > 0 && game_state != null :
 		_is_processing_update = true
 		var data = _pending_updates.pop_front()
 		
@@ -199,9 +227,9 @@ func _process_update_queue() -> void:
 		print("[MatchSessionService] 📡 Emitiendo match_state_updated...")
 		emit_signal("match_state_updated", current_match)
 		
-		# ⏳ ESPERAR a que GameMatch termine de renderizar antes de procesar la siguiente actualización
-		print("[MatchSessionService] ⏳ Esperando que GameMatch termine de renderizar...")
-		await render_complete
+		# ⏳ Ceder el frame para que GameMatch procese el render antes de continuar
+		await get_tree().process_frame
+		await get_tree().process_frame
 		
 		print("[MatchSessionService] ✅ Actualización completada")
 	
@@ -227,7 +255,20 @@ func _on_match_end(data: Dictionary) -> void:
 # =====================================================
 func _on_match_error(code: String, message: String) -> void:
 	print("❌ Error Match (%s): %s" % [code, message])
-	emit_signal("match_error", code, message)
+
+	# Partida TEST activa: ofrecemos reanudar o abandonar
+	if code == "ALREADY_IN_MATCH":
+		var match_id := ""
+		var re := RegEx.new()
+		re.compile(r"\(ID:\s*([a-f0-9\-]{36})\)")
+		var result = re.search(message)
+		if result:
+			match_id = result.get_string(1)
+		print("⚠️ Partida activa detectada: %s" % match_id)
+		emit_signal("active_test_match_exists", match_id)
+		return
+
+	emit_signal("match_error", message)
 
 
 # =====================================================
@@ -273,15 +314,16 @@ func start_test_match() -> void:
 	print("🎭 [MatchSessionService] Iniciando partida TEST...")
 	is_test_mode = true
 	
+	WebSocketManager.request_test_match()
 	# 1️⃣ HTTP POST para crear la partida
-	ApiClient.post_request_with_callback(
-		"/matches/init-match-test",
-		{},
-		"start_test_match",
-		_on_test_match_response,
-		true,  # use_auth
-		15.0   # timeout
-	)
+	#ApiClient.post_request_with_callback(
+		#"/matches/init-match-test",
+		#{},
+		#"start_test_match",
+		#_on_test_match_response,
+		#true,  # use_auth
+		#15.0   # timeout
+	#)
 
 func _on_test_match_response(success: bool, data: Variant, error: String) -> void:
 	"""Maneja la respuesta HTTP de crear partida TEST
@@ -337,6 +379,7 @@ func _initialize_match(match_data: Dictionary, mode: String):
 	print("  player2_id: %s" % match_data.get("player2_id", "NOT_FOUND"))
 	
 	# 2️⃣ Configurar modo
+	_is_processing_update = true
 	is_test_mode = mode == "test"
 
 	# 3️⃣ Crear GameState
@@ -417,7 +460,7 @@ func _resume_test_match() -> void:
 
 func _on_resume_test_match_response(success: bool, data: Variant, error: String) -> void:
 	"""Maneja la respuesta al intentar reanudar partida TEST"""
-	print("📡 [MatchManager] Respuesta HTTP resume_test_match - Success: ", success)
+	print("📡 [MatchSessionService] Respuesta HTTP resume_test_match - Success: ", success)
 	
 	if not success:
 		var error_msg = error if error != "" else "Error desconocido al reanudar partida TEST"
@@ -499,6 +542,27 @@ func _verify_and_preload_images():
 	# y entonces enviaremos el mensaje WebSocket para iniciar el turno
 
 
+func request_resume_test_match() -> void:
+	"""Reanudar la partida TEST activa por WebSocket"""
+	if not WebSocketManager.is_connected_to_server():
+		emit_signal("match_error", "No conectado al servidor")
+		return
+	print("♻️ [MatchSessionService] Solicitando reanudar partida TEST...")
+	is_test_mode = true
+	_is_resuming = true
+	WebSocketManager.send_event("resume_test_match", {})
+
+
+func request_abandon_test_match(match_id: String) -> void:
+	"""Abandonar la partida TEST activa y crear una nueva"""
+	if not WebSocketManager.is_connected_to_server():
+		emit_signal("match_error", "No conectado al servidor")
+		return
+	print("🗑️ [MatchSessionService] Abandonando partida TEST %s..." % match_id)
+	is_test_mode = true
+	WebSocketManager.send_event("abandon_test_match", {"match_id": match_id})
+
+
 func play_card(card_instance_id: String, zone: String, position: int = 0) -> void:
 	if not is_in_match:
 		return
@@ -535,11 +599,19 @@ func on_gamematch_ready() -> void:
 	Ahora enviamos mensaje WebSocket para iniciar el primer turno
 	"""
 	if not is_test_mode or not is_in_match:
-		print("⚠️ [MatchManager] No estamos en partida TEST")
+		print("⚠️ [MatchSessionService] No estamos en partida TEST")
 		return
 	
-	print("🎮 [MatchManager] GameMatch está lista, iniciando primer turno por WebSocket...")
+	print("🎮 [MatchSessionService] GameMatch está lista, iniciando primer turno por WebSocket...")
 	
-	# Enviar por WebSocket para iniciar el turno
 	var match_id = current_match.get("id", "")
+	_is_processing_update = false
+
+	# Si es reanudación, NO llamar start_first_turn (el juego ya está en curso)
+	if _is_resuming:
+		_is_resuming = false
+		print("♻️ [MatchSessionService] Partida reanudada, saltando start_first_turn")
+		return
+
+	# Enviar por WebSocket para iniciar el primer turno
 	WebSocketManager.start_first_turn(match_id)

@@ -1,7 +1,7 @@
 # GameController.gd
 # Controlador de Intención - Validador ligero de UX
 # ✅ Valida condiciones MÍNIMAS del cliente
-# ✅ Forwardea al servidor (MatchManager)
+# ✅ Forwardea al servidor (MatchSessionService)
 # ❌ NO calcula daño
 # ❌ NO aplica efectos
 # ❌ NO modifica GameState
@@ -11,7 +11,7 @@ class_name GameController
 extends Node
 
 var game_state: GameState = null
-var match_manager: MatchManager = null
+var match_manager: MatchSessionService = null
 
 # Señales para UI (feedback inmediato)
 signal play_card_requested(card_instance: CardInstance, zone: String)
@@ -21,7 +21,7 @@ signal end_turn_requested()
 func set_game_state(state: GameState) -> void:
 	game_state = state
 
-func set_match_manager(mm: MatchManager) -> void:
+func set_match_manager(mm: MatchSessionService) -> void:
 	match_manager = mm
 
 # =====================================================
@@ -59,7 +59,7 @@ func request_play_card(card_instance: CardInstance, zone: String, position: int 
 	print("[GameController] 🃏 Enviando solicitud jugar: %s → %s" % [card_instance.base_data.name, zone])
 	play_card_requested.emit(card_instance, zone)
 
-	# ✅ Forwardear al MatchManager
+	# ✅ Forwardear al MatchSessionService
 	match_manager.play_card(card_instance.instance_id, zone, position)
 	return true
 
@@ -98,7 +98,7 @@ func request_attack(attacker_id: String, defender_id: String) -> bool:
 	print("[GameController] ⚔️ Enviando solicitud atacar: %s → %s" % [attacker_id, defender_id])
 	attack_requested.emit(attacker_id, defender_id)
 
-	# ✅ Forwardear al MatchManager
+	# ✅ Forwardear al MatchSessionService
 	match_manager.send_attack(attacker_id, defender_id)
 	return true
 
@@ -121,5 +121,5 @@ func request_end_turn() -> void:
 	print("[GameController] 🔄 Enviando fin de turno")
 	end_turn_requested.emit()
 
-	# ✅ Forwardear al MatchManager
+	# ✅ Forwardear al MatchSessionService
 	match_manager.end_turn()

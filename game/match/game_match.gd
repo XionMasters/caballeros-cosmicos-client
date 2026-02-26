@@ -17,6 +17,7 @@ extends Control
 @onready var player_hand: HandLayout = $RootColumns/CenterColumn/PlayerHand/HandLayout
 @onready var opponent_hand_container: HandLayout = $RootColumns/CenterColumn/OpponentHand/HandLayout
 @onready var end_turn_button: Button = $RootColumns/RightColumn/PlayerEmpty/EndTurnButton
+@onready var player_knight_slots_zone = $RootColumns/CenterColumn/PlayerKnights/plKnightsZone
 
 # ============================================================================
 # CONTROLADORES
@@ -24,6 +25,7 @@ extends Control
 var card_deal_animator: CardDealAnimator = null
 var player_hand_controller: PlayerHandController = null
 var opponent_hand_controller: OpponentHandController = null
+var _last_player_number: int = 0  # Para detectar cambios de perspectiva (TEST match)
 
 # ============================================================================
 # CICLO DE VIDA
@@ -36,7 +38,7 @@ func _ready() -> void:
 	2. Esperar frames para que nodos estén listos
 	3. Configurar componentes
 	4. Renderizar estado
-	5. Avisar a MatchManager que está listo (inicia turno por WebSocket)
+	5. Avisar a MatchSessionService que está listo (inicia turno por WebSocket)
 	"""
 	print("[GameMatch] 🎮 Inicializando GameMatch...")
 	print("[GameMatch] 📌 DEBUG: end_turn_button = %s" % end_turn_button)
@@ -57,9 +59,13 @@ func _ready() -> void:
 	# 3️⃣ Conectar señales
 	MatchSessionService.match_state_updated.connect(_on_match_state_updated)
 	MatchSessionService.phase_changed.connect(_on_phase_changed)
+	MatchSessionService.match_error.connect(_on_match_error_received)
 	
 	# 3️⃣b Configurar botón de End Turn
 	_setup_end_turn_button()
+	
+	# 3️⃣c Conectar slots del campo
+	_setup_card_slots()
 	
 	# 4️⃣ Configurar animador y controladores
 	_setup_card_deal_animator()
@@ -67,12 +73,15 @@ func _ready() -> void:
 	
 	# 5️⃣ Renderizar estado inicial
 	await _render_from_match_state()
+
+	# ✅ Revalidar botón después del primer render (inicio/reanudar)
+	_update_end_turn_button_state()
 	
 	# 6️⃣ Esperar a que las imágenes terminen de precargarse
 	print("[GameMatch] ⏳ Esperando precarga de imágenes...")
 	await get_tree().create_timer(1.0).timeout
 	
-	# 7️⃣ LISTO: Avisar a MatchManager que puede iniciar el primer turno
+	# 7️⃣ LISTO: Avisar a MatchSessionService que puede iniciar el primer turno
 	print("[GameMatch] ✅ GameMatch completamente cargado, iniciando primer turno...")
 	MatchSessionService.on_gamematch_ready()
 
@@ -144,16 +153,71 @@ func _setup_end_turn_button() -> void:
 	print("[GameMatch] ✅ End Turn button configurado")
 
 
+func _setup_card_slots() -> void:
+	"""Conectar card_dropped de todos los slots del campo del jugador"""
+	if not player_knight_slots_zone:
+		print("[GameMatch] ❌ player_knight_slots_zone no encontrado")
+		return
+
+	var connected := 0
+	for slot in player_knight_slots_zone.get_children():
+		if slot.has_signal("card_dropped"):
+			if not slot.card_dropped.is_connected(_on_card_dropped_in_slot):
+				slot.card_dropped.connect(_on_card_dropped_in_slot)
+				connected += 1
+	print("[GameMatch] ✅ Slots conectados: %d" % connected)
+
+
+func _on_card_dropped_in_slot(payload: Dictionary) -> void:
+	"""Una carta fue soltada en un slot del campo → enviar al servidor"""
+	var card_instance: CardInstance = payload.get("card_instance")
+	if not card_instance:
+		print("[GameMatch] ❌ card_dropped: sin card_instance")
+		return
+
+	var target_slot = payload.get("target_slot")
+	var slot_type = payload.get("slot_type", CardSlot.SlotType.KNIGHT)
+
+	var target_zone := _slot_type_to_zone(slot_type)
+	if target_zone.is_empty():
+		print("[GameMatch] ❌ card_dropped: zona desconocida %s" % slot_type)
+		return
+
+	# Posición = índice del slot dentro de su contenedor padre
+	var position := 0
+	if target_slot and is_instance_valid(target_slot):
+		position = target_slot.get_index()
+
+	print("[GameMatch] 🃏 Jugando carta %s → %s[%d]" % [
+		card_instance.instance_id, target_zone, position
+	])
+	MatchSessionService.play_card(card_instance.instance_id, target_zone, position)
+
+
+func _slot_type_to_zone(slot_type: int) -> String:
+	match slot_type:
+		CardSlot.SlotType.KNIGHT:      return "field_knight"
+		CardSlot.SlotType.TECH_OBJECT: return "field_technique"
+		CardSlot.SlotType.HELPER:      return "field_helper"
+		CardSlot.SlotType.SCENARIO:    return "field_scenario"
+		CardSlot.SlotType.OCCASION:    return "field_occasion"
+	return ""
+
+
+func _on_match_error_received(error_message: String) -> void:
+	"""El servidor rechazó una acción. Re-renderizar para revertir cambios visuales."""
+	print("[GameMatch] ❌ Error del servidor: %s" % error_message)
+	# Re-renderizar desde el estado del servidor (revierte la carta al lugar correcto)
+	await _render_from_match_state()
+
+
 # ============================================================================
 # MAIN CALLBACKS
 # ============================================================================
 func _on_match_state_updated(_match_data: Dictionary) -> void:
-	"""Callback cuando MatchManager actualiza el estado"""
+	"""Callback cuando MatchSessionService actualiza el estado"""
 	await _render_from_match_state()
-	
-	# ✅ Avisar que terminamos de renderizar
-	MatchSessionService.render_complete.emit()
-	print("[GameMatch] 📡 Render completado, emitiendo signal render_complete")
+	_update_end_turn_button_state()
 
 
 func _render_from_match_state() -> void:
@@ -179,6 +243,13 @@ func _render_all(game_state: GameState, current_match: Dictionary):
 	GameMatch NO SABE cómo funciona cada UI.
 	Solo orquesta.
 	"""
+	# Detectar cambio de perspectiva (TEST match: END_TURN invierte perspectiva)
+	if _last_player_number != 0 and game_state.player_number != _last_player_number:
+		print("[GameMatch] 🔄 Perspectiva cambió %d → %d — reseteando controllers" % [_last_player_number, game_state.player_number])
+		player_hand_controller.reset()
+		opponent_hand_controller.reset()
+	_last_player_number = game_state.player_number
+
 	_render_status_and_deck(game_state, current_match)
 	
 	# Los controladores se encargan de TODO sobre sus manos
@@ -251,7 +322,7 @@ func _render_fallback() -> void:
 # TURN MANAGEMENT
 # ============================================================================
 func _on_phase_changed(phase: String) -> void:
-	"""Callback cuando cambia la fase desde MatchManager"""
+	"""Callback cuando cambia la fase desde MatchSessionService"""
 	print("[GameMatch] 📊 Fase cambió a: %s" % phase)
 	_update_end_turn_button_state()
 	
@@ -262,25 +333,35 @@ func _on_phase_changed(phase: String) -> void:
 
 
 func _update_end_turn_button_state() -> void:
-	"""Actualizar estado (habilitado/deshabilitado) del botón según fase actual"""
-	if not end_turn_button or not MatchSessionService.game_state:
+	"""Actualizar estado (habilitado/deshabilitado) del botón según turno real"""
+	if not end_turn_button:
 		return
-	
-	var game_state = MatchSessionService.game_state
-	var is_player_turn = false
-	
-	# Detectar si es el turno del jugador
-	match game_state.current_phase:
-		"player1_turn":
-			is_player_turn = (game_state.player_number == 1)
-		"player2_turn":
-			is_player_turn = (game_state.player_number == 2)
-		_:
-			is_player_turn = false
-	
-	end_turn_button.disabled = not is_player_turn
-	print("[GameMatch] 🔘 End Turn button habilitado: %s" % is_player_turn)
 
+	var is_player_turn := _is_local_player_turn()
+	end_turn_button.disabled = not is_player_turn
+
+	var phase_debug := ""
+	if MatchSessionService.game_state:
+		phase_debug = str(MatchSessionService.game_state.current_phase)
+
+	var current_player_debug = "n/a"
+	if MatchSessionService.current_match and MatchSessionService.current_match.has("current_player"):
+		current_player_debug = str(MatchSessionService.current_match["current_player"])
+
+	print("[GameMatch] 🔘 End Turn habilitado=%s | phase=%s | current_player=%s" % [
+		is_player_turn, phase_debug, current_player_debug
+	])
+
+	# Actualizar indicador visual de turno en avatares
+	_update_turn_indicator(is_player_turn)
+
+
+func _update_turn_indicator(is_my_turn: bool) -> void:
+	"""Ilumina el avatar del jugador con el turno activo"""
+	if player_panel:
+		player_panel.set_active_turn(is_my_turn)
+	if opponent_panel:
+		opponent_panel.set_active_turn(not is_my_turn)
 
 func _on_end_turn_button_pressed() -> void:
 	"""Manejador cuando se presiona el botón de End Turn"""
@@ -314,28 +395,10 @@ func _on_end_turn_button_pressed() -> void:
 	
 	# Deshabilitar botón
 	end_turn_button.disabled = true
-	
-	# Crear callback para respuesta
-	var callback = func(success: bool, data: Variant, error: String) -> void:
-		print("[GameMatch] 📡 RESPUESTA RECIBIDA DEL SERVIDOR")
-		print("[GameMatch]    - success: %s" % success)
-		print("[GameMatch]    - error: %s" % error)
-		
-		if success:
-			print("[GameMatch] ✅ ¡TURNO PASADO EXITOSAMENTE!")
-		else:
-			print("[GameMatch] ❌ Error: %s" % error)
-			end_turn_button.disabled = false
-	
-	# Enviar al servidor
-	ApiClient.post_request_with_callback(
-		"/matches/%s/pass-turn" % match_id,
-		{},
-		"pass_turn_%s" % match_id,
-		callback,
-		true
-	)
+	# end_turn_button.disabled = false
 
+	# Enviar al servidor
+	MatchSessionService.end_turn()
 
 func _show_opponent_cards_test() -> void:
 	"""En TEST mode: mostrar las cartas reales del rival en lugar de dorsos"""
@@ -350,3 +413,30 @@ func _show_opponent_cards_test() -> void:
 	
 	# Actualizar mano del rival con cartas reales
 	await opponent_hand_controller.update_from_state(game_state)
+
+func _is_local_player_turn() -> bool:
+	"""Determina de forma robusta si es turno del jugador local."""
+	if not MatchSessionService.game_state:
+		return false
+
+	var game_state = MatchSessionService.game_state
+	var player_number := int(game_state.player_number)
+	var phase := str(game_state.current_phase).to_lower()
+
+	# 1) Fuente principal: phase
+	match phase:
+		"player1_turn":
+			return player_number == 1
+		"player2_turn":
+			return player_number == 2
+		"my_turn":
+			return true
+		"opponent_turn":
+			return false
+
+	# 2) Fallback: current_player en metadata del match
+	var current_match = MatchSessionService.current_match
+	if current_match and current_match.has("current_player"):
+		return int(current_match["current_player"]) == player_number
+
+	return false

@@ -1,6 +1,6 @@
 # CardZone.gd (CORREGIDO)
 # Base genérica para zonas de 5 cartas (caballeros, técnicas)
-extends Control
+extends HBoxContainer
 class_name CardZone
 
 # ============================================================================

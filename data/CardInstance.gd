@@ -26,6 +26,7 @@ var owner_id: String                  # Jugador dueño
 var position: int = 0         # Position SIEMPRE es int
 var field_slot: int = -1              # slot en el tablero
 var is_revealed: bool = true          # false permite ocultar al oponente
+var hidden: bool = false              # true = mostrar dorso (mano oponente)
 var zone: String = "deck"     # Zona: hand / field / deck / graveyard
 
 # ---------------------------------------------------------
@@ -89,10 +90,11 @@ static func from_server_data(data: Dictionary) -> CardInstance:
 	inst.mode = data.get("mode", "normal")
 	inst.is_exhausted = data.get("is_exhausted", false)
 	inst.is_revealed = data.get("is_revealed", true)
+	inst.hidden = data.get("hidden", false)
 
-	# Buscar base_data o card (servidor puede enviar ambos)
+	# Si hidden=true el servidor no manda card data
 	var card_data = data.get("base_data", data.get("card", {}))
-	if card_data:
+	if card_data and not inst.hidden:
 		inst.base_data = CardData.from_json(card_data)
 
 	var bd = inst.base_data
@@ -122,6 +124,13 @@ func update_from_server_data(data: Dictionary) -> void:
 	mode = data.get("mode", mode)
 	is_exhausted = data.get("is_exhausted", is_exhausted)
 	is_revealed = data.get("is_revealed", is_revealed)
+	hidden = data.get("hidden", hidden)
+
+	# Actualizar base_data solo si se revela la carta
+	if not hidden:
+		var card_data = data.get("base_data", data.get("card", {}))
+		if card_data and not card_data.is_empty():
+			base_data = CardData.from_json(card_data)
 
 	current_health = data.get("current_health", current_health)
 	max_health = data.get("max_health", max_health)

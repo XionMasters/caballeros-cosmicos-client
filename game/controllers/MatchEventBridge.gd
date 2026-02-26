@@ -1,6 +1,6 @@
 # MatchEventBridge.gd
 # Puente entre eventos del servidor (WebSocket) y el sistema de juego local
-# Traduce eventos de MatchManager → GameState → MatchPlayController
+# Traduce eventos de MatchSessionService → GameState → MatchPlayController
 
 class_name MatchEventBridge
 extends Node
@@ -29,14 +29,14 @@ func _init(
 # ============================================================================
 
 func setup() -> void:
-	"""Conectar a MatchManager para escuchar eventos"""
+	"""Conectar a MatchSessionService para escuchar eventos"""
 	print("[MatchEventBridge] 🌉 Configurando puente de eventos...")
 	
 	# Escuchar respuestas del servidor
-	# Los signals reales de MatchManager:
-	MatchManager.match_state_updated.connect(_on_match_state_updated)
-	MatchManager.phase_changed.connect(_on_phase_changed)
-	MatchManager.match_error.connect(_on_match_error)
+	# Los signals reales de MatchSessionService:
+	MatchSessionService.match_state_updated.connect(_on_match_state_updated)
+	MatchSessionService.phase_changed.connect(_on_phase_changed)
+	MatchSessionService.match_error.connect(_on_match_error)
 	
 	# Conectar solicitud de juego desde el controller
 	match_play_controller.card_play_requested.connect(_on_card_play_requested)
@@ -54,8 +54,8 @@ func _on_card_play_requested(
 	"""El controller quiere jugar una carta → enviar al servidor"""
 	print("[MatchEventBridge] 📤 Reenviando solicitud al servidor...")
 	
-	# Enviar al MatchManager (que hace HTTP al servidor)
-	MatchManager.play_card(
+	# Enviar al MatchSessionService (que hace HTTP al servidor)
+	MatchSessionService.play_card(
 		card_instance.instance_id,
 		target_zone,
 		target_slot
@@ -82,13 +82,13 @@ func _on_match_state_updated(_match_data: Dictionary) -> void:
 	"""El servidor actualizó el estado de la partida
 	
 	Flujo:
-	1. GameState ya fue actualizado por MatchManager
+	1. GameState ya fue actualizado por MatchSessionService
 	2. Re-renderizar tablero
 	3. Reconectar eventos de cartas
 	"""
 	print("[MatchEventBridge] 🔄 Estado actualizado del servidor")
 	
-	# Aquí el GameState ya fue actualizado por MatchManager
+	# Aquí el GameState ya fue actualizado por MatchSessionService
 	# Solo notificar al controller que se re-renderizó
 	if match_play_controller:
 		match_play_controller.on_game_state_updated(game_state)
@@ -103,8 +103,8 @@ func _on_match_state_updated(_match_data: Dictionary) -> void:
 
 func cleanup() -> void:
 	"""Desconectar eventos"""
-	MatchManager.match_state_updated.disconnect(_on_match_state_updated)
-	MatchManager.phase_changed.disconnect(_on_phase_changed)
-	MatchManager.match_error.disconnect(_on_match_error)
+	MatchSessionService.match_state_updated.disconnect(_on_match_state_updated)
+	MatchSessionService.phase_changed.disconnect(_on_phase_changed)
+	MatchSessionService.match_error.disconnect(_on_match_error)
 	
 	match_play_controller.card_play_requested.disconnect(_on_card_play_requested)

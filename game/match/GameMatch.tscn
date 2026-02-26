@@ -1,4 +1,4 @@
-[gd_scene load_steps=8 format=3 uid="uid://cqhcm66m33h6w"]
+[gd_scene load_steps=10 format=3 uid="uid://cqhcm66m33h6w"]
 
 [ext_resource type="Script" uid="uid://dr6rbg7s4qae4" path="res://game/match/game_match.gd" id="1_cacvx"]
 [ext_resource type="PackedScene" uid="uid://bvmtnk4qe67i0" path="res://game/status/PlayerStatusPanel.tscn" id="2_cacvx"]
@@ -6,7 +6,9 @@
 [ext_resource type="Script" uid="uid://bawtj0kxtha3n" path="res://data/DeckDisplay.gd" id="3_toc0o"]
 [ext_resource type="PackedScene" uid="uid://bkm3xrw8qaa" path="res://cards/CardBack.tscn" id="4_nhra7"]
 [ext_resource type="Script" uid="uid://43lk65ww7agb" path="res://game/match/MatchOptionsMenu.gd" id="5_match"]
+[ext_resource type="Script" uid="uid://dp3elij3xnl56" path="res://game/zones/CardZone.gd" id="6_d43fj"]
 [ext_resource type="Texture2D" uid="uid://dkraalehxqaon" path="res://assets/ui-icons/Designer.png" id="7_4gpco"]
+[ext_resource type="Script" uid="uid://bw5ydvi5j28b" path="res://game/deck/CardSlot.gd" id="7_u7rf6"]
 
 [node name="GameMatch" type="Control"]
 layout_mode = 3
@@ -36,6 +38,8 @@ grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="LeftColumn" type="Control" parent="RootColumns"]
+custom_minimum_size = Vector2(200, 0)
+layout_direction = 1
 layout_mode = 2
 size_flags_horizontal = 4
 
@@ -95,6 +99,54 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
 
+[node name="opKnightsZone" type="HBoxContainer" parent="RootColumns/CenterColumn/OpponentKnights"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+script = ExtResource("6_d43fj")
+metadata/_custom_type_script = "uid://dp3elij3xnl56"
+
+[node name="opKnightsSlot-1" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="opKnightsSlot-2" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="opKnightsSlot-3" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="opKnightsSlot-4" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="opKnightsSlot-5" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
 [node name="Spacer" type="Control" parent="RootColumns/CenterColumn"]
 layout_mode = 2
 size_flags_horizontal = 3
@@ -105,6 +157,54 @@ custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
+
+[node name="plKnightsZone" type="HBoxContainer" parent="RootColumns/CenterColumn/PlayerKnights"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+alignment = 1
+script = ExtResource("6_d43fj")
+metadata/_custom_type_script = "uid://dp3elij3xnl56"
+
+[node name="plKnightsSlot-1" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="plKnightsSlot-2" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="plKnightsSlot-3" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="plKnightsSlot-4" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="plKnightsSlot-5" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
+custom_minimum_size = Vector2(120, 168)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+script = ExtResource("7_u7rf6")
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="PlayerCardsZone" type="VBoxContainer" parent="RootColumns/CenterColumn"]
 custom_minimum_size = Vector2(0, 200)

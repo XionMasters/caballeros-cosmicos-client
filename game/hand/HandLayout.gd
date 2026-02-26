@@ -49,7 +49,7 @@ func arrange_cards() -> void:
 		return
 
 	var count: int = cards.size()
-	print("[HandLayout] 📐 arrange_cards() - posicionando %d cartas" % count)
+	# print("[HandLayout] 📐 arrange_cards() - posicionando %d cartas" % count)
 	
 	# Debug: verify single source of truth
 	if get_children().size() != _cards.size():
@@ -68,7 +68,7 @@ func arrange_cards() -> void:
 	var start_x = max(10.0, (available_width - total_width) / 2.0 + 10.0)
 	
 	var base_y = 0.0
-	print("[HandLayout] 📊 Layout - available_width: %.1f, total_width: %.1f, start_x: %.1f" % [available_width, total_width, start_x])
+	# print("[HandLayout] 📊 Layout - available_width: %.1f, total_width: %.1f, start_x: %.1f" % [available_width, total_width, start_x])
 
 	for i in range(count):
 		var card = cards[i] as Control
@@ -80,14 +80,14 @@ func arrange_cards() -> void:
 		var py = base_y
 		
 		var parent_name: String = card.get_parent().name if card.get_parent() else "NULL"
-		print("[HandLayout] 📍 Card %d (%s) - pos: (%.1f, %.1f), size: %s, parent: %s" % [
-			i,
-			card.name,
-			px,
-			py,
-			card.size,
-			parent_name
-		])
+		#print("[HandLayout] 📍 Card %d (%s) - pos: (%.1f, %.1f), size: %s, parent: %s" % [
+			#i,
+			#card.name,
+			#px,
+			#py,
+			#card.size,
+			#parent_name
+		#])
 
 		card.set_meta("base_pos", Vector2(px, py))
 		card.set_meta("base_index", i)
@@ -116,7 +116,7 @@ func hover_card(card: Control) -> void:
 	if dragging_card or hovered_card == card:
 		return
 
-	print("HandLayout: Hover activado en carta")
+	# print("HandLayout: Hover activado en carta")
 	hovered_card = card
 
 	# Kill previous tween if it exists
@@ -248,13 +248,13 @@ func remove_card(card: Node) -> void:
 func _increment_pending_dealt() -> void:
 	"""Called when CardDealAnimator starts animating a card"""
 	_pending_dealt_cards += 1
-	print("[HandLayout] 📥 +1 pending dealt, total: %d" % _pending_dealt_cards)
+	# print("[HandLayout] 📥 +1 pending dealt, total: %d" % _pending_dealt_cards)
 
 
 func _decrement_pending_dealt() -> void:
 	"""Called when CardDealAnimator finishes and adds card to hand"""
 	_pending_dealt_cards = max(0, _pending_dealt_cards - 1)
-	print("[HandLayout] 📤 -1 pending dealt, total: %d" % _pending_dealt_cards)
+	# print("[HandLayout] 📤 -1 pending dealt, total: %d" % _pending_dealt_cards)
 
 
 # ====================================================================
@@ -284,16 +284,16 @@ func _on_exit(card): unhover_card(card)
 # ====================================================================
 func _update_layout() -> void:
 	"""Override del método template de CardCollection"""
-	print("[HandLayout] 🔄 _update_layout() called - cards: %d" % _cards.size())
+	# print("[HandLayout] 🔄 _update_layout() called - cards: %d" % _cards.size())
 	
 	# Debug: Verify single source of truth
 	for card in _cards:
 		if card.get_parent() != self:
 			var actual_parent_name: String = card.get_parent().name if card.get_parent() else "NULL"
-			print("[HandLayout] ❌ Card parent MISMATCH! Card: %s, expected parent: %s, actual parent: %s" % [card.name, name, actual_parent_name])
+			# print("[HandLayout] ❌ Card parent MISMATCH! Card: %s, expected parent: %s, actual parent: %s" % [card.name, name, actual_parent_name])
 			assert(false, "[HandLayout] Card parent mismatch! Card: %s, parent: %s" % [card, card.get_parent()])
 	
-	print("[HandLayout] ✅ All %d cards have correct parent" % _cards.size())
+	# print("[HandLayout] ✅ All %d cards have correct parent" % _cards.size())
 	arrange_cards()
-	print("[HandLayout] ✅ arrange_cards() completed")
+	# print("[HandLayout] ✅ arrange_cards() completed")
 	super._update_layout()  # Emitir señal

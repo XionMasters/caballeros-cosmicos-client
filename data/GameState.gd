@@ -44,14 +44,18 @@ var player_occasion: CardInstance = null
 var player_deck_count: int = 40
 var player_graveyard: Array[CardInstance] = []
 
-# Zonas del oponente (info limitada)
-var opponent_hand_count: int = 0
+# Zonas del oponente
+var opponent_hand: Array[CardInstance] = []   # cartas oponente (hidden=true salvo efecto)
 var opponent_field_knights: Array[CardInstance] = []
 var opponent_field_techniques: Array[CardInstance] = []
 var opponent_helper: CardInstance = null
 var opponent_occasion: CardInstance = null
 var opponent_deck_count: int = 40
 var opponent_graveyard: Array[CardInstance] = []
+
+# Derivado: conteo de mano oponente (compatibilidad con código existente)
+var opponent_hand_count: int:
+	get: return opponent_hand.size()
 
 # Zona compartida
 var scenario: CardInstance = null
@@ -76,6 +80,7 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 	state.player_field_techniques.clear()
 	state.player_graveyard.clear()
 
+	state.opponent_hand.clear()
 	state.opponent_field_knights.clear()
 	state.opponent_field_techniques.clear()
 	state.opponent_graveyard.clear()
@@ -91,7 +96,11 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 	var p1 = data.get("player1_id", "")
 	var p2 = data.get("player2_id", "")
 
-	if p1 == local_player_id:
+	# Partida TEST: ambos IDs son iguales → usar perspective_player del servidor
+	if p1 == p2 and p1 == local_player_id:
+		state.player_number = data.get("perspective_player", 1)
+		state.opponent_id = p1  # En TEST, el oponente es uno mismo
+	elif p1 == local_player_id:
 		state.player_number = 1
 		state.opponent_id = p2
 	elif p2 == local_player_id:
@@ -115,15 +124,15 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 		state.opponent_cosmos = data.get("player1_cosmos", 0)
 		state.opponent_id = data.get("player1_id", "")
 	
-	# Parsear contadores de mazos y mano
+	# Parsear contadores de mazos
 	if state.player_number == 1:
 		state.player_deck_count = data.get("player1_deck_size", 40)
 		state.opponent_deck_count = data.get("player2_deck_size", 40)
-		state.opponent_hand_count = data.get("player2_hand_count", 0)
+		# opponent_hand_count es derivado de opponent_hand (no asignar)
 	else:
 		state.player_deck_count = data.get("player2_deck_size", 40)
 		state.opponent_deck_count = data.get("player1_deck_size", 40)
-		state.opponent_hand_count = data.get("player1_hand_count", 0)
+		# opponent_hand_count es derivado de opponent_hand (no asignar)
 	
 	# Parsear cartas en juego desde el array cards_in_play
 	var cards_in_play = data.get("cards_in_play", [])
@@ -133,19 +142,18 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 		var zone = card_in_play.get("zone", "")
 		var position = card_in_play.get("position", 0)
 		
-		# ✅ CORRECCIÓN: Usar from_server_data en vez de new()
-		# Esto preserva: buffs, status, mode, is_exhausted, etc.
 		var card_instance = state._sync_card(card_in_play)
 		
-		# Asignar field_slot desde position (el servidor puede enviar "position" en vez de "field_slot")
 		if card_in_play.has("position"):
 			card_instance.field_slot = card_in_play.get("position", -1)
 		
-		# Clasificar en zonas según player_number
 		var is_mine = (card_player == state.player_number)
 		
-		if zone == "hand" and is_mine:
-			state.player_hand.append(card_instance)
+		if zone == "hand":
+			if is_mine:
+				state.player_hand.append(card_instance)
+			else:
+				state.opponent_hand.append(card_instance)
 		elif zone == "field_knight":
 			if is_mine:
 				_set_in_array(state.player_field_knights, position, card_instance)
@@ -402,15 +410,21 @@ func apply_update(data: Dictionary) -> void:
 		if data.has("player1_cosmos"):
 			opponent_cosmos = data["player1_cosmos"]
 
+	# Cambio de perspectiva: el servidor manda perspective_player en cada update
+	# Solo actualizar player_number — los arrays se reconstruyen desde cards_in_play
+	if data.has("perspective_player"):
+		var new_perspective: int = data["perspective_player"]
+		if new_perspective != player_number:
+			print("[GameState] 🔄 Perspectiva cambia %d → %d" % [player_number, new_perspective])
+			player_number = new_perspective
+			player_hand.clear()
+			opponent_hand.clear()
+
 	# Si llegan cartas actualizadas (ej: card_played, turn_changed)
 	if data.has("cards_in_play"):
 		_update_cards_in_play(data["cards_in_play"])
 
-	# Mano (solo si el servidor manda conteo o los IDs)
-	if data.has("player1_hand_count") or data.has("player2_hand_count"):
-		opponent_hand_count = (
-			data.get("player2_hand_count") if player_number == 1 else data.get("player1_hand_count")
-		)
+	# opponent_hand_count es derivado de opponent_hand.size() — no asignar aquí
 
 func _cleanup_removed_cards(active_ids: Array) -> void:
 	for id in cards_by_id.keys():
@@ -435,24 +449,34 @@ func _update_cards_in_play(cards_data: Array) -> void:
 	var new_occasions = {}
 	var new_scenario = null
 
+	# Borrar manos si el payload incluye cartas de mano (reconstrucción completa)
+	var has_hand_cards := cards_data.any(func(c): return c.get("zone", "") == "hand")
+	if has_hand_cards:
+		player_hand.clear()
+		opponent_hand.clear()
+
 	for info in cards_data:
-	# luego asignarla a la zona correspondiente
 		var player_n = info.get("player_number")
 		var zone = info.get("zone")
 		var pos = info.get("position", 0)
 
 		var card_instance = _sync_card(info)
-
 		var is_mine = (player_n == player_number)
 
 		match zone:
+			"hand":
+				if is_mine:
+					player_hand.append(card_instance)
+				else:
+					opponent_hand.append(card_instance)
+
 			"field_knight":
 				if is_mine:
 					new_knights_p1[pos] = card_instance
 				else:
 					new_knights_p2[pos] = card_instance
 
-			"field_tech_object":
+			"field_tech_object", "field_support":
 				if is_mine:
 					new_tech_p1[pos] = card_instance
 				else:

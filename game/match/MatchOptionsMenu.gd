@@ -85,7 +85,7 @@ func _send_abandon_request(match_id: String, loading_screen: Control) -> void:
 			MatchSessionService.is_in_match = false
 			MatchSessionService.current_match = {}
 			MatchSessionService.game_state = null
-			print("[MatchOptionsMenu] 🧹 Estado del MatchManager limpiado")
+			print("[MatchOptionsMenu] 🧹 Estado del MatchSessionService limpiado")
 			print("[MatchOptionsMenu]    - is_in_match: %s" % MatchSessionService.is_in_match)
 			print("[MatchOptionsMenu]    - current_match vacío: %s" % MatchSessionService.current_match.is_empty())
 			print("[MatchOptionsMenu]    - game_state: %s" % MatchSessionService.game_state)

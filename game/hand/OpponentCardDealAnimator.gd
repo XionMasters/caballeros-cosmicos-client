@@ -111,11 +111,11 @@ func deal_cards_to_hand(count: int, starting_delay: float = 0.0) -> void:
 # ============================================================================
 func _deal_single_card_back_async(index: int) -> void:
 	"""Animar un dorso de carta desde el mazo a la mano"""
-	print("[OpponentCardDealAnimator] 🔄 Iniciando dorso %d..." % (index + 1))
+	# print("[OpponentCardDealAnimator] 🔄 Iniciando dorso %d..." % (index + 1))
 	
 	# Crear CardBack
 	var card_back = card_back_template.instantiate()
-	print("[OpponentCardDealAnimator] ✅ CardBack instanciado")
+	# print("[OpponentCardDealAnimator] ✅ CardBack instanciado")
 	
 	# IMPORTANTE: Cargar y asignar la textura del dorso
 	_assign_card_back_texture(card_back)
@@ -126,40 +126,40 @@ func _deal_single_card_back_async(index: int) -> void:
 	card_back.modulate.a = 0.0
 	
 	# Obtener posición destino
-	print("[OpponentCardDealAnimator] 📍 Obteniendo posición destino...")
+	# print("[OpponentCardDealAnimator] 📍 Obteniendo posición destino...")
 	var target_slot_pos = target_hand.get_next_dealt_card_position()
-	print("[OpponentCardDealAnimator] 📍 Posición destino: %s" % target_slot_pos)
+	# print("[OpponentCardDealAnimator] 📍 Posición destino: %s" % target_slot_pos)
 	
 	# Agregar al árbol temporalmente
 	parent_node.add_child(card_back)
-	print("[OpponentCardDealAnimator] 🌳 CardBack agregado al árbol")
+	# print("[OpponentCardDealAnimator] 🌳 CardBack agregado al árbol")
 	
 	# Animar
-	print("[OpponentCardDealAnimator] 🎬 Iniciando animación...")
+	# print("[OpponentCardDealAnimator] 🎬 Iniciando animación...")
 	await _animate_card_deal(card_back, target_slot_pos)
-	print("[OpponentCardDealAnimator] ✨ Animación completada")
+	# print("[OpponentCardDealAnimator] ✨ Animación completada")
 	
 	# Agregar a la mano
-	print("[OpponentCardDealAnimator] 🤝 Agregando a mano...")
+	# print("[OpponentCardDealAnimator] 🤝 Agregando a mano...")
 	if target_hand is CardCollection:
 		target_hand.add_card(card_back)
-		print("[OpponentCardDealAnimator] ✅ CardBack agregado a mano")
+		# print("[OpponentCardDealAnimator] ✅ CardBack agregado a mano")
 		var parent_name: String = card_back.get_parent().name if card_back.get_parent() else "NONE"
-		print("[OpponentCardDealAnimator] 📊 CardBack final - pos: %s, size: %s, scale: %s, visible: %s, parent: %s" % [
-			card_back.global_position,
-			card_back.size,
-			card_back.scale,
-			card_back.visible,
-			parent_name
-		])
+		#print("[OpponentCardDealAnimator] 📊 CardBack final - pos: %s, size: %s, scale: %s, visible: %s, parent: %s" % [
+			#card_back.global_position,
+			#card_back.size,
+			#card_back.scale,
+			#card_back.visible,
+			#parent_name
+		#])
 	else:
 		push_error("[OpponentCardDealAnimator] target_hand no es CardCollection, es: %s" % target_hand.get_class())
 		return
 	
 	card_back.scale = target_scale
-	print("[OpponentCardDealAnimator] 📊 CardBack después rescale - scale: %s" % card_back.scale)
+	# print("[OpponentCardDealAnimator] 📊 CardBack después rescale - scale: %s" % card_back.scale)
 	
-	print("[OpponentCardDealAnimator] ✅ Dorso %d robado" % (index + 1))
+	# print("[OpponentCardDealAnimator] ✅ Dorso %d robado" % (index + 1))
 
 
 func _animate_card_deal(card_back: Control, target_pos: Vector2) -> void:
@@ -211,7 +211,7 @@ func _assign_card_back_texture(card_back: CardBack) -> void:
 		if opponent_deck.get_back_texture():
 			var texture = opponent_deck.get_back_texture()
 			card_back.set_back_texture(texture)
-			print("[OpponentCardDealAnimator] 🖼️ Textura del dorso asignada desde opponent_deck")
+			#print("[OpponentCardDealAnimator] 🖼️ Textura del dorso asignada desde opponent_deck")
 		else:
 			print("[OpponentCardDealAnimator] ⚠️ Timeout esperando textura, usando fallback")
 	else:

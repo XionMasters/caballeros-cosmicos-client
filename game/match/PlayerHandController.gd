@@ -121,6 +121,19 @@ func _extract_new_cards(game_state: GameState) -> Array:
 
 
 # ============================================================================
+# RESET (CAMBIO DE PERSPECTIVA)
+# ============================================================================
+func reset() -> void:
+	"""Resetear estado local cuando cambia la perspectiva (TEST match)"""
+	initialized = false
+	initial_deal_done = false
+	last_hand_size = 0
+	if hand_layout:
+		hand_layout.clear_cards()
+	print("[PlayerHandController] 🔄 Reset por cambio de perspectiva")
+
+
+# ============================================================================
 # RENDERIZACIÓN (SIN ANIMACIONES)
 # ============================================================================
 func _render_hand_state(game_state: GameState) -> void:

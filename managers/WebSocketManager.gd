@@ -129,6 +129,37 @@ func send_event(event_name: String, data: Dictionary = {}) -> void:
 	if err != OK:
 		print("⚠️ Error enviando evento WS:", err, "evento:", event_name)
 
+func _to_match_action_type(event_name: String) -> String:
+	var normalized := event_name.strip_edges().to_lower()
+	match normalized:
+		"play_card":
+			return "PLAY_CARD"
+		"declare_attack", "attack":
+			return "ATTACK"
+		"end_turn":
+			return "END_TURN"
+		"change_defensive_mode":
+			return "CHANGE_DEFENSIVE_MODE"
+		_:
+			return event_name.strip_edges().to_upper()
+
+func _generate_action_id() -> String:
+	return _uuid_v4()
+
+func send_match_event(event_name: String, data: Dictionary = {}) -> void:
+	"""Envía una acción de partida por evento genérico: match_action."""
+	if not is_connected_to_server():
+		push_error("WebSocket no conectado, no se envia match_action: %s" % event_name)
+		return
+
+	var action_data := data.duplicate(true)
+	action_data["type"] = _to_match_action_type(event_name)
+
+	if not action_data.has("action_id"):
+		action_data["action_id"] = _generate_action_id()
+
+	send_event("match_action", action_data)
+
 # =========================
 # Funciones de Chat / UI
 # =========================
@@ -188,7 +219,7 @@ func play_card(match_id: String, card_id: String, zone: String = "", position: i
 	if not is_connected_to_server():
 		push_error("No conectado - no se puede enviar play_card")
 		return
-	send_event("play_card", {
+	send_match_event("play_card", {
 		"match_id": match_id,
 		"card_id": card_id,
 		"zone": zone,
@@ -206,7 +237,7 @@ func declare_attack(match_id: String, attacker_id: String, defender_id: String) 
 	if not is_connected_to_server():
 		push_error("No conectado - no se puede enviar declare_attack")
 		return
-	send_event("declare_attack", {
+	send_match_event("declare_attack", {
 		"match_id": match_id,
 		"attacker_id": attacker_id,
 		"defender_id": defender_id
@@ -216,7 +247,7 @@ func end_turn(match_id: String) -> void:
 	if not is_connected_to_server():
 		push_error("No conectado - no se puede enviar end_turn")
 		return
-	send_event("end_turn", {"match_id": match_id})
+	send_match_event("end_turn", {"match_id": match_id})
 
 func start_first_turn(match_id: String) -> void:
 	"""Iniciar el primer turno de la partida
@@ -302,3 +333,24 @@ func get_api_base_url() -> String:
 	if base.ends_with("/api"):
 		return base.substr(0, base.length() - 4)
 	return base
+
+func _uuid_v4() -> String:
+	var rng := RandomNumberGenerator.new()
+	rng.randomize()
+
+	var b := PackedByteArray()
+	b.resize(16)
+	for i in range(16):
+		b[i] = rng.randi_range(0, 255)
+
+	# RFC 4122 (v4)
+	b[6] = (b[6] & 0x0F) | 0x40
+	b[8] = (b[8] & 0x3F) | 0x80
+
+	return "%02x%02x%02x%02x-%02x%02x-%02x%02x-%02x%02x-%02x%02x%02x%02x%02x%02x" % [
+		b[0], b[1], b[2], b[3],
+		b[4], b[5],
+		b[6], b[7],
+		b[8], b[9],
+		b[10], b[11], b[12], b[13], b[14], b[15]
+	]

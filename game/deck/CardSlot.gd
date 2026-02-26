@@ -85,6 +85,23 @@ func _process(_delta: float) -> void:
 # SHARED STYLES
 # ====================================================
 func _init_shared_styles():
+	# Borde por defecto (siempre visible)
+	if not _glow_style_cache.has("default"):
+		var default_style := StyleBoxFlat.new()
+		default_style.bg_color = Color(0, 0, 0, 0.25)
+		default_style.border_color = Color(0.4, 0.4, 0.5, 0.7)
+		default_style.border_width_left = 2
+		default_style.border_width_right = 2
+		default_style.border_width_top = 2
+		default_style.border_width_bottom = 2
+		default_style.corner_radius_top_left = 4
+		default_style.corner_radius_top_right = 4
+		default_style.corner_radius_bottom_left = 4
+		default_style.corner_radius_bottom_right = 4
+		_glow_style_cache["default"] = default_style
+	add_theme_stylebox_override("panel", _glow_style_cache["default"])
+	queue_redraw()
+
 	if _hover_style == null:
 		_hover_style = StyleBoxFlat.new()
 		_hover_style.bg_color = Color(1, 1, 1, 0.12)
@@ -118,7 +135,13 @@ func _init_shared_styles():
 		_invalid_drag_style.shadow_color = Color(1, 0, 0, 0.4)
 		_invalid_drag_style.shadow_size = 4
 
-func _make_glow_style(color: Color) -> StyleBoxFlat:
+func _draw() -> void:
+	"""Control no dibuja panel stylebox automáticamente, hay que hacerlo manual"""
+	var style := get_theme_stylebox("panel")
+	if style:
+		draw_style_box(style, Rect2(Vector2.ZERO, size))
+
+func _make_glow_style(color: Color) -> StyleBoxFlat:	
 	var key := "%f-%f-%f-%f" % [color.r, color.g, color.b, color.a]
 	if _glow_style_cache.has(key):
 		return _glow_style_cache[key]
@@ -378,12 +401,15 @@ func _on_mouse_entered() -> void:
 	elif not is_occupied and not is_opponent:
 		# Hover normal (sin drag)
 		add_theme_stylebox_override("panel", _hover_style)
+		queue_redraw()
 
 
 func _on_mouse_exited() -> void:
 	_is_mouse_over = false
 	# Remover cualquier estilo de drag
 	remove_theme_stylebox_override("panel")
+	add_theme_stylebox_override("panel", _glow_style_cache["default"])
+	queue_redraw()
 
 
 func _update_drag_glow() -> void:
@@ -396,6 +422,7 @@ func _update_drag_glow() -> void:
 		# ❌ Rojo: drop inválido
 		add_theme_stylebox_override("panel", _invalid_drag_style)
 		print("[CardSlot:%s] 🔴 Glow INVÁLIDO (drop bloqueado)" % self.name)
+	queue_redraw()
 
 
 # ====================================================
@@ -439,6 +466,8 @@ func notify_card_drag_ended() -> void:
 	_current_dragging_card = null
 	_is_mouse_over = false
 	remove_theme_stylebox_override("panel")
+	add_theme_stylebox_override("panel", _glow_style_cache["default"])
+	queue_redraw()
 	print("[CardSlot:%s] 📍 Drag finalizado" % self.name)
 
 
@@ -506,7 +535,8 @@ func set_glow(enabled: bool, color: Color = Color(1, 0.8, 0.1)):
 	if enabled:
 		add_theme_stylebox_override("panel", _make_glow_style(color))
 	else:
-		remove_theme_stylebox_override("panel")
+		add_theme_stylebox_override("panel", _glow_style_cache.get("default"))
+	queue_redraw()
 
 # ====================================================
 # UTIL / SIGNAL FORWARD

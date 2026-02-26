@@ -3,13 +3,13 @@
 # Responsabilidades:
 #   ✅ Fetch deck activo
 #   ✅ Validar deck
-#   ✅ Coordinar con MatchManager para crear partida
+#   ✅ Coordinar con MatchSessionService para crear partida
 #   ✅ Emitir señales de progreso y error
 #
 # NO HACE:
 #   ❌ Renderizar
 #   ❌ Mostrar UI
-#   ❌ Lógica de match (eso es MatchManager)
+#   ❌ Lógica de match (eso es MatchSessionService)
 
 class_name MatchFlowController
 extends Node
@@ -32,8 +32,8 @@ var is_loading: bool = false
 # ---------------------------------------------------------
 func _ready() -> void:
 	# Escuchar eventos internos de orquestación
-	MatchManager.match_started.connect(_on_match_started)
-	MatchManager.match_error.connect(_on_match_error)
+	MatchSessionService.match_started.connect(_on_match_started)
+	MatchSessionService.match_error.connect(_on_match_error)
 
 
 # ---------------------------------------------------------
@@ -167,9 +167,9 @@ func _request_match() -> void:
 	loading.emit("Iniciando partida en servidor...")
 	print("[MatchFlowController] 3️⃣ Pidiendo partida TEST al servidor...")
 	
-	# MatchManager maneja la comunicación WebSocket
+	# MatchSessionService maneja la comunicación WebSocket
 	# Emitirá match_started cuando el servidor responda
-	MatchManager.start_test_match()
+	MatchSessionService.start_test_match()
 
 
 # ---------------------------------------------------------

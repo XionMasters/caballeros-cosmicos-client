@@ -24,7 +24,7 @@ func _ready() -> void:
 	size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	size_flags_horizontal = Control.SIZE_SHRINK_CENTER
 
-	print("[DeckDisplay] 📏 Tamaño mínimo establecido: %s" % custom_minimum_size)
+	# print("[DeckDisplay] 📏 Tamaño mínimo establecido: %s" % custom_minimum_size)
 	
 	_ensure_counter()
 	
@@ -91,43 +91,43 @@ func pop_card_back() -> void:
 
 func _load_card_back_texture() -> void:
 	if _player_id.is_empty():
-		print("[DeckDisplay] ℹ️ player_id vacío, usando dorso por defecto")
+		# print("[DeckDisplay] ℹ️ player_id vacío, usando dorso por defecto")
 		_back_texture = CardsManager.get_default_card_back()
-		print("[DeckDisplay] 📍 Dorso por defecto = %s" % ("Válido" if _back_texture else "NULL"))
+		# print("[DeckDisplay] 📍 Dorso por defecto = %s" % ("Válido" if _back_texture else "NULL"))
 		_rebuild_visual()
 		return
 
 	# Primero intentar cargar desde el perfil público del usuario
 	var callback = func(success: bool, data: Variant, error: String) -> void:
 		if success and data is Dictionary:
-			print("[DeckDisplay] 📋 Datos recibidos: %s" % data)
+			# print("[DeckDisplay] 📋 Datos recibidos: %s" % data)
 			var deck_back = data.get("deck_back")
 			
-			print("[DeckDisplay] 📍 Respuesta del perfil: deck_back = %s" % ("Exists" if deck_back else "Null"))
+			# print("[DeckDisplay] 📍 Respuesta del perfil: deck_back = %s" % ("Exists" if deck_back else "Null"))
 			
 			# Verificar si hay un dorso actual
 			if deck_back and deck_back is Dictionary:
 				var image_url = deck_back.get("image_url", "")
-				print("[DeckDisplay] 📍 URL encontrada: %s" % image_url)
+				# print("[DeckDisplay] 📍 URL encontrada: %s" % image_url)
 				
 				if not image_url.is_empty():
-					print("[DeckDisplay] ✅ Cargando dorso: %s" % deck_back.get("name", ""))
+					# print("[DeckDisplay] ✅ Cargando dorso: %s" % deck_back.get("name", ""))
 					_load_card_back_image(image_url)
 					return
 			
 			# Si no hay dorso en perfil, usar el predeterminado
-			print("[DeckDisplay] ℹ️ Sin dorso personalizado, intentando default")
+			# print("[DeckDisplay] ℹ️ Sin dorso personalizado, intentando default")
 			_back_texture = CardsManager.get_default_card_back()
-			print("[DeckDisplay] 📍 Dorso por defecto = %s" % ("Válido" if _back_texture else "NULL"))
+			# print("[DeckDisplay] 📍 Dorso por defecto = %s" % ("Válido" if _back_texture else "NULL"))
 			_rebuild_visual()
 			return
 
-		print("[DeckDisplay] ⚠️ Error cargando perfil: %s" % error)
+		# print("[DeckDisplay] ⚠️ Error cargando perfil: %s" % error)
 		_back_texture = CardsManager.get_default_card_back()
-		print("[DeckDisplay] 📍 Dorso por defecto (error) = %s" % ("Válido" if _back_texture else "NULL"))
+		# print("[DeckDisplay] 📍 Dorso por defecto (error) = %s" % ("Válido" if _back_texture else "NULL"))
 		_rebuild_visual()
 
-	print("[DeckDisplay] 🔄 Cargando perfil de usuario: %s" % _player_id)
+	# print("[DeckDisplay] 🔄 Cargando perfil de usuario: %s" % _player_id)
 	
 	# Llamar al endpoint público que devuelve avatar y deck_back
 	ApiClient.get_request_with_callback(
@@ -138,14 +138,14 @@ func _load_card_back_texture() -> void:
 	)
 
 func _load_card_back_image(image_url: String) -> void:
-	print("[DeckDisplay] 🖼️ Cargando imagen: %s" % image_url)
+	# print("[DeckDisplay] 🖼️ Cargando imagen: %s" % image_url)
 	
 	var callback = func(image: Image, _tag = null) -> void:
 		if image:
 			_back_texture = ImageTexture.create_from_image(image)
-			print("[DeckDisplay] ✅ Imagen de dorso cargada correctamente")
+			# print("[DeckDisplay] ✅ Imagen de dorso cargada correctamente")
 		else:
-			print("[DeckDisplay] ❌ Error cargando imagen de dorso, usando default")
+			# print("[DeckDisplay] ❌ Error cargando imagen de dorso, usando default")
 			_back_texture = CardsManager.get_default_card_back()
 		
 		# Reconstruir visual DESPUÉS de cargar la textura
@@ -165,7 +165,7 @@ func _rebuild_visual() -> void:
 		push_error("[DeckDisplay] card_back_scene no asignado")
 		return
 	
-	print("[DeckDisplay] 🎨 Reconstruyendo visual con %d cartas (mostrar max %d)" % [_card_count, max_visible_cards])
+	# print("[DeckDisplay] 🎨 Reconstruyendo visual con %d cartas (mostrar max %d)" % [_card_count, max_visible_cards])
 	
 	# Borra todos los nodos hijos visibles (no el Counter)
 	for child in get_children():
@@ -181,7 +181,7 @@ func _rebuild_visual() -> void:
 		# Asignar textura si existe, sino CardBack maneja el fallback
 		if _back_texture:
 			back.set_back_texture(_back_texture)
-			print("[DeckDisplay] ✅ Textura asignada a carta %d" % i)
+			# print("[DeckDisplay] ✅ Textura asignada a carta %d" % i)
 		else:
 			# Si no hay textura, CardBack mostrará su fallback visual
 			print("[DeckDisplay] ⚠️ Sin textura de dorso, usando fallback de CardBack")
@@ -189,15 +189,15 @@ func _rebuild_visual() -> void:
 		# back.position = Vector2(0, -i * stack_offset)
 		back.z_index = i
 		add_child(back)
-		print("[DeckDisplay] ✅ Carta %d agregada al árbol de nodos" % i)
+		# print("[DeckDisplay] ✅ Carta %d agregada al árbol de nodos" % i)
 
 	# Contador visual
 	if _counter_label:
 		_counter_label.text = str(_card_count)
 		_counter_label.position = Vector2(0, 30)
-		print("[DeckDisplay] 📊 Contador actualizado: %d" % _card_count)
+		# print("[DeckDisplay] 📊 Contador actualizado: %d" % _card_count)
 	
-	print("[DeckDisplay] ✅ Visual reconstruida completamente: %d cartas visibles" % cards_visible)
+	# print("[DeckDisplay] ✅ Visual reconstruida completamente: %d cartas visibles" % cards_visible)
 	arrange_cards()
 
 
@@ -212,7 +212,7 @@ func _update_layout() -> void:
 
 func arrange_cards() -> void:
 	# Apila las cartas con offset vertical
-	print("[DeckDisplay] 📐 arrange_cards() - size: %s, custom_minimum_size: %s" % [size, custom_minimum_size])
+	# print("[DeckDisplay] 📐 arrange_cards() - size: %s, custom_minimum_size: %s" % [size, custom_minimum_size])
 	
 	var visible_count = 0
 	for child in get_children():
@@ -226,7 +226,7 @@ func arrange_cards() -> void:
 			var offset_y = visible_count * stack_offset
 			
 			child.position = Vector2(center_x, offset_y)
-			print("[DeckDisplay] 📍 Carta %d posicionada en (x=%f, y=%f) (size: %s)" % [visible_count, center_x, offset_y, child.size])
+			# print("[DeckDisplay] 📍 Carta %d posicionada en (x=%f, y=%f) (size: %s)" % [visible_count, center_x, offset_y, child.size])
 			
 			visible_count += 1
 # ============================================================

@@ -177,7 +177,7 @@
 	#status_label.text = "¡Partida encontrada! Cargando recursos..."
 	#
 	## Establecer que NO es test_mode (es multiplayer normal)
-	#MatchManager.is_test_mode = false
+	#MatchSessionService.is_test_mode = false
 	#
 	## Pre-cargar el dorso de carta
 	#CardsManager.preload_card_back()

@@ -33,16 +33,16 @@ func _ready() -> void:
 	if end_turn_button and not end_turn_button.pressed.is_connected(_on_end_turn_pressed):
 		end_turn_button.pressed.connect(_on_end_turn_pressed)
 	
-	# Conectar señales del MatchManager
-	MatchManager.match_state_updated.connect(_on_match_updated)
-	MatchManager.match_error.connect(_on_match_error)
+	# Conectar señales del MatchSessionService
+	MatchSessionService.match_state_updated.connect(_on_match_updated)
+	MatchSessionService.match_error.connect(_on_match_error)
 	
 	# Inicializar partida
 	_initialize_match()
 
 func _initialize_match() -> void:
 	"""Inicializar la partida una sola vez"""
-	current_match = MatchManager.current_match
+	current_match = MatchSessionService.current_match
 	if current_match.is_empty():
 		push_error("[GameBoard] No hay partida activa")
 		SceneTransition.go_to_lobby()
@@ -98,7 +98,7 @@ func _on_match_updated(match_data: Dictionary) -> void:
 	current_match = match_data
 	
 	# Crear/actualizar GameState
-	game_state = GameState.from_server_data(match_data, player_id)
+	game_state = GameState.from_match_payload(match_data, player_id)
 	
 	# Actualizar UI
 	_update_ui()
@@ -151,7 +151,7 @@ func _on_end_turn_pressed() -> void:
 		return
 	
 	print("[GameBoard] ⏭️ Pidiendo fin de turno al servidor")
-	MatchManager.end_turn()
+	MatchSessionService.end_turn()
 
 
 func _on_match_error(error_message: String) -> void:
