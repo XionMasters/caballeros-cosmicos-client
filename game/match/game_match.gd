@@ -18,6 +18,9 @@ extends Control
 @onready var opponent_hand_container: HandLayout = $RootColumns/CenterColumn/OpponentHand/HandLayout
 @onready var end_turn_button: Button = $RootColumns/RightColumn/PlayerEmpty/EndTurnButton
 @onready var player_knight_slots_zone = $RootColumns/CenterColumn/PlayerKnights/plKnightsZone
+@onready var opponent_knight_slots_zone = $RootColumns/CenterColumn/OpponentKnights/opKnightsZone
+
+const CARD_DISPLAY_SCENE = preload("res://cards/CardDisplay.tscn")
 
 # ============================================================================
 # CONTROLADORES
@@ -248,13 +251,92 @@ func _render_all(game_state: GameState, current_match: Dictionary):
 		print("[GameMatch] 🔄 Perspectiva cambió %d → %d — reseteando controllers" % [_last_player_number, game_state.player_number])
 		player_hand_controller.reset()
 		opponent_hand_controller.reset()
+		# Limpiar campo (las cartas cambian de "mías" a "del rival" y viceversa)
+		_clear_all_slots(player_knight_slots_zone)
+		_clear_all_slots(opponent_knight_slots_zone)
 	_last_player_number = game_state.player_number
 
 	_render_status_and_deck(game_state, current_match)
+	_render_field(game_state)
 	
 	# Los controladores se encargan de TODO sobre sus manos
 	await player_hand_controller.update_from_state(game_state)
 	await opponent_hand_controller.update_from_state(game_state)
+
+
+# ============================================================================
+# FIELD RENDERING
+# ============================================================================
+func _render_field(game_state: GameState) -> void:
+	"""Renderizar cartas en el campo desde el GameState del servidor"""
+	_render_knight_zone(player_knight_slots_zone, game_state.player_field_knights, false)
+	_render_knight_zone(opponent_knight_slots_zone, game_state.opponent_field_knights, true)
+
+
+func _render_knight_zone(zone: Node, field_cards: Array[CardInstance], is_opponent: bool) -> void:
+	"""Actualizar todos los slots de una zona con las cartas del GameState"""
+	if not zone:
+		return
+
+	# Mapa posición → CardInstance
+	var cards_by_pos: Dictionary = {}
+	for ci in field_cards:
+		if ci:
+			cards_by_pos[ci.field_slot] = ci
+
+	var slots = zone.get_children()
+	for i in range(slots.size()):
+		var slot = slots[i]
+		if not slot is CardSlot:
+			continue
+		var expected: CardInstance = cards_by_pos.get(i, null)
+
+		if expected == null:
+			# Slot debe estar vacío
+			if slot.is_occupied:
+				_clear_slot_fast(slot)
+		else:
+			# ¿Ya tiene la carta correcta?
+			if slot.is_occupied and slot.card_instance and \
+					slot.card_instance.instance_id == expected.instance_id:
+				continue  # Ya está, no hace falta redibujar
+			if slot.is_occupied:
+				_clear_slot_fast(slot)
+			_place_card_in_slot(slot, expected, is_opponent)
+
+
+func _clear_all_slots(zone: Node) -> void:
+	"""Limpiar todos los slots de una zona (cambio de perspectiva)"""
+	if not zone:
+		return
+	for slot in zone.get_children():
+		if slot is CardSlot and slot.is_occupied:
+			_clear_slot_fast(slot)
+
+
+func _clear_slot_fast(slot: CardSlot) -> void:
+	"""Liberar carta del slot sin animación (para re-renders sincrónicos)"""
+	if slot.card_display_node and is_instance_valid(slot.card_display_node):
+		slot.card_display_node.queue_free()
+	slot.card_display_node = null
+	slot.card_instance = null
+	slot.is_occupied = false
+	if slot.watermark_label:
+		slot.watermark_label.visible = true
+
+
+func _place_card_in_slot(slot: CardSlot, card_instance: CardInstance, is_opponent: bool) -> void:
+	"""Instanciar un CardDisplay y colocarlo en el slot"""
+	if not card_instance or not card_instance.base_data:
+		print("[GameMatch] ⚠️ _place_card_in_slot: CardInstance sin base_data")
+		return
+	var card_display: CardDisplay = CARD_DISPLAY_SCENE.instantiate()
+	card_display.setup_from_instance(card_instance)
+	if is_opponent:
+		# Cartas del rival en campo: no arrastrables
+		card_display.interaction_enabled = false
+		card_display.disable_hover_animation = true
+	slot.place_card(card_display)
 
 
 func _render_status_and_deck(game_state: GameState, current_match: Dictionary) -> void:

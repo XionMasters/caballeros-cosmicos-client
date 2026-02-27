@@ -137,16 +137,38 @@ func reset() -> void:
 # RENDERIZACIÓN (SIN ANIMACIONES)
 # ============================================================================
 func _render_hand_state(game_state: GameState) -> void:
-	"""Renderizar el estado actual de la mano (solo pinta, no anima)"""
+	"""Renderizar el estado actual de la mano sincronizando con el servidor.
+	- Elimina cartas que ya NO están en la mano (jugadas al campo, etc.)
+	- Añade cartas si la mano estaba vacía (reanudación)
+	"""
 	if not hand_layout:
 		return
-	
-	# Solo renderizar si la mano está vacía (cartas nuevas ya fueron agregadas por animator)
+
+	# IDs válidos según el servidor
+	var valid_ids: Dictionary = {}
+	for ci in game_state.player_hand:
+		if ci:
+			valid_ids[ci.instance_id] = true
+
+	# Eliminar cartas que ya no están en la mano del servidor
+	for card_display in hand_layout.get_cards().duplicate():
+		if not card_display or not is_instance_valid(card_display):
+			hand_layout.remove_card(card_display)
+			continue
+		var inst_id := ""
+		if card_display.has_method("get_instance"):
+			var inst = card_display.get_instance()
+			if inst:
+				inst_id = inst.instance_id
+		if inst_id.is_empty() or not valid_ids.has(inst_id):
+			hand_layout.remove_card(card_display)
+			print("[PlayerHandController] 🗑️ Carta quitada de mano: %s" % inst_id)
+
+	# Añadir cartas si la mano está vacía (reanudación / primer render)
 	if hand_layout.get_cards().is_empty() and game_state.player_hand.size() > 0:
 		for card_instance in game_state.player_hand:
 			var card_display = preload("res://cards/CardDisplay.tscn").instantiate()
 			card_display.setup(card_instance.base_data)
 			card_display.bind_instance(card_instance)
 			hand_layout.add_card(card_display)
-		
 		print("[PlayerHandController] 🎴 Mano renderizada: %d cartas" % game_state.player_hand.size())
