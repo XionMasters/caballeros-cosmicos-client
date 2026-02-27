@@ -588,6 +588,38 @@ func end_turn() -> void:
 	WebSocketManager.end_turn(match_id)
 
 
+func send_change_defensive_mode(card_in_play_id: String, mode: String) -> void:
+	"""Cambiar modo defensivo de un caballero (evasion / defense / normal)"""
+	if not is_in_match:
+		return
+	var match_id: String = current_match.get("id", "")
+	WebSocketManager.send_change_defensive_mode(match_id, card_in_play_id, mode)
+
+
+func send_charge_cosmos() -> void:
+	"""Cargar cosmo — recupera 3 CP"""
+	if not is_in_match:
+		return
+	var match_id: String = current_match.get("id", "")
+	WebSocketManager.send_charge_cosmos(match_id)
+
+
+func send_sacrifice_knight(card_in_play_id: String) -> void:
+	"""Sacrificar un caballero propio (-1 LP)"""
+	if not is_in_match:
+		return
+	var match_id: String = current_match.get("id", "")
+	WebSocketManager.send_sacrifice_knight(match_id, card_in_play_id)
+
+
+func send_move_knight(card_in_play_id: String, target_position: int) -> void:
+	"""Mover caballero a posición vacía del campo (0-4)"""
+	if not is_in_match:
+		return
+	var match_id: String = current_match.get("id", "")
+	WebSocketManager.send_move_knight(match_id, card_in_play_id, target_position)
+
+
 func on_gamematch_ready() -> void:
 	"""Llamada por GameMatch cuando está lista la escena y todo está renderizado
 	

@@ -30,6 +30,13 @@ var player_hand_controller: PlayerHandController = null
 var opponent_hand_controller: OpponentHandController = null
 var _last_player_number: int = 0  # Para detectar cambios de perspectiva (TEST match)
 
+# Acciones de caballero
+var knight_actions_panel: Control = null
+var _pending_attacker_id: String = ""   # ID del atacante pendiente de seleccionar objetivo
+var _pending_move_id: String = ""        # ID del caballero pendiente de seleccionar destino
+var _is_selecting_attack_target: bool = false
+var _is_selecting_move_target: bool = false
+
 # ============================================================================
 # CICLO DE VIDA
 # ============================================================================
@@ -69,6 +76,9 @@ func _ready() -> void:
 	
 	# 3️⃣c Conectar slots del campo
 	_setup_card_slots()
+	
+	# 3️d Configurar panel de acciones de caballeros
+	_setup_knight_actions_panel()
 	
 	# 4️⃣ Configurar animador y controladores
 	_setup_card_deal_animator()
@@ -171,6 +181,28 @@ func _setup_card_slots() -> void:
 	print("[GameMatch] ✅ Slots conectados: %d" % connected)
 
 
+func _setup_knight_actions_panel() -> void:
+	"""Instanciar KnightActionsPanel y conectar slot_clicked en zonas de caballeros"""
+	# Crear panel de acciones dinámicamente
+	knight_actions_panel = Control.new()
+	knight_actions_panel.set_script(load("res://ui/KnightActionsPanel.gd"))
+	add_child(knight_actions_panel)
+	knight_actions_panel.action_selected.connect(_on_knight_action_selected)
+	print("[GameMatch] ✅ KnightActionsPanel configurado")
+
+	# Conectar slot_clicked en zona propia
+	if player_knight_slots_zone:
+		for slot in player_knight_slots_zone.get_children():
+			if slot.has_signal("slot_clicked") and not slot.slot_clicked.is_connected(_on_player_knight_slot_clicked):
+				slot.slot_clicked.connect(_on_player_knight_slot_clicked)
+
+	# Conectar slot_clicked en zona rival (para selección de objetivo de ataque)
+	if opponent_knight_slots_zone:
+		for slot in opponent_knight_slots_zone.get_children():
+			if slot.has_signal("slot_clicked") and not slot.slot_clicked.is_connected(_on_opponent_knight_slot_clicked):
+				slot.slot_clicked.connect(_on_opponent_knight_slot_clicked)
+
+
 func _on_card_dropped_in_slot(payload: Dictionary) -> void:
 	"""Una carta fue soltada en un slot del campo → enviar al servidor"""
 	var card_instance: CardInstance = payload.get("card_instance")
@@ -215,10 +247,104 @@ func _on_match_error_received(error_message: String) -> void:
 
 
 # ============================================================================
+# ACCIONES DE CABALLEROS
+# ============================================================================
+func _on_player_knight_slot_clicked(slot: Node) -> void:
+	"""Slot propio clickeado: mostrar acciones O confirmar destino de movimiento"""
+	if _is_selecting_move_target:
+		# El jugador seleccionó un slot propio como destino de movimiento
+		if slot.card_instance == null:
+			# Slot vacío → mover aquí
+			var target_pos: int = slot.get_index()
+			print("[GameMatch] 🔄 Moviendo caballero a pos %d" % target_pos)
+			MatchSessionService.send_move_knight(_pending_move_id, target_pos)
+		else:
+			print("[GameMatch] ⚠️ Slot ocupado, selecciona uno vacío")
+		_is_selecting_move_target = false
+		_pending_move_id = ""
+		return
+
+	if _is_selecting_attack_target:
+		# No se puede atacar slots propios — cancelar
+		print("[GameMatch] ⚠️ No puedes atacar a un caballero aliado. Cancelado.")
+		_is_selecting_attack_target = false
+		_pending_attacker_id = ""
+		return
+
+	# Sin modo especial: mostrar panel de acciones para este caballero
+	if slot.card_instance == null:
+		return  # Slot vacío, nada que hacer
+	knight_actions_panel.show_actions_for_knight(slot)
+
+
+func _on_opponent_knight_slot_clicked(slot: Node) -> void:
+	"""Slot rival clickeado: confirmar objetivo de ataque"""
+	if _is_selecting_attack_target:
+		var defender_id: String = ""
+		if slot.card_instance:
+			defender_id = slot.card_instance.instance_id
+		print("[GameMatch] ⚔️ Atacando: %s → %s" % [
+			_pending_attacker_id,
+			defender_id if defender_id != "" else "(daño directo)"
+		])
+		MatchSessionService.send_attack(_pending_attacker_id, defender_id)
+		_is_selecting_attack_target = false
+		_pending_attacker_id = ""
+		return
+
+	# Sin modo especial: click en campo rival sin ataque activo → ignorar
+
+
+func _on_knight_action_selected(action: String, source_slot: Node) -> void:
+	"""Despachar acción seleccionada desde KnightActionsPanel"""
+	var card_inst: CardInstance = source_slot.card_instance if source_slot else null
+	if not card_inst:
+		print("[GameMatch] ❌ Slot sin carta para la acción: %s" % action)
+		return
+
+	var instance_id: String = card_inst.instance_id
+
+	match action:
+		"attack":
+			_pending_attacker_id = instance_id
+			_is_selecting_attack_target = true
+			print("[GameMatch] ⚔️ Modo ataque — selecciona objetivo rival (o zona vacía para daño directo)")
+
+		"charge":
+			print("[GameMatch] 💫 Cargando cosmos")
+			MatchSessionService.send_charge_cosmos()
+
+		"sacrifice":
+			print("[GameMatch] 💀 Sacrificando caballero %s" % instance_id)
+			MatchSessionService.send_sacrifice_knight(instance_id)
+
+		"evade":
+			print("[GameMatch] 🌀 Activando modo evasión para %s" % instance_id)
+			MatchSessionService.send_change_defensive_mode(instance_id, "evasion")
+
+		"block":
+			print("[GameMatch] 🛡️ Activando modo defensa para %s" % instance_id)
+			MatchSessionService.send_change_defensive_mode(instance_id, "defense")
+
+		"move":
+			_pending_move_id = instance_id
+			_is_selecting_move_target = true
+			print("[GameMatch] 🔄 Modo mover — selecciona un slot vacío propio")
+
+		"technique", "pray":
+			print("[GameMatch] ℹ️ Acción '%s' aún no implementada" % action)
+
+
+# ============================================================================
 # MAIN CALLBACKS
 # ============================================================================
 func _on_match_state_updated(_match_data: Dictionary) -> void:
 	"""Callback cuando MatchSessionService actualiza el estado"""
+	# Detectar fin de partida antes de renderizar
+	var gs = MatchSessionService.game_state
+	if gs and str(gs.current_phase).to_lower() == "game_over":
+		_show_battle_summary(gs.winner_id)
+		return
 	await _render_from_match_state()
 	_update_end_turn_button_state()
 
@@ -278,11 +404,12 @@ func _render_knight_zone(zone: Node, field_cards: Array[CardInstance], is_oppone
 	if not zone:
 		return
 
-	# Mapa posición → CardInstance
+	# Mapa posición → CardInstance (usa índice del array, NO field_slot)
+	# field_slot puede estar desactualizado si la carta acaba de moverse desde mano
 	var cards_by_pos: Dictionary = {}
-	for ci in field_cards:
-		if ci:
-			cards_by_pos[ci.field_slot] = ci
+	for i in range(field_cards.size()):
+		if field_cards[i]:
+			cards_by_pos[i] = field_cards[i]
 
 	var slots = zone.get_children()
 	for i in range(slots.size()):
@@ -321,6 +448,8 @@ func _clear_slot_fast(slot: CardSlot) -> void:
 	slot.card_display_node = null
 	slot.card_instance = null
 	slot.is_occupied = false
+	if slot.resized.is_connected(slot._reposition_card):
+		slot.resized.disconnect(slot._reposition_card)
 	if slot.watermark_label:
 		slot.watermark_label.visible = true
 
@@ -336,7 +465,7 @@ func _place_card_in_slot(slot: CardSlot, card_instance: CardInstance, is_opponen
 		# Cartas del rival en campo: no arrastrables
 		card_display.interaction_enabled = false
 		card_display.disable_hover_animation = true
-	slot.place_card(card_display)
+	slot.place_card(card_display, false)  # sin animación en re-render del servidor
 
 
 func _render_status_and_deck(game_state: GameState, current_match: Dictionary) -> void:
@@ -522,3 +651,20 @@ func _is_local_player_turn() -> bool:
 		return int(current_match["current_player"]) == player_number
 
 	return false
+
+
+# ============================================================================
+# BATTLE SUMMARY / FIN DE PARTIDA
+# ============================================================================
+func _show_battle_summary(winner_id: String) -> void:
+	"""Mostrar pantalla de resumen de batalla cuando la partida termina"""
+	print("[GameMatch] 🏁 Fin de partida — winner_id: %s" % winner_id)
+
+	var local_player_id = MatchSessionService.game_state.player_id if MatchSessionService.game_state else ""
+	var won: bool = (winner_id != "" and winner_id == local_player_id)
+
+	SceneTransition.set_pending_data({
+		"won": won,
+		"winner_id": winner_id
+	})
+	get_tree().change_scene_to_file("res://menus/battle_summary/BattleSummary.tscn")

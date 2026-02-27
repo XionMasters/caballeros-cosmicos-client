@@ -24,6 +24,21 @@ signal card_placed(slot: CardSlot, card_display: Control)
 func _ready() -> void:
 	print("[CardZone] Inicializando zona")
 	_collect_slots()
+	resized.connect(_recalculate_separation)
+	call_deferred("_recalculate_separation")
+
+
+func _recalculate_separation() -> void:
+	"""Calcula el espacio entre slots según el ancho disponible"""
+	var num_slots := max_cards
+	var card_w := CardSizeConfig.card_width
+	var available := size.x
+	var total_cards := num_slots * card_w
+	var gaps := num_slots - 1
+	var sep := 8.0  # mínimo
+	if gaps > 0 and available > total_cards:
+		sep = (available - total_cards) / gaps
+	add_theme_constant_override("separation", int(sep))
 
 
 func _collect_slots() -> void:

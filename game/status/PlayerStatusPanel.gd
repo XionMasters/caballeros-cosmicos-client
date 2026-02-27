@@ -41,16 +41,21 @@ func _ready() -> void:
 func setup(player_name: String, life: int, cosmos: int, user_id: String = "") -> void:
 	"""Configurar panel con datos del jugador y cargar avatar desde servidor"""
 	self.player_name = player_name
+	
+	# Si ya está inicializado con el mismo usuario, solo actualizar vida y cosmos
+	if not player_id.is_empty() and player_id == user_id:
+		update_both(life, cosmos)
+		return
+	
 	current_life = life
 	current_cosmos = cosmos
 	player_id = user_id
 	
 	# Setup inicial del avatar sin textura (se cargará en async)
 	avatar_display.setup(player_name, life, cosmos, null)
-	# print("[PlayerStatusPanel] Verificamos user_id y luedo pedimos imagen del avatar. ", user_id)
-	# Si hay user_id, cargar avatar del servidor
+	
+	# Si hay user_id, cargar avatar del servidor (solo la primera vez)
 	if not user_id.is_empty():
-		# print("[PlayerStatusPanel] Verificamos Aca se debe mandar a pedir, porque user_id no es empty? ah, si lo es. ")
 		_load_avatar_from_server(user_id)
 
 func update_life(new_life: int) -> void:

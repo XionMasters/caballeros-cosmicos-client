@@ -32,6 +32,8 @@ var opponent_life: int = 12
 var player_cosmos: int = 0  # CP disponible
 var opponent_cosmos: int = 0
 
+var winner_id: String = ""  # UUID del ganador; vacío mientras la partida sigue
+
 # Cartas en juego por id
 var cards_by_id: Dictionary = {}
 
@@ -74,6 +76,7 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 	state.current_phase = data.get("phase", "main")
 	state.player_id = local_player_id
 	state.active_player_number = data.get("current_player", 1)
+	state.winner_id = data.get("winner_id", "")
 	
 	state.player_hand.clear()
 	state.player_field_knights.clear()
@@ -387,6 +390,9 @@ func apply_update(data: Dictionary) -> void:
 
 	if data.has("current_player"):
 		active_player_number = data["current_player"]
+
+	if data.has("winner_id"):
+		winner_id = data.get("winner_id", "")
 
 	# Recursos
 	if player_number == 1:

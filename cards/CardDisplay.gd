@@ -57,6 +57,7 @@ var highlight_tween: Tween = null
 
 # ===== CARD STATES (Game logic) =====
 var interaction_enabled: bool = true
+var dragging_enabled: bool = true   # false cuando la carta está en un slot del campo
 var is_disabled: bool = false
 var is_exhausted: bool = false
 var is_highlighted: bool = false
@@ -153,7 +154,7 @@ func _ensure_ui_structure() -> void:
 	
 	card_image = TextureRect.new()
 	card_image.name = "CardImage"
-	card_image.custom_minimum_size = Vector2(140, 196)
+	card_image.custom_minimum_size = CardSizeConfig.get_hand_card_size()
 	card_image.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	card_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	card_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -387,7 +388,7 @@ func _preserve_hover_position() -> void:
 
 func can_be_dragged() -> bool:
 	"""Check if card can be dragged"""
-	return card_data != null and interaction_enabled and not is_disabled and not is_exhausted
+	return card_data != null and interaction_enabled and dragging_enabled and not is_disabled and not is_exhausted
 
 
 func get_drag_data(_at_position: Vector2) -> Variant:
@@ -398,11 +399,7 @@ func get_drag_data(_at_position: Vector2) -> Variant:
 	Retorna Dictionary = data para pasar a _can_drop_data() en targets
 	"""
 	if not can_be_dragged():
-		print("[CardDisplay] ❌ get_drag_data(): no se puede arrastrar %s" % (card_data.name if card_data else "unknown"))
 		return null
-	
-	# MEGA DEBUG - Ver si esto se llama
-	push_error("!!!!! GET_DRAG_DATA LLAMADO - card=%s !!!!!" % (card_data.name if card_data else "unknown"))
 	
 	var drag_data = {
 		"card_type": card_data.type,           # "knight", "technique", "item", etc.

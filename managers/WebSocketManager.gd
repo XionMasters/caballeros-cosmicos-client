@@ -140,6 +140,12 @@ func _to_match_action_type(event_name: String) -> String:
 			return "END_TURN"
 		"change_defensive_mode":
 			return "CHANGE_DEFENSIVE_MODE"
+		"charge_cosmos":
+			return "CHARGE_COSMOS"
+		"sacrifice_knight":
+			return "SACRIFICE_KNIGHT"
+		"move_knight":
+			return "MOVE_KNIGHT"
 		_:
 			return event_name.strip_edges().to_upper()
 
@@ -248,6 +254,45 @@ func end_turn(match_id: String) -> void:
 		push_error("No conectado - no se puede enviar end_turn")
 		return
 	send_match_event("end_turn", {"match_id": match_id})
+
+func send_change_defensive_mode(match_id: String, card_in_play_id: String, mode: String) -> void:
+	"""Cambiar modo defensivo de un caballero (evasion / defense / normal)"""
+	if not is_connected_to_server():
+		push_error("No conectado - no se puede enviar change_defensive_mode")
+		return
+	send_match_event("change_defensive_mode", {
+		"match_id": match_id,
+		"card_id": card_in_play_id,
+		"mode": mode
+	})
+
+func send_charge_cosmos(match_id: String) -> void:
+	"""Cargar cosmo (+3 CP para el jugador)"""
+	if not is_connected_to_server():
+		push_error("No conectado - no se puede enviar charge_cosmos")
+		return
+	send_match_event("charge_cosmos", {"match_id": match_id})
+
+func send_sacrifice_knight(match_id: String, card_in_play_id: String) -> void:
+	"""Sacrificar un caballero propio (-1 LP)"""
+	if not is_connected_to_server():
+		push_error("No conectado - no se puede enviar sacrifice_knight")
+		return
+	send_match_event("sacrifice_knight", {
+		"match_id": match_id,
+		"card_id": card_in_play_id
+	})
+
+func send_move_knight(match_id: String, card_in_play_id: String, target_position: int) -> void:
+	"""Mover un caballero a una posición vacía del campo (0-4)"""
+	if not is_connected_to_server():
+		push_error("No conectado - no se puede enviar move_knight")
+		return
+	send_match_event("move_knight", {
+		"match_id": match_id,
+		"card_id": card_in_play_id,
+		"target_position": target_position
+	})
 
 func start_first_turn(match_id: String) -> void:
 	"""Iniciar el primer turno de la partida

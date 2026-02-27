@@ -46,11 +46,13 @@ static var _invalid_drag_style: StyleBoxFlat = null # Rojo para drop inválido
 # ====================================================
 func _ready():
 	mouse_filter = Control.MOUSE_FILTER_STOP
-	
-	# Asegurar que el slot tiene tamaño para detectar mouse events
-	# Si no tiene custom_minimum_size, establecer uno
-	if custom_minimum_size == Vector2.ZERO:
-		custom_minimum_size = Vector2(120, 168)  # Tamaño de carta estándar
+
+	# Tamaño fijo desde CardSizeConfig (no se estira en el HBoxContainer)
+	var card_size := Vector2(CardSizeConfig.card_width, CardSizeConfig.card_height)
+	custom_minimum_size = card_size
+	size = card_size
+	size_flags_horizontal = 0  # No expandir
+	size_flags_vertical = 0
 	
 	_create_watermark()
 	_init_shared_styles()
@@ -307,7 +309,7 @@ func _drop_data(_at_position: Vector2, data: Variant) -> void:
 # ====================================================
 # PLACEMENT / CLEAR
 # ====================================================
-func place_card(card_display: Control) -> void:
+func place_card(card_display: Control, animate: bool = true) -> void:
 	"""Coloca visualmente la carta y actualiza card_instance"""
 	# if occupied, clear first (animation included)
 	if is_occupied:
@@ -328,13 +330,19 @@ func place_card(card_display: Control) -> void:
 	card_display_node = card_display
 	is_occupied = true
 
-	# reparent & fit
+	# reparent & center at natural card size (120x168)
 	if card_display.get_parent():
 		card_display.get_parent().remove_child(card_display)
 	add_child(card_display)
-	card_display.set_anchors_preset(Control.PRESET_FULL_RECT)
-	card_display.grow_horizontal = Control.GROW_DIRECTION_BOTH
-	card_display.grow_vertical = Control.GROW_DIRECTION_BOTH
+	card_display.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	card_display.reset_size()
+	# position deferred so the slot has its final size from the container layout
+	call_deferred("_reposition_card")
+	if not resized.is_connected(_reposition_card):
+		resized.connect(_reposition_card)
+
+	# Deshabilitar drag para cartas en campo (ninguna carta en slot es arrastrable)
+	card_display.dragging_enabled = false
 
 	# connect double-click forwarding
 	if card_display.has_signal("card_double_clicked"):
@@ -346,12 +354,18 @@ func place_card(card_display: Control) -> void:
 		watermark_label.visible = false
 
 	# feedback
-	if has_node("/root/AudioManager"):
+	if animate and has_node("/root/AudioManager"):
 		get_node("/root/AudioManager").play_card_place()
 
 	# animate and emit
-	animate_card_entrance()
+	if animate:
+		animate_card_entrance()
 	emit_signal("card_placed", self, card_display)
+
+func _reposition_card() -> void:
+	"""Centrar card_display_node en el slot según el tamaño actual del slot"""
+	if card_display_node and is_instance_valid(card_display_node):
+		card_display_node.position = ((size - card_display_node.size) / 2).round()
 
 func clear() -> void:
 	"""Quita la carta del slot con animación. No asume ownership extra."""
@@ -365,6 +379,9 @@ func clear() -> void:
 	card_display_node = null
 	card_instance = null
 	is_occupied = false
+
+	if resized.is_connected(_reposition_card):
+		resized.disconnect(_reposition_card)
 
 	if watermark_label:
 		watermark_label.visible = true

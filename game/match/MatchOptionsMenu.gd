@@ -90,17 +90,19 @@ func _send_abandon_request(match_id: String, loading_screen: Control) -> void:
 			print("[MatchOptionsMenu]    - current_match vacío: %s" % MatchSessionService.current_match.is_empty())
 			print("[MatchOptionsMenu]    - game_state: %s" % MatchSessionService.game_state)
 			
-			# Esperar 3 segundos para que el servidor procese completamente la finalización
-			# El servidor hace await match.save() + 500ms delay interno
-			print("[MatchOptionsMenu] ⏳ Esperando 3 segundos para que el servidor finalice la partida...")
-			await get_tree().create_timer(3.0).timeout
-			
-			print("[MatchOptionsMenu] 🔔 Tiempo de espera completado, verificando y retornando al lobby")
+			# Esperar un frame para que el servidor procese la finalización
+			print("[MatchOptionsMenu] ⏳ Esperando confirmación del servidor...")
+			await get_tree().create_timer(0.5).timeout
 			
 			if loading_screen:
 				loading_screen.queue_free()
 			
-			_return_to_lobby()
+			# Ir a pantalla de resumen (abandonar = derrota)
+			var winner_id: String = ""
+			if data is Dictionary:
+				winner_id = data.get("winner_id", "")
+			SceneTransition.set_pending_data({"won": false, "winner_id": winner_id})
+			game_match.get_tree().change_scene_to_file("res://menus/battle_summary/BattleSummary.tscn")
 		else:
 			print("[MatchOptionsMenu] ❌ Error abandonando partida: %s" % error)
 			if loading_screen:

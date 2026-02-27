@@ -86,7 +86,8 @@ static func from_server_data(data: Dictionary) -> CardInstance:
 	
 	# Normalizar zone a string
 	inst.zone = str(data.get("zone", "deck"))
-	inst.field_slot = data.get("field_slot", -1)
+	# field_slot: servidor envia 'position', no 'field_slot'. Usar position como fallback.
+	inst.field_slot = data.get("field_slot", inst.position)
 	inst.mode = data.get("mode", "normal")
 	inst.is_exhausted = data.get("is_exhausted", false)
 	inst.is_revealed = data.get("is_revealed", true)
@@ -120,7 +121,11 @@ static func from_server_data(data: Dictionary) -> CardInstance:
 func update_from_server_data(data: Dictionary) -> void:
 	position = int(data.get("position", position))
 	zone = str(data.get("zone", zone))
-	field_slot = data.get("field_slot", field_slot)
+	# field_slot: actualizar desde 'position' si no viene explícito
+	if data.has("field_slot"):
+		field_slot = data["field_slot"]
+	elif data.has("position"):
+		field_slot = int(data["position"])
 	mode = data.get("mode", mode)
 	is_exhausted = data.get("is_exhausted", is_exhausted)
 	is_revealed = data.get("is_revealed", is_revealed)

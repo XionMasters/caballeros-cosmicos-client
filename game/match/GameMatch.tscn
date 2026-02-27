@@ -1,4 +1,4 @@
-[gd_scene load_steps=10 format=3 uid="uid://cqhcm66m33h6w"]
+[gd_scene load_steps=11 format=3 uid="uid://cqhcm66m33h6w"]
 
 [ext_resource type="Script" uid="uid://dr6rbg7s4qae4" path="res://game/match/game_match.gd" id="1_cacvx"]
 [ext_resource type="PackedScene" uid="uid://bvmtnk4qe67i0" path="res://game/status/PlayerStatusPanel.tscn" id="2_cacvx"]
@@ -9,6 +9,7 @@
 [ext_resource type="Script" uid="uid://dp3elij3xnl56" path="res://game/zones/CardZone.gd" id="6_d43fj"]
 [ext_resource type="Texture2D" uid="uid://dkraalehxqaon" path="res://assets/ui-icons/Designer.png" id="7_4gpco"]
 [ext_resource type="Script" uid="uid://bw5ydvi5j28b" path="res://game/deck/CardSlot.gd" id="7_u7rf6"]
+[ext_resource type="Script" uid="uid://ww1kn105pxpd" path="res://game/zones/TechniqueZone.gd" id="7_wyhu6"]
 
 [node name="GameMatch" type="Control"]
 layout_mode = 3
@@ -93,6 +94,53 @@ layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 
+[node name="OpponentTechniques" type="HBoxContainer" parent="RootColumns/CenterColumn/OpponentCardsZone"]
+layout_mode = 2
+script = ExtResource("6_d43fj")
+metadata/_custom_type_script = "uid://dp3elij3xnl56"
+
+[node name="opTechniqueZone" type="HBoxContainer" parent="RootColumns/CenterColumn/OpponentCardsZone/OpponentTechniques"]
+layout_mode = 2
+size_flags_horizontal = 3
+alignment = 1
+script = ExtResource("7_wyhu6")
+metadata/_custom_type_script = "uid://ww1kn105pxpd"
+
+[node name="opTechSlot-1" type="Control" parent="RootColumns/CenterColumn/OpponentCardsZone/OpponentTechniques/opTechniqueZone"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+is_opponent = true
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="opTechSlot-2" type="Control" parent="RootColumns/CenterColumn/OpponentCardsZone/OpponentTechniques/opTechniqueZone"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+is_opponent = true
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="opTechSlot-3" type="Control" parent="RootColumns/CenterColumn/OpponentCardsZone/OpponentTechniques/opTechniqueZone"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+is_opponent = true
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="opTechSlot-4" type="Control" parent="RootColumns/CenterColumn/OpponentCardsZone/OpponentTechniques/opTechniqueZone"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+is_opponent = true
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="opTechSlot-5" type="Control" parent="RootColumns/CenterColumn/OpponentCardsZone/OpponentTechniques/opTechniqueZone"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+is_opponent = true
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
 [node name="OpponentKnights" type="VBoxContainer" parent="RootColumns/CenterColumn"]
 custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
@@ -108,43 +156,38 @@ script = ExtResource("6_d43fj")
 metadata/_custom_type_script = "uid://dp3elij3xnl56"
 
 [node name="opKnightsSlot-1" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
+is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="opKnightsSlot-2" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
+is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="opKnightsSlot-3" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
+is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="opKnightsSlot-4" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
+is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="opKnightsSlot-5" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
+is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="Spacer" type="Control" parent="RootColumns/CenterColumn"]
@@ -167,42 +210,32 @@ script = ExtResource("6_d43fj")
 metadata/_custom_type_script = "uid://dp3elij3xnl56"
 
 [node name="plKnightsSlot-1" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="plKnightsSlot-2" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="plKnightsSlot-3" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="plKnightsSlot-4" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="plKnightsSlot-5" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
-size_flags_horizontal = 3
-size_flags_vertical = 3
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
@@ -210,7 +243,43 @@ metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 0
+size_flags_vertical = 3
+
+[node name="PlayerTechniques" type="HBoxContainer" parent="RootColumns/CenterColumn/PlayerCardsZone"]
+layout_mode = 2
+alignment = 1
+script = ExtResource("6_d43fj")
+metadata/_custom_type_script = "uid://dp3elij3xnl56"
+
+[node name="plTechSlot-1" type="Control" parent="RootColumns/CenterColumn/PlayerCardsZone/PlayerTechniques"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="plTechSlot-2" type="Control" parent="RootColumns/CenterColumn/PlayerCardsZone/PlayerTechniques"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="plTechSlot-3" type="Control" parent="RootColumns/CenterColumn/PlayerCardsZone/PlayerTechniques"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="plTechSlot-4" type="Control" parent="RootColumns/CenterColumn/PlayerCardsZone/PlayerTechniques"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
+[node name="plTechSlot-5" type="Control" parent="RootColumns/CenterColumn/PlayerCardsZone/PlayerTechniques"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 1
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="PlayerHand" type="VBoxContainer" parent="RootColumns/CenterColumn"]
 custom_minimum_size = Vector2(0, 120)
@@ -221,6 +290,10 @@ size_flags_vertical = 0
 [node name="HandLayout" type="Control" parent="RootColumns/CenterColumn/PlayerHand"]
 layout_mode = 2
 script = ExtResource("3_kk4i8")
+
+[node name="spRightColumn" type="VBoxContainer" parent="RootColumns"]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
 
 [node name="RightColumn" type="VBoxContainer" parent="RootColumns"]
 layout_mode = 2
@@ -254,11 +327,25 @@ layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
 
+[node name="opOcasion" type="Control" parent="RootColumns/RightColumn/OpponentOcasion"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 4
+is_opponent = true
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
 [node name="OpponentAssist" type="VBoxContainer" parent="RootColumns/RightColumn"]
 custom_minimum_size = Vector2(150, 120)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
+
+[node name="opAssist" type="Control" parent="RootColumns/RightColumn/OpponentAssist"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 2
+is_opponent = true
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="Spacer2" type="Control" parent="RootColumns/RightColumn"]
 layout_mode = 2
@@ -271,11 +358,23 @@ layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
 
+[node name="plAssist" type="Control" parent="RootColumns/RightColumn/PlayerAssist"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 2
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
 [node name="PlayerOcasion" type="VBoxContainer" parent="RootColumns/RightColumn"]
 custom_minimum_size = Vector2(150, 120)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
+
+[node name="plOcasion" type="Control" parent="RootColumns/RightColumn/PlayerOcasion"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 4
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="PlayerEmpty" type="VBoxContainer" parent="RootColumns/RightColumn"]
 custom_minimum_size = Vector2(150, 0)

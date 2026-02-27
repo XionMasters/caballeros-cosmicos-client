@@ -3,7 +3,7 @@
 [ext_resource type="Script" uid="uid://bevg574c1hl0n" path="res://cards/CardDisplay.gd" id="1_card"]
 
 [node name="CardDisplay" type="Control"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_card")
@@ -13,7 +13,7 @@ layout_mode = 0
 mouse_filter = 2
 
 [node name="CardImage" type="TextureRect" parent="VBoxContainer"]
-custom_minimum_size = Vector2(120, 168)
+custom_minimum_size = Vector2(107, 140)
 layout_mode = 2
 size_flags_vertical = 3
 mouse_filter = 2

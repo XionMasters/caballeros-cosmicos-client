@@ -17,6 +17,10 @@ var match_manager: MatchSessionService = null
 signal play_card_requested(card_instance: CardInstance, zone: String)
 signal attack_requested(attacker_id: String, defender_id: String)
 signal end_turn_requested()
+signal charge_cosmos_requested()
+signal sacrifice_knight_requested(card_in_play_id: String)
+signal move_knight_requested(card_in_play_id: String, target_position: int)
+signal defensive_mode_requested(card_in_play_id: String, mode: String)
 
 func set_game_state(state: GameState) -> void:
 	game_state = state
@@ -67,8 +71,9 @@ func request_play_card(card_instance: CardInstance, zone: String, position: int 
 # =====================================================
 # ATAQUES - Validación de UX + Forwarding
 # =====================================================
-func request_attack(attacker_id: String, defender_id: String) -> bool:
-	"""Validar que UX permita atacar, luego forwardear al servidor"""
+func request_attack(attacker_id: String, defender_id: String = "") -> bool:
+	"""Validar que UX permita atacar, luego forwardear al servidor.
+	Si defender_id está vacío, se trata como ataque directo al jugador rival."""
 	
 	if not game_state or not match_manager:
 		print("[GameController] ❌ Estado incompleto")
@@ -95,7 +100,7 @@ func request_attack(attacker_id: String, defender_id: String) -> bool:
 	# - Si el defensor existe/es válido (servidor lo valida)
 	# - Si hay lethal damage (servidor lo calcula)
 
-	print("[GameController] ⚔️ Enviando solicitud atacar: %s → %s" % [attacker_id, defender_id])
+	print("[GameController] ⚔️ Enviando solicitud atacar: %s → %s" % [attacker_id, defender_id if defender_id != "" else "(daño directo)"])
 	attack_requested.emit(attacker_id, defender_id)
 
 	# ✅ Forwardear al MatchSessionService
@@ -123,3 +128,58 @@ func request_end_turn() -> void:
 
 	# ✅ Forwardear al MatchSessionService
 	match_manager.end_turn()
+
+
+# =====================================================
+# ACCIONES DE CABALLERO
+# =====================================================
+func request_charge_cosmos() -> void:
+	"""Cargar cosmo del jugador (+3 CP)"""
+	if not game_state or not match_manager:
+		print("[GameController] ❌ Estado incompleto")
+		return
+	print("[GameController] 💫 Cargando cosmos...")
+	charge_cosmos_requested.emit()
+	match_manager.send_charge_cosmos()
+
+
+func request_sacrifice_knight(card_in_play_id: String) -> void:
+	"""Sacrificar un caballero propio para liberar espacio (-1 LP)"""
+	if not game_state or not match_manager:
+		print("[GameController] ❌ Estado incompleto")
+		return
+	if card_in_play_id.is_empty():
+		print("[GameController] ❌ card_in_play_id vacío")
+		return
+	print("[GameController] 💀 Sacrificando caballero: %s" % card_in_play_id)
+	sacrifice_knight_requested.emit(card_in_play_id)
+	match_manager.send_sacrifice_knight(card_in_play_id)
+
+
+func request_move_knight(card_in_play_id: String, target_position: int) -> void:
+	"""Mover un caballero a una posición vacía del campo (0-4)"""
+	if not game_state or not match_manager:
+		print("[GameController] ❌ Estado incompleto")
+		return
+	if card_in_play_id.is_empty():
+		print("[GameController] ❌ card_in_play_id vacío")
+		return
+	if target_position < 0 or target_position > 4:
+		print("[GameController] ❌ Posición inválida: %d" % target_position)
+		return
+	print("[GameController] 🔄 Moviendo caballero %s → pos %d" % [card_in_play_id, target_position])
+	move_knight_requested.emit(card_in_play_id, target_position)
+	match_manager.send_move_knight(card_in_play_id, target_position)
+
+
+func request_change_defensive_mode(card_in_play_id: String, mode: String) -> void:
+	"""Cambiar modo defensivo: 'evasion', 'defense' o 'normal'"""
+	if not game_state or not match_manager:
+		print("[GameController] ❌ Estado incompleto")
+		return
+	if card_in_play_id.is_empty():
+		print("[GameController] ❌ card_in_play_id vacío")
+		return
+	print("[GameController] 🛡️ Cambiando modo defensivo %s → %s" % [card_in_play_id, mode])
+	defensive_mode_requested.emit(card_in_play_id, mode)
+	match_manager.send_change_defensive_mode(card_in_play_id, mode)

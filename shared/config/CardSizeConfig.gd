@@ -8,10 +8,10 @@ extends Node
 # ============================================================================
 
 ## Ancho de la carta en píxeles (base)
-var card_width: float = 120.0
+var card_width: float = 107.0
 
 ## Alto de la carta en píxeles (base)
-var card_height: float = 168.0
+var card_height: float = 140.0
 
 ## Aspect ratio para referencia
 var card_aspect_ratio: float  # Se calcula en _ready()

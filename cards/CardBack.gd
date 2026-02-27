@@ -11,7 +11,7 @@ static var shared_style: StyleBoxFlat = null
 
 
 func _ready() -> void:
-	custom_minimum_size = Vector2(80, 120)
+	custom_minimum_size = Vector2(CardSizeConfig.card_width, CardSizeConfig.card_height)
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_setup_style()
 
