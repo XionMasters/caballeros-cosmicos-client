@@ -262,7 +262,7 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 		print("[CardSlot:%s] ❌ sin card_type" % self.name)
 		return false
 
-	var card_type: String = str(data["card_type"])
+	var card_type: String = _normalize_card_type(str(data["card_type"]))
 	print("[CardSlot:%s] card_type=%s, slot_type=%s" % [self.name, card_type, slot_type])
 
 	match slot_type:
@@ -343,6 +343,7 @@ func place_card(card_display: Control, animate: bool = true) -> void:
 
 	# Deshabilitar drag para cartas en campo (ninguna carta en slot es arrastrable)
 	card_display.dragging_enabled = false
+	card_display.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	# connect double-click forwarding
 	if card_display.has_signal("card_double_clicked"):
@@ -452,6 +453,7 @@ func notify_card_drag_started(card_display: Control, card_data: Dictionary) -> v
 	"""
 	_current_dragging_card = card_display
 	var card_type: String = card_data.get("type", "")
+	card_type = _normalize_card_type(card_type)
 	
 	# Validar si este slot acepta este tipo de carta
 	_drag_valid = _validate_card_type(card_type) and not is_occupied
@@ -506,6 +508,7 @@ func _process_drop() -> void:
 		return
 	
 	var card_type: String = card_data.get("type", "")
+	card_type = _normalize_card_type(card_type)
 	
 	# Validar tipo de carta
 	print("[CardSlot:%s] 🔍 Validando tipo %s para slot %s" % [self.name, card_type, slot_type])
@@ -535,18 +538,51 @@ func _process_drop() -> void:
 
 func _validate_card_type(card_type: String) -> bool:
 	"""Validar si el tipo de carta es compatible con este slot"""
+	card_type = _normalize_card_type(card_type)
 	match slot_type:
 		SlotType.KNIGHT:
 			return card_type == "knight"
 		SlotType.TECH_OBJECT:
-			return card_type == "technique" or card_type == "object"
+			return card_type == "technique" or card_type == "item"
 		SlotType.HELPER:
 			return card_type == "helper"
 		SlotType.SCENARIO:
-			return card_type == "scenario"
+			return card_type == "stage"
 		SlotType.OCCASION:
-			return card_type == "occasion"
+			return card_type == "event"
 	return false
+
+
+func _normalize_card_type(raw_type: String) -> String:
+	var value := raw_type.strip_edges().to_lower()
+
+	match value:
+		# Knight
+		"caballero":
+			return "knight"
+
+		# Technique
+		"tecnica", "técnica":
+			return "technique"
+
+		# Item (legacy: object/objeto)
+		"item", "objeto", "object":
+			return "item"
+
+		# Helper
+		"helper", "ayudante", "assist", "assistant", "assistente":
+			return "helper"
+
+		# Stage (legacy: scenario/escenario)
+		"stage", "scenario", "escenario", "cenario":
+			return "stage"
+
+		# Event (legacy: occasion/ocasion)
+		"event", "occasion", "ocasion", "ocasión":
+			return "event"
+
+		_:
+			return value
 
 func set_glow(enabled: bool, color: Color = Color(1, 0.8, 0.1)):
 	if enabled:

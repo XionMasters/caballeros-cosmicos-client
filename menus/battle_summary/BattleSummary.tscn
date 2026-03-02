@@ -1,7 +1,7 @@
 [gd_scene load_steps=3 format=3 uid="uid://clhuwjhe8rn54"]
 
 [ext_resource type="Script" uid="uid://cwp238yc1lai7" path="res://menus/battle_summary/BattleSummary.gd" id="1_bsumm"]
-[ext_resource type="Texture2D" uid="uid://nl0gsfvte5vx" path="res://assets/images/Designer.png" id="2_10x33"]
+[ext_resource type="Texture2D" uid="uid://nl0gsfvte5vx" path="res://assets/images/lose.png" id="2_10x33"]
 
 [node name="BattleSummary" type="Control"]
 layout_mode = 3

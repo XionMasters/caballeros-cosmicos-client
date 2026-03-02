@@ -19,7 +19,6 @@ signal card_play_failed(reason: String)
 # ============================================================================
 var board_renderer: BoardRenderer = null
 var game_state: GameState = null
-var match_manager: MatchManager = null
 
 # Mapeo: CardDisplay → CardInstance (para validación rápida)
 var _card_display_to_instance: Dictionary = {}
@@ -45,12 +44,10 @@ var _pending_energy_costs: Array = []  # Array de {card_id, cost, timestamp}
 func _init(
 	p_board_renderer: BoardRenderer,
 	p_game_state: GameState,
-	p_match_manager: MatchManager = null,
 	p_is_test_mode: bool = false
 ) -> void:
 	board_renderer = p_board_renderer
 	game_state = p_game_state
-	match_manager = p_match_manager if p_match_manager else MatchManager
 	is_test_mode = p_is_test_mode
 
 

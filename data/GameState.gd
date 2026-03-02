@@ -36,6 +36,7 @@ var winner_id: String = ""  # UUID del ganador; vacío mientras la partida sigue
 
 # Cartas en juego por id
 var cards_by_id: Dictionary = {}
+var previous_snapshot: Dictionary = {}
 
 # Zonas del jugador
 var player_hand: Array[CardInstance] = []
@@ -71,9 +72,9 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 	var state = GameState.new()
 	state.cards_by_id = {}
 	
-	state.match_id = data.get("id", "")
+	state.match_id = data.get("id", data.get("match_id", ""))
 	state.current_turn = data.get("current_turn", 1)
-	state.current_phase = data.get("phase", "main")
+	state.current_phase = data.get("phase", data.get("current_phase", "main"))
 	state.player_id = local_player_id
 	state.active_player_number = data.get("current_player", 1)
 	state.winner_id = data.get("winner_id", "")
@@ -103,6 +104,7 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 	if p1 == p2 and p1 == local_player_id:
 		state.player_number = data.get("perspective_player", 1)
 		state.opponent_id = p1  # En TEST, el oponente es uno mismo
+		print("[GameState] 🎭 TEST Match - perspective_player: %d" % state.player_number)
 	elif p1 == local_player_id:
 		state.player_number = 1
 		state.opponent_id = p2
@@ -139,6 +141,7 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 	
 	# Parsear cartas en juego desde el array cards_in_play
 	var cards_in_play = data.get("cards_in_play", [])
+	print("[GameState] 📇 Procesando %d cartas del servidor" % cards_in_play.size())
 	
 	for card_in_play in cards_in_play:
 		var card_player = card_in_play.get("player_number", 0)
@@ -160,8 +163,10 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 		elif zone == "field_knight":
 			if is_mine:
 				_set_in_array(state.player_field_knights, position, card_instance)
+				print("[GameState]   → Player Knight slot %d: %s" % [position, card_instance.base_data.name])
 			else:
 				_set_in_array(state.opponent_field_knights, position, card_instance)
+				print("[GameState]   → Opponent Knight slot %d: %s" % [position, card_instance.base_data.name])
 		elif zone == "field_support":
 			if is_mine:
 				_set_in_array(state.player_field_techniques, position, card_instance)
@@ -380,6 +385,8 @@ func apply_update(data: Dictionary) -> void:
 	Actualiza solo lo que cambia: vidas, cosmos, cartas nuevas,
 	cambio de fase, turno, etc.
 	"""
+	# Guardar snapshot del estado ANTERIOR para diff/depuración
+	previous_snapshot = _build_snapshot()
 
 	# Turno y fase
 	if data.has("current_turn"):
@@ -432,6 +439,32 @@ func apply_update(data: Dictionary) -> void:
 
 	# opponent_hand_count es derivado de opponent_hand.size() — no asignar aquí
 
+func _build_snapshot() -> Dictionary:
+	"""Snapshot ligero del estado actual para comparar contra el próximo update"""
+	return {
+		"player_field_knights": _array_instance_ids(player_field_knights),
+		"opponent_field_knights": _array_instance_ids(opponent_field_knights),
+		"player_field_techniques": _array_instance_ids(player_field_techniques),
+		"opponent_field_techniques": _array_instance_ids(opponent_field_techniques),
+		"player_hand_count": player_hand.size(),
+		"opponent_hand_count": opponent_hand.size(),
+		"phase": current_phase,
+		"turn": current_turn,
+	}
+
+func _array_instance_ids(array: Array) -> Array:
+	var result: Array = []
+	for item in array:
+		if item == null:
+			result.append(null)
+		else:
+			result.append(item.instance_id)
+	return result
+
+func get_previous_snapshot() -> Dictionary:
+	"""Exponer snapshot anterior para inspección desde UI/controladores"""
+	return previous_snapshot.duplicate(true)
+
 func _cleanup_removed_cards(active_ids: Array) -> void:
 	for id in cards_by_id.keys():
 		if id not in active_ids:
@@ -456,7 +489,7 @@ func _update_cards_in_play(cards_data: Array) -> void:
 	var new_scenario = null
 
 	# Borrar manos si el payload incluye cartas de mano (reconstrucción completa)
-	var has_hand_cards := cards_data.any(func(c): return c.get("zone", "") == "hand")
+	var has_hand_cards: bool = cards_data.any(func(c): return c.get("zone", "") == "hand")
 	if has_hand_cards:
 		player_hand.clear()
 		opponent_hand.clear()
@@ -497,19 +530,11 @@ func _update_cards_in_play(cards_data: Array) -> void:
 			"field_scenario":
 				new_scenario = card_instance
 
-	# Aplicar cambios EXISTENTES sin borrar todo
-
-	for pos in new_knights_p1.keys():
-		_set_in_array(player_field_knights, pos, new_knights_p1[pos])
-
-	for pos in new_knights_p2.keys():
-		_set_in_array(opponent_field_knights, pos, new_knights_p2[pos])
-
-	for pos in new_tech_p1.keys():
-		_set_in_array(player_field_techniques, pos, new_tech_p1[pos])
-
-	for pos in new_tech_p2.keys():
-		_set_in_array(opponent_field_techniques, pos, new_tech_p2[pos])
+	# Reconciliar zonas completas para eliminar cartas que ya no existen
+	_reconcile_zone_array(player_field_knights, new_knights_p1)
+	_reconcile_zone_array(opponent_field_knights, new_knights_p2)
+	_reconcile_zone_array(player_field_techniques, new_tech_p1)
+	_reconcile_zone_array(opponent_field_techniques, new_tech_p2)
 
 	if new_helpers.has(player_number):
 		player_helper = new_helpers[player_number]
@@ -523,3 +548,14 @@ func _update_cards_in_play(cards_data: Array) -> void:
 
 	if new_scenario:
 		scenario = new_scenario
+
+func _reconcile_zone_array(zone_array: Array, values_by_pos: Dictionary, fixed_size: int = 5) -> void:
+	"""Reemplaza el contenido de una zona por el estado actual del servidor"""
+	zone_array.clear()
+	for i in range(fixed_size):
+		zone_array.append(null)
+
+	for pos in values_by_pos.keys():
+		var index := int(pos)
+		if index >= 0 and index < fixed_size:
+			zone_array[index] = values_by_pos[pos]

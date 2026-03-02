@@ -347,6 +347,18 @@ slot_type = 2
 is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
+[node name="ScenarioZone" type="VBoxContainer" parent="RootColumns/RightColumn"]
+custom_minimum_size = Vector2(150, 120)
+layout_mode = 2
+size_flags_horizontal = 2
+size_flags_vertical = 0
+
+[node name="ScenarioSlot" type="Control" parent="RootColumns/RightColumn/ScenarioZone"]
+layout_mode = 2
+script = ExtResource("7_u7rf6")
+slot_type = 3
+metadata/_custom_type_script = "uid://bw5ydvi5j28b"
+
 [node name="Spacer2" type="Control" parent="RootColumns/RightColumn"]
 layout_mode = 2
 size_flags_horizontal = 2

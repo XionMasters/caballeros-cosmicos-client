@@ -53,7 +53,7 @@ func _collect_slots() -> void:
 			# Conectar señales del slot si existen
 			if child.has_signal("card_placed"):
 				if not child.card_placed.is_connected(_on_slot_card_placed):
-					child.card_placed.connect(_on_slot_card_placed.bind(child))
+					child.card_placed.connect(_on_slot_card_placed)
 	
 	print("[CardZone] ✅ Recopilados %d slots" % slots.size())
 

@@ -9,6 +9,7 @@ extends Node
 # REFERENCIAS
 # ============================================================================
 var match_play_controller: MatchPlayController = null
+var board_renderer: BoardRenderer = null
 var game_state: GameState = null
 
 # ============================================================================

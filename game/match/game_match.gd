@@ -19,6 +19,7 @@ extends Control
 @onready var end_turn_button: Button = $RootColumns/RightColumn/PlayerEmpty/EndTurnButton
 @onready var player_knight_slots_zone = $RootColumns/CenterColumn/PlayerKnights/plKnightsZone
 @onready var opponent_knight_slots_zone = $RootColumns/CenterColumn/OpponentKnights/opKnightsZone
+@onready var scenario_slot: CardSlot = $RootColumns/RightColumn/ScenarioZone/ScenarioSlot
 
 const CARD_DISPLAY_SCENE = preload("res://cards/CardDisplay.tscn")
 
@@ -167,18 +168,23 @@ func _setup_end_turn_button() -> void:
 
 
 func _setup_card_slots() -> void:
-	"""Conectar card_dropped de todos los slots del campo del jugador"""
-	if not player_knight_slots_zone:
-		print("[GameMatch] ❌ player_knight_slots_zone no encontrado")
-		return
-
+	"""Conectar card_dropped de TODOS los CardSlot jugables del jugador"""
 	var connected := 0
-	for slot in player_knight_slots_zone.get_children():
-		if slot.has_signal("card_dropped"):
+	for slot in _get_all_children(self):
+		if slot is CardSlot and not slot.is_opponent and slot.has_signal("card_dropped"):
 			if not slot.card_dropped.is_connected(_on_card_dropped_in_slot):
 				slot.card_dropped.connect(_on_card_dropped_in_slot)
 				connected += 1
-	print("[GameMatch] ✅ Slots conectados: %d" % connected)
+
+	print("[GameMatch] ✅ Slots jugables conectados: %d" % connected)
+
+
+func _get_all_children(node: Node) -> Array[Node]:
+	var result: Array[Node] = []
+	for child in node.get_children():
+		result.append(child)
+		result.append_array(_get_all_children(child))
+	return result
 
 
 func _setup_knight_actions_panel() -> void:
@@ -232,7 +238,7 @@ func _on_card_dropped_in_slot(payload: Dictionary) -> void:
 func _slot_type_to_zone(slot_type: int) -> String:
 	match slot_type:
 		CardSlot.SlotType.KNIGHT:      return "field_knight"
-		CardSlot.SlotType.TECH_OBJECT: return "field_technique"
+		CardSlot.SlotType.TECH_OBJECT: return "field_support"
 		CardSlot.SlotType.HELPER:      return "field_helper"
 		CardSlot.SlotType.SCENARIO:    return "field_scenario"
 		CardSlot.SlotType.OCCASION:    return "field_occasion"
@@ -342,11 +348,74 @@ func _on_match_state_updated(_match_data: Dictionary) -> void:
 	"""Callback cuando MatchSessionService actualiza el estado"""
 	# Detectar fin de partida antes de renderizar
 	var gs = MatchSessionService.game_state
+	_log_field_slot_diffs(gs)
 	if gs and str(gs.current_phase).to_lower() == "game_over":
 		_show_battle_summary(gs.winner_id)
 		return
 	await _render_from_match_state()
 	_update_end_turn_button_state()
+
+
+func _log_field_slot_diffs(game_state: GameState) -> void:
+	"""Log de diferencias por slot entre snapshot previo y estado actual"""
+	if not game_state or not game_state.has_method("get_previous_snapshot"):
+		return
+
+	var previous: Dictionary = game_state.get_previous_snapshot()
+	if previous.is_empty():
+		return
+
+	var changed := false
+	changed = _log_zone_diff(
+		"Player Knights",
+		previous.get("player_field_knights", []),
+		_extract_instance_ids(game_state.player_field_knights)
+	) or changed
+
+	changed = _log_zone_diff(
+		"Opponent Knights",
+		previous.get("opponent_field_knights", []),
+		_extract_instance_ids(game_state.opponent_field_knights)
+	) or changed
+
+	changed = _log_zone_diff(
+		"Player Techniques",
+		previous.get("player_field_techniques", []),
+		_extract_instance_ids(game_state.player_field_techniques)
+	) or changed
+
+	changed = _log_zone_diff(
+		"Opponent Techniques",
+		previous.get("opponent_field_techniques", []),
+		_extract_instance_ids(game_state.opponent_field_techniques)
+	) or changed
+
+	if changed:
+		print("[GameMatch] 🔍 Diff de campo aplicado")
+
+
+func _extract_instance_ids(cards: Array) -> Array:
+	var ids: Array = []
+	for c in cards:
+		if c == null:
+			ids.append(null)
+		else:
+			ids.append(c.instance_id)
+	return ids
+
+
+func _log_zone_diff(zone_name: String, previous_ids: Array, current_ids: Array) -> bool:
+	var max_size: int = maxi(previous_ids.size(), current_ids.size())
+	var has_changes := false
+
+	for i in range(max_size):
+		var before = previous_ids[i] if i < previous_ids.size() else null
+		var after = current_ids[i] if i < current_ids.size() else null
+		if before != after:
+			has_changes = true
+			print("[GameMatch] %s slot %d: %s -> %s" % [zone_name, i, str(before), str(after)])
+
+	return has_changes
 
 
 func _render_from_match_state() -> void:
@@ -380,6 +449,8 @@ func _render_all(game_state: GameState, current_match: Dictionary):
 		# Limpiar campo (las cartas cambian de "mías" a "del rival" y viceversa)
 		_clear_all_slots(player_knight_slots_zone)
 		_clear_all_slots(opponent_knight_slots_zone)
+		if scenario_slot and scenario_slot.is_occupied:
+			_clear_slot_fast(scenario_slot)
 	_last_player_number = game_state.player_number
 
 	_render_status_and_deck(game_state, current_match)
@@ -397,12 +468,37 @@ func _render_field(game_state: GameState) -> void:
 	"""Renderizar cartas en el campo desde el GameState del servidor"""
 	_render_knight_zone(player_knight_slots_zone, game_state.player_field_knights, false)
 	_render_knight_zone(opponent_knight_slots_zone, game_state.opponent_field_knights, true)
+	_render_scenario_slot(game_state.scenario)
+
+
+func _render_scenario_slot(scenario_card: CardInstance) -> void:
+	"""Renderizar carta de escenario (zona compartida)"""
+	if not scenario_slot:
+		return
+
+	if scenario_card == null:
+		if scenario_slot.is_occupied:
+			_clear_slot_fast(scenario_slot)
+		return
+
+	if scenario_slot.is_occupied and scenario_slot.card_instance and \
+			scenario_slot.card_instance.instance_id == scenario_card.instance_id:
+		return
+
+	if scenario_slot.is_occupied:
+		_clear_slot_fast(scenario_slot)
+
+	_place_card_in_slot(scenario_slot, scenario_card, false)
 
 
 func _render_knight_zone(zone: Node, field_cards: Array[CardInstance], is_opponent: bool) -> void:
 	"""Actualizar todos los slots de una zona con las cartas del GameState"""
 	if not zone:
 		return
+
+	# ✅ PRIMERO: Limpiar TODOS los slots antes de re-renderizar
+	# Esto es crítico para TEST matches donde la perspectiva NO cambia pero el turno SÍ
+	_clear_all_slots(zone)
 
 	# Mapa posición → CardInstance (usa índice del array, NO field_slot)
 	# field_slot puede estar desactualizado si la carta acaba de moverse desde mano
@@ -418,17 +514,7 @@ func _render_knight_zone(zone: Node, field_cards: Array[CardInstance], is_oppone
 			continue
 		var expected: CardInstance = cards_by_pos.get(i, null)
 
-		if expected == null:
-			# Slot debe estar vacío
-			if slot.is_occupied:
-				_clear_slot_fast(slot)
-		else:
-			# ¿Ya tiene la carta correcta?
-			if slot.is_occupied and slot.card_instance and \
-					slot.card_instance.instance_id == expected.instance_id:
-				continue  # Ya está, no hace falta redibujar
-			if slot.is_occupied:
-				_clear_slot_fast(slot)
+		if expected != null:
 			_place_card_in_slot(slot, expected, is_opponent)
 
 

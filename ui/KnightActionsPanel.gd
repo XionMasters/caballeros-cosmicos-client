@@ -24,7 +24,7 @@ var selected_knight_slot: Node = null
 
 func _ready():
 	# Crear estructura si no existe
-	mouse_filter = Control.MOUSE_FILTER_IGNORE
+	mouse_filter = Control.MOUSE_FILTER_STOP
 	if not has_node("MarginContainer/VBoxContainer"):
 		var margin = MarginContainer.new()
 		margin.name = "MarginContainer"
