@@ -221,6 +221,7 @@ func _process_update_queue() -> void:
 				current_match["player2_name"] = p2["username"]
 
 		# game_state: ESTADO REAL (cartas, vida, zonas, todo)
+		_debug_log_field_knights(data)
 		game_state.apply_update(data)
 
 		# Emitir signal de actualización
@@ -235,6 +236,50 @@ func _process_update_queue() -> void:
 	
 	_is_processing_update = false
 	print("[MatchSessionService] 📭 Cola de actualizaciones vacía")
+
+
+# =====================================================
+# 🐛 DEBUG: LOG ESTADO DEL CAMPO
+# =====================================================
+func _debug_log_field_knights(data: Dictionary) -> void:
+	"""Imprime en consola el estado de todos los caballeros en el campo
+	con sus acciones válidas, modo y estado de agotamiento.
+	Útil para verificar qué calcula el servidor en cada match_update."""
+	var cards: Array = data.get("cards_in_play", [])
+	var field_cards := cards.filter(func(c): return c.get("zone", "").begins_with("field_knight"))
+	
+	if field_cards.is_empty():
+		print("[DEBUG ⚔️] No hay caballeros en el campo.")
+		return
+
+	print("[DEBUG ⚔️] ─── CABALLEROS EN EL CAMPO ──────────────────────")
+	for c in field_cards:
+		# El nombre viene anidado en c.card.name (según el serializador del servidor)
+		var card_dict   : Dictionary = c.get("card", {})
+		var name_str    := str(card_dict.get("name", c.get("id", "?")))
+		var player_n    := str(c.get("player_number", "?"))
+		var pos         := str(c.get("position", "?"))
+		# El modo viene en "mode" (campo principal del servidor)
+		var mode_str    := str(c.get("mode", c.get("is_defensive_mode", "normal")))
+		# Exhaustión: is_exhausted o has_attacked_this_turn
+		var exhausted   : bool = c.get("is_exhausted", c.get("has_attacked_this_turn", false))
+		var valid_acts  : Dictionary = c.get("valid_actions") if c.get("valid_actions") is Dictionary else {}
+		var has_acted_va: bool = valid_acts.get("has_acted", exhausted)
+		var effects     : Array  = c.get("status_effects") if c.get("status_effects") is Array else []
+
+		print("  [P%s | pos %s] %-30s | modo: %-8s | agotado: %s | has_acted VA: %s | efectos: %d" % [
+			player_n, pos, name_str, mode_str, str(exhausted), str(has_acted_va), effects.size()
+		])
+		if not valid_acts.is_empty():
+			for action_key in valid_acts.keys():
+				var val = valid_acts[action_key]
+				print("    └─ %s: %s" % [action_key, str(val)])
+		else:
+			print("    └─ (sin valid_actions)")
+		for eff in effects:
+			if eff is Dictionary:
+				print("    ⚡ efecto: %s (turnos: %s)" % [eff.get("type","?"), str(eff.get("remaining_turns","?"))])
+	print("[DEBUG ⚔️] ─────────────────────────────────────────────────")
 
 
 # =====================================================
