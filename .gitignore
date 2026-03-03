@@ -4,3 +4,5 @@
 buids/
 *.exe
 *.pck
+*.tmp
+user_data/
