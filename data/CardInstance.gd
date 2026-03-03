@@ -51,6 +51,14 @@ var temporary_buffs: Array = []       # [{stat, value, duration}]
 var actions_this_turn: Array[String] = []
 
 # ---------------------------------------------------------
+# Acciones válidas (calculadas por el servidor en cada match_update)
+# Solo presente para cartas del jugador activo; null/vacío para el inactivo.
+# field_knight:  KnightValidActions  { has_acted, can_attack, attack_targets, can_move, move_targets, ... }
+# hand:          HandCardValidActions { can_play, play_slots }
+# ---------------------------------------------------------
+var valid_actions: Dictionary = {}
+
+# ---------------------------------------------------------
 # Adjuntos / Equipos
 # ---------------------------------------------------------
 var attached_cards: Array[CardInstance] = []
@@ -116,6 +124,9 @@ static func from_server_data(data: Dictionary) -> CardInstance:
 		for action in actions_array:
 			inst.actions_this_turn.append(str(action))
 
+	var raw_valid = data.get("valid_actions", null)
+	inst.valid_actions = raw_valid if raw_valid is Dictionary else {}
+
 	return inst
 
 func update_from_server_data(data: Dictionary) -> void:
@@ -144,6 +155,10 @@ func update_from_server_data(data: Dictionary) -> void:
 
 	status_effects = data.get("status_effects", status_effects)
 	temporary_buffs = data.get("buffs", temporary_buffs)
+
+	var raw_valid = data.get("valid_actions", null)
+	if raw_valid is Dictionary:
+		valid_actions = raw_valid
 
 	stats_changed.emit(self)
 

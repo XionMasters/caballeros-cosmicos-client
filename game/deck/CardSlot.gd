@@ -27,6 +27,10 @@ var card_instance: CardInstance = null           # CardInstance real (si aplica)
 var card_display_node: Control = null            # UI node (CardDisplay)
 var is_occupied: bool = false
 
+# Target highlight (selección de objetivo — reutilizable para ataque, buff, etc.)
+var _highlight_color: Color = Color.TRANSPARENT
+var _highlight_tween: Tween = null
+
 # Drag tracking (sistema manual sin get_drag_data)
 var _current_dragging_card: Control = null       # CardDisplay que está siendo arrastrada
 var _is_mouse_over: bool = false                 # Detectar si el cursor está sobre este slot
@@ -142,6 +146,12 @@ func _draw() -> void:
 	var style := get_theme_stylebox("panel")
 	if style:
 		draw_style_box(style, Rect2(Vector2.ZERO, size))
+	# Overlay parpadeante de selección de objetivo
+	if _highlight_color.a > 0.01:
+		draw_rect(Rect2(Vector2.ZERO, size), _highlight_color, true)
+		var border_c := Color(_highlight_color.r, _highlight_color.g, _highlight_color.b,
+				minf(_highlight_color.a * 1.6, 1.0))
+		draw_rect(Rect2(Vector2.ZERO, size), border_c, false, 3.0)
 
 func _make_glow_style(color: Color) -> StyleBoxFlat:	
 	var key := "%f-%f-%f-%f" % [color.r, color.g, color.b, color.a]
@@ -158,6 +168,36 @@ func _make_glow_style(color: Color) -> StyleBoxFlat:
 	s.shadow_size = 6
 	_glow_style_cache[key] = s
 	return s
+
+# ====================================================
+# TARGET HIGHLIGHT  (selección de objetivo)
+# ====================================================
+func set_target_highlight(active: bool, color: Color = Color(1.0, 0.2, 0.2)) -> void:
+	"""Activa/desactiva el overlay parpadeante para indicar objetivo válido.
+	Reutilizable para cualquier acción: ataque (rojo), buff (verde), mover (azul), etc."""
+	if _highlight_tween:
+		_highlight_tween.kill()
+		_highlight_tween = null
+
+	if not active:
+		_highlight_color = Color.TRANSPARENT
+		queue_redraw()
+		return
+
+	# Pulso suave: 0.75 → 0.08 → 0.75, en bucle
+	_highlight_tween = create_tween().set_loops()
+	_highlight_tween.tween_method(
+		func(a: float) -> void:
+			_highlight_color = Color(color.r, color.g, color.b, a)
+			queue_redraw(),
+		0.75, 0.08, 0.42
+	)
+	_highlight_tween.tween_method(
+		func(a: float) -> void:
+			_highlight_color = Color(color.r, color.g, color.b, a)
+			queue_redraw(),
+		0.08, 0.75, 0.42
+	)
 
 # ====================================================
 # WATERMARK

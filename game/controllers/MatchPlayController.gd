@@ -502,8 +502,7 @@ func _attempt_play_card(card_display: CardDisplay, target_zone: String, target_s
 	card_play_requested.emit(card_instance, target_zone, target_slot)
 	
 	# El servidor responderá y triggeará una actualización de GameState
-	# Cuando MatchManager reciba la respuesta, actualizará game_state
-	# Y TestBoard llamará nuevamente a setup_card_interactions()
+	# TestBoard llamará nuevamente a setup_card_interactions()
 
 
 func _validate_card_play(card_instance: CardInstance, target_zone: String) -> bool:

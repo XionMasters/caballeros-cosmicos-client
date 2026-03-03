@@ -1,322 +1,277 @@
 # Arquitectura del Sistema de Partidas
 
-## 📋 Resumen Rápido
+> Última actualización: Marzo 2026  
+> Estado: refleja el código en producción
 
-Cuando inicias una partida en Godot, esta es la cadena de archivos que se ejecuta:
+## Flujo de Navegación Real
 
 ```
-Main.tscn (menú) → MatchSearch.gd (matchmaking) → GameBoard.tscn/GameBoard.gd (partida)
+LoginScreen → MainLobby → MatchSearch | match_test_button → GameMatch.tscn
 ```
+
+- `menus/login/` — autenticación
+- `menus/lobby/MainLobby.tscn` — hub principal tras login
+- `menus/matchsearch/MatchSearch.tscn` — matchmaking PvP
+- `menus/lobby/MatchTestButton.tscn` — acceso rápido a partida TEST
+- `game/match/GameMatch.tscn` — escena de partida activa
+
+> **Nota**: `game/board/GameBoard.gd` y `GameBoard.tscn` son una versión anterior (refactor v2, ~160 líneas).
+> El controlador activo es `game/match/game_match.gd` (671 líneas). No confundirlos.
 
 ---
 
-## 🎮 Archivos Principales de Partida
+## Archivos Principales de Partida
 
-### 1. **GameBoard.tscn + GameBoard.gd** ⭐ CORE
-**Ubicación**: `scenes/game/GameBoard.tscn` + `scenes/game/GameBoard.gd`
-
-**Qué hace**: Es el "cerebro" de la partida. Controla todo el tablero de juego.
+### 1. `game/match/game_match.gd` + `GameMatch.tscn` — CONTROLADOR PRINCIPAL
 
 **Responsabilidades**:
-- Recibe el estado del juego desde el servidor WebSocket
-- Renderiza todas las zonas (mano, campo, cementerio, etc.)
-- Maneja los turnos y fases del juego
-- Coordina las acciones del jugador (atacar, usar técnicas, etc.)
-- Actualiza la UI del tablero cada vez que cambia algo
+- Orquestar renderización delegando a controladores especializados
+- Conectar señales de `MatchSessionService` (estado, fases, errores)
+- Configurar animadores, hand controllers y slots al iniciar
+- Gestionar modos de selección de acción (ataque, movimiento)
+- Despachar acciones del jugador a `MatchSessionService`
 
-**Flujo principal**:
+**Flujo `_ready()`**:
 ```gdscript
-_ready() → conectar WebSocket
-↓
-receive game state from server
-↓
-update_board(game_state) → render_all_zones()
-↓
-_place_card_in_zone() → crea CardDisplay para cada carta
+_ready()
+  ↓ obtener game_state de SceneTransition
+  ↓ await 2 frames (nodos listos)
+  ↓ conectar señales de MatchSessionService
+  ↓ _setup_end_turn_button()
+  ↓ _setup_card_slots()
+  ↓ _setup_knight_actions_panel()
+  ↓ _setup_card_deal_animator()
+  ↓ _setup_hand_controllers()
+  ↓ await _render_from_match_state()
+  ↓ await timer 1s (precarga imágenes)
+  ↓ MatchSessionService.on_gamematch_ready()  ← dispara primer turno
 ```
 
-**Variables clave**:
-- `match_id`: ID de la partida actual
-- `player_id`: Tu ID de usuario
-- `game_state`: Estado completo del juego (JSON del servidor)
-- `player_hand`, `opponent_hand`: Referencias a las manos
-- `player_field_slots`, `opponent_field_slots`: Arrays de slots del campo
+**Variables de estado interno**:
+- `_pending_attacker_id`: ID del atacante esperando objetivo
+- `_pending_move_id`: ID del caballero esperando destino
+- `_is_selecting_attack_target / _is_selecting_move_target`: modos de selección
+
+### 2. `game/controllers/` — CONTROLADORES DELEGADOS
+
+| Archivo | Responsabilidad |
+|---|---|
+| `MatchFlowController.gd` | Fetch deck → validar → crear/reanudar partida |
+| `MatchPlayController.gd` | Acciones en juego (jugar carta, fin de turno) |
+| `MatchEventBridge.gd` | Puente entre eventos WS y el tablero |
+| `MatchInitializer.gd` | Setup inicial de la escena de partida |
+
+### 3. `game/match/PlayerHandController.gd` / `OpponentHandController.gd`
+
+Gestionan la mano propia (con animaciones de robo) y la mano rival (dorsos).
+Creados por `game_match.gd` como objetos GD (no nodos), no tienen escena propia.
+
+### 4. `game/rules/GameController.gd`
+
+Validador ligero de UX del lado cliente. **No** aplica lógica de juego.
+Verifica condiciones mínimas (turno, agotamiento, pertenencia) antes de enviar al servidor.
+Forwardea a `MatchSessionService`.
 
 ---
 
-### 2. **CardDisplay.gd** 🃏 CARTAS
-**Ubicación**: `scripts/cards/CardDisplay.gd`
+### 5. `cards/CardDisplay.gd` + `CardDisplay.tscn`
 
-**Qué hace**: Muestra UNA carta individual (imagen, nombre, stats).
+Representa visualmente una carta individual. Maneja hover, clic, drag & drop.
+Instanciado por `game_match.gd` usando `CARD_DISPLAY_SCENE` preloadeado.
 
-**Responsabilidades**:
-- Crear la estructura visual de la carta (imagen, nombre, rareza, stats)
-- Manejar hover, clic, doble clic
-- Permitir arrastrar la carta (drag & drop)
-- Animación de aparición (`play_spawn_animation()`)
-
-**Cuándo se crea**: Cada vez que GameBoard necesita mostrar una carta:
-```gdscript
-# En GameBoard.gd línea ~345
-var card_display = CARD_DISPLAY_TEMPLATE.instantiate()
-card_display.setup(card_data)  # Configura nombre, stats, etc.
-```
-
-**Señales que emite**:
-- `card_clicked(card_data)`: Clic simple
-- `card_double_clicked(card_data)`: Doble clic (para ver detalles)
+Señales relevantes: `card_clicked`, `card_double_clicked`, `drag_started`.
 
 ---
 
-### 3. **HandLayout.gd** 🎴 MANO DE CARTAS
-**Ubicación**: `scripts/game/HandLayout.gd`
+### 6. `game/zones/CardSlot.gd`
 
-**Qué hace**: Organiza las cartas de la mano en forma de **abanico** (fan layout).
+Representa un espacio del campo. Acepta drop de cartas y emite `card_dropped` y `slot_clicked`.
+Los slots propios responden al menú de acciones de caballero; los rivales responden a confirmación de ataque.
 
-**Responsabilidades**:
-- Posicionar cartas en arco
-- Animar hover (elevar carta cuando pasas el mouse)
-- Recalcular posiciones cuando agregas/quitas cartas
+### 7. Managers globales (autoloads)
 
-**Cómo funciona**:
-```gdscript
-add_card(card_display)  # Agrega carta a la mano
-↓
-arrange_cards()  # Calcula posiciones en abanico
-↓
-Conecta eventos mouse_entered/exited de cada carta
-```
+| Manager | Responsabilidad |
+|---|---|
+| `managers/WebSocketManager.gd` | Conexión WS, envío/recepción de mensajes con el servidor |
+| `managers/CardsManager.gd` | Caché de imágenes de cartas |
+| `managers/TurnPhaseManager.gd` | Estado de fase actual del turno |
+| `managers/AudioManager.gd` | Efectos de sonido y música |
+| `managers/LocalizationManager.gd` | Traducciones (es/en/pt) |
+| `managers/AuthManager.gd` | Token JWT, sesión del usuario |
+| `managers/Signals.gd` | Bus de señales globales |
 
-**Matemática del abanico**:
-- Calcula ángulo para cada carta: `-30°` a `+30°` (max_angle = 60)
-- Posiciona en arco usando seno/coseno
-- Rota ligeramente cada carta según su ángulo
+### 8. `shared/services/MatchSessionService.gd`
 
-**IMPORTANTE**: Este script maneja el hover, NO CardDisplay (cuando está en mano).
+Autoload que centraliza el estado de la partida activa en el cliente.
+Todo lo que `game_match.gd` envía al servidor pasa por aquí.
+Observa eventos WS y emite señales hacia la escena (`match_state_updated`, `phase_changed`, `match_error`).
 
----
+### 9. `data/CardInstance.gd` / `data/GameState.gd`
 
-### 4. **CardSlot.gd** 🔲 SLOTS DEL CAMPO
-**Ubicación**: `scripts/game/CardSlot.gd`
-
-**Qué hace**: Representa un espacio en el campo de batalla donde puedes **colocar** cartas.
-
-**Responsabilidades**:
-- Aceptar cartas arrastradas (drop zone)
-- Validar si puedes colocar esa carta ahí
-- Mostrar visual cuando está vacío/ocupado
-- Permitir interactuar con la carta colocada
-
-**Drag & Drop**:
-```gdscript
-_can_drop_data(pos, data):
-    # ¿Es una carta válida? ¿Es tu turno? ¿Tienes cosmos suficiente?
-    
-_drop_data(pos, data):
-    # Colocar carta en el slot
-    # Enviar acción al servidor via WebSocket
-```
-
-**Estados visuales**:
-- Vacío: Muestra watermark (ej: "Caballero 1")
-- Ocupado: Muestra la carta
-- Hover: Resalta cuando arrastras carta compatible
+Modelos de datos de partida activa. `GameState` es snapshot del servidor; `CardInstance` representa una carta en juego con su estado (zona, modo, agotamiento).
 
 ---
 
-### 5. **WebSocketManager.gd** 🌐 COMUNICACIÓN
-**Ubicación**: `scripts/managers/WebSocketManager.gd` (autoload global)
+## Flujos Completos
 
-**Qué hace**: Mantiene la conexión WebSocket con el servidor para tiempo real.
-
-**Responsabilidades**:
-- Conectar al servidor (`ws://localhost:4000`)
-- Enviar acciones del jugador (jugar carta, atacar, pasar turno)
-- Recibir actualizaciones del servidor (nuevo estado del juego)
-- Manejar reconexiones
-
-**Mensajes típicos**:
-```json
-// Cliente → Servidor
-{
-  "type": "play_card",
-  "match_id": "abc123",
-  "card_id": "card_456",
-  "target_slot": 0
-}
-
-// Servidor → Cliente
-{
-  "type": "game_state_update",
-  "match_id": "abc123",
-  "state": { ... }
-}
+### 1. Iniciar partida TEST
+```
+MainLobby → MatchTestButton presionado
+  ↓ MatchFlowController.start_test_match()
+  ↓ DecksManager.fetch_user_decks()
+  ↓ (deck listo) WebSocketManager.request_test_match()
+  ↓ Servidor crea partida TEST, responde con match_found + match_update
+  ↓ MatchSessionService recibe match_found → SceneTransition a GameMatch.tscn
+  ↓ game_match.gd._ready() → carga estado → MatchSessionService.on_gamematch_ready()
+  ↓ Servidor envía 1er match_update → _render_from_match_state()
 ```
 
-**Usado por**: GameBoard escucha las señales de WebSocketManager.
+### 2. Iniciar partida PvP
+```
+MainLobby → MatchSearch.tscn
+  ↓ WebSocketManager.search_match()
+  ↓ Servidor hace matchmaking FIFO
+  ↓ Servidor responde match_found a ambos jugadores
+  ↓ MatchSessionService → SceneTransition a GameMatch.tscn
+```
 
----
+### 3. Jugar una carta
+```
+Jugador arrastra CardDisplay desde HandLayout
+  ↓ Suelta en CardSlot
+  ↓ CardSlot emite card_dropped(payload)
+  ↓ game_match._on_card_dropped_in_slot(payload)
+  ↓ MatchSessionService.play_card(instance_id, zone, position)
+  ↓ WebSocketManager.play_card() → send_match_event("play_card", {...})
+  ↓ WS → servidor: { type: "PLAY_CARD", match_id, card_id, zone, position }
+  ↓ Servidor valida + actualiza BD
+  ↓ Servidor broadcast match_update a ambos jugadores
+  ↓ MatchSessionService.match_state_updated emitida
+  ↓ game_match._on_match_state_updated() → _render_from_match_state()
+```
 
-### 6. **CardsManager.gd** 📦 CACHÉ DE CARTAS
-**Ubicación**: `scripts/managers/CardsManager.gd` (autoload global)
+### 4. Atacar con un caballero (ver sección dedicada más abajo)
 
-**Qué hace**: Descarga y cachea las imágenes de las cartas desde el servidor.
-
-**Responsabilidades**:
-- Descargar imágenes de cartas (HTTPRequest)
-- Guardar en caché (`_image_cache` diccionario)
-- Proveer texturas a CardDisplay
-
-**Flujo**:
-```gdscript
-CardsManager.fetch_card_image(card_id, image_url)
-↓
-HTTPRequest descarga imagen
-↓
-Convierte a ImageTexture
-↓
-Guarda en _image_cache[card_id]
-↓
-Emite señal card_image_loaded(card_id, texture)
-↓
-CardDisplay.set_card_image(texture)
+### 5. Fin de turno
+```
+Jugador presiona EndTurnButton
+  ↓ game_match._on_end_turn_button_pressed()
+  ↓ MatchSessionService.end_turn()
+  ↓ WebSocketManager.end_turn(match_id)
+  ↓ WS → servidor: { type: "END_TURN", match_id, action_id }
+  ↓ Servidor valida + cambia turno
+  ↓ Servidor broadcast match_update
+  ↓ game_match re-renderiza + actualiza botón End Turn
 ```
 
 ---
 
-### 7. **CardData.gd** 📊 MODELO DE DATOS
-**Ubicación**: `scripts/cards/CardData.gd`
+---
 
-**Qué hace**: Define la estructura de datos de una carta (clase).
+## Flujo Detallado: Atacar con un Caballero
 
-**Propiedades**:
-```gdscript
-class_name CardData
+```
+[1] Jugador clickea su propio knight slot
+      ↓ CardSlot emite slot_clicked(slot)
+      ↓ game_match._on_player_knight_slot_clicked(slot)
+      ↓ (slot tiene carta, sin modo activo) knight_actions_panel.show_actions_for_knight(slot)
 
-var id: String
-var name: String
-var type: String  # "caballero", "tecnica", "objeto", etc.
-var rarity: String  # "comun", "rara", "epica", "legendaria"
-var attack: int
-var defense: int
-var health: int
-var image_url: String
+[2] Panel muestra opciones → jugador presiona "Batalhar (BA)"
+      ↓ KnightActionsPanel._on_action_button_pressed("attack")
+      ↓ _start_attack_mode() → action_selected.emit("attack", selected_knight_slot)
+
+[3] game_match recibe signal action_selected
+      ↓ _on_knight_action_selected("attack", source_slot)
+      ↓ _pending_attacker_id = instance_id
+      ↓ _is_selecting_attack_target = true
+      (visual: el jugador debe seleccionar objetivo)
+
+[4] Jugador clickea un slot rival
+      ↓ CardSlot emite slot_clicked(slot)
+      ↓ game_match._on_opponent_knight_slot_clicked(slot)
+      ↓ (modo activo: _is_selecting_attack_target)
+      ↓ defender_id = slot.card_instance.instance_id (vacío = daño directo)
+      ↓ MatchSessionService.send_attack(_pending_attacker_id, defender_id)
+      ↓ _is_selecting_attack_target = false
+
+[5] MatchSessionService
+      ↓ send_attack(attacker_id, defender_id)
+      ↓ WebSocketManager.declare_attack(match_id, attacker_id, defender_id)
+
+[6] WebSocketManager
+      ↓ send_match_event("declare_attack", { match_id, attacker_id, defender_id })
+      ↓ _to_match_action_type("declare_attack") → "ATTACK"
+      ↓ send_event("match_action", { type: "ATTACK", match_id, attacker_id, defender_id, action_id })
+
+[7] Servidor (TypeScript)
+      ↓ websocket-router.ts recibe match_action
+      ↓ matchesCoordinator.handleAction({ type: "ATTACK", ... })
+      ↓ MatchCoordinator.attack(matchId, userId, attackerId, defenderId, actionId)
+      ↓ AttackRulesEngine.ts: valida reglas, calcula daño (CE/AR/modo)
+      ↓ Actualiza CardInPlay en BD (HP, zona yomotsu si muere)
+      ↓ MatchStateService.buildBroadcastMatchState()
+      ↓ broadcast match_update a ambos jugadores con perspectivas separadas
+
+[8] Cliente recibe match_update
+      ↓ MatchSessionService.match_state_updated.emit(data)
+      ↓ game_match._on_match_state_updated()
+      ↓ _render_from_match_state() → re-renderiza tablero completo
+      ↓ MatchEffectsManager.play_attack_effect() (línea + número de daño)
+      ↓ CombatAnimator.animate_attack() (dash del clon del atacante)
 ```
 
-**Métodos útiles**:
-- `get_rarity_color(rarity)`: Retorna Color según rareza
-- `get_rarity_name(rarity)`: Traduce rareza a texto
+**Archivos involucrados en el ataque:**
+
+| Capa | Archivo | Rol |
+|------|---------|-----|
+| UI | `ui/KnightActionsPanel.gd` | Panel que inicia el modo ataque |
+| Orquestador | `game/match/game_match.gd` | Captura clicks, gestiona estado de selección |
+| Validación cliente | `game/rules/GameController.gd` | Verifica mínimos (turno, agotamiento) antes de enviar |
+| Servicio cliente | `shared/services/MatchSessionService.gd` | `send_attack()` → delega a WS |
+| Transporte | `managers/WebSocketManager.gd` | `declare_attack()` → empaqueta y envía `match_action` |
+| Enrutamiento servidor | `services/websocket/websocket-router.ts` | Recibe `match_action` tipo `ATTACK` |
+| Coordinador servidor | `services/coordinators/matchesCoordinator.ts` | Delega a `MatchCoordinator.attack()` |
+| Lógica de dominio | `engine/AttackRulesEngine.ts` | Calcula daño, valida modos, aplica resultado |
+| Modelo | `models/CardInPlay.ts` | Registro de carta en juego (HP, zona, modo) |
+| Efectos visuales | `game/MatchEffectsManager.gd` | Línea de ataque + número de daño flotante |
+| Animación | `shared/effects/CombatAnimator.gd` | Dash del clon del atacante |
+| Efecto flash | `shared/effects/AttackFlash.gd` | Flash sobre la carta impactada |
 
 ---
 
-## 🔄 Flujo Completo de una Partida
+## Zonas del tablero
 
-### 1. **Iniciar Partida**
-```
-Usuario en Main.tscn → clic "Buscar Partida"
-↓
-MatchSearch.gd → WebSocket "search_match"
-↓
-Servidor matchmaking encuentra oponente
-↓
-Servidor envía "match_found" con match_id
-↓
-Godot cambia escena a GameBoard.tscn
-```
-
-### 2. **Cargar Tablero Inicial**
-```
-GameBoard._ready()
-↓
-WebSocket.connect_to_match(match_id)
-↓
-Servidor envía initial_state
-↓
-GameBoard.update_board(state)
-↓
-render_all_zones() crea CardDisplay para cada carta
-```
-
-### 3. **Jugador Coloca Carta**
-```
-Usuario arrastra CardDisplay desde mano
-↓
-Suelta en CardSlot
-↓
-CardSlot._drop_data() valida acción
-↓
-WebSocket.send("play_card", {card_id, slot})
-↓
-Servidor valida y actualiza estado
-↓
-Servidor broadcast nuevo state a ambos jugadores
-↓
-GameBoard recibe update → render_all_zones()
-```
-
-### 4. **Turnos y Fases**
-```
-Servidor controla turnos (cada jugador tiene tiempo límite)
-↓
-Envía "turn_changed" event
-↓
-GameBoard actualiza UI (habilitar/deshabilitar controles)
-```
+| Zona (`zone`) | Descripción |
+|---|---|
+| `hand` | Mano del jugador |
+| `field_knight` | Slots de caballeros en campo (0–4) |
+| `field_technique` | Slots de técnicas en campo (0–4) |
+| `field_helper` | Slot del ayudante |
+| `field_scenario` | Slot del escenario |
+| `field_occasion` | Slot de ocasión |
+| `yomotsu` | Cementerio |
+| `exiled` | Cartas exiliadas |
 
 ---
 
-## 🐛 Problema Actual: Cartas Titilando
+## Guía de modificación
 
-**Causa**: Dos sistemas manejando hover simultáneamente:
-1. **HandLayout** conecta `mouse_entered`/`exited` en línea 68-71
-2. **CardDisplay** también tiene `_on_mouse_entered()`/`_on_mouse_exited()`
-
-**Conflicto**:
-- HandLayout anima posición de la carta
-- Cambio de posición hace que el mouse "salga" de la carta
-- Se dispara `mouse_exited` → carta baja
-- Mouse vuelve a entrar → `mouse_entered` → carta sube
-- **Loop infinito** = titileo
-
-**Solución**: Desactivar eventos de CardDisplay cuando está en HandLayout.
+| Qué cambiar | Dónde ir |
+|---|---|
+| Agregar nueva acción de caballero | `ui/KnightActionsPanel.gd` + `game_match._on_knight_action_selected()` |
+| Cambiar renderizado del tablero | `game/match/game_match.gd` → `_render_from_match_state()` |
+| Cambiar cómo se arma el estado del servidor | `services/match/matchState.service.ts` |
+| Agregar nuevo tipo de evento WS | `managers/WebSocketManager.gd` + `services/websocket/websocket-router.ts` |
+| Cambiar animación de ataque | `shared/effects/CombatAnimator.gd` |
+| Cambiar reglas de combate | `engine/AttackRulesEngine.ts` (servidor) |
 
 ---
 
-## 📝 Modificar el Código
+## Checklist de debugging
 
-### Agregar una carta al campo
-**Archivo**: `GameBoard.gd` → función `_place_card_in_zone()`
-
-### Cambiar animación de cartas
-**Archivo**: `CardDisplay.gd` → función `_on_mouse_entered()`
-
-### Ajustar layout de mano
-**Archivo**: `HandLayout.gd` → variables `@export` (max_angle, radius, etc.)
-
-### Agregar nueva acción (ej: atacar)
-1. Crear función en `GameBoard.gd`: `_on_attack_button_pressed()`
-2. Enviar mensaje WebSocket: `WebSocketManager.send_action("attack", data)`
-3. Backend procesa en `websocket.service.ts`
-
----
-
-## 🎯 Archivos que NO Debes Tocar (Normalmente)
-
-- **Main.gd**: Solo navegación de menús
-- **LoginScreen.gd**: Autenticación
-- **WebSocketManager.gd**: Ya está completo (a menos que agregues nuevos tipos de mensajes)
-- **CardsManager.gd**: Funciona bien para caché de imágenes
-
----
-
-## ✅ Checklist para Debuggear Partidas
-
-1. ¿El WebSocket está conectado? → Ver consola de GameBoard
-2. ¿Llega el `game_state` del servidor? → Agregar `print(game_state)` en `update_board()`
-3. ¿Las cartas se crean? → Ver si `CARD_DISPLAY_TEMPLATE` se instancia
-4. ¿Las imágenes cargan? → Verificar `CardsManager._image_cache`
-5. ¿Los slots aceptan cartas? → Debuggear `CardSlot._can_drop_data()`
-
----
-
-¿Necesitas más detalle sobre algún archivo específico?
+1. ¿El WS está conectado? → `WebSocketManager.is_connected_to_server()`
+2. ¿Llega `match_update`? → `print` en `MatchSessionService._on_match_update()`
+3. ¿El `game_state` tiene las cartas? → `print(MatchSessionService.game_state)`
+4. ¿El slot recibe clicks? → Verificar `mouse_filter` en `CardSlot`
+5. ¿La acción llega al servidor? → Logs del servidor `[MatchesCoordinator]`
+6. ¿El atacante está agotado? → `CardInstance.is_exhausted` en `GameState`
