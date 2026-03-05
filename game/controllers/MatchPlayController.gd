@@ -581,8 +581,12 @@ func _detect_drop_zone(card_position: Vector2) -> String:
 
 func _detect_drop_slot(target_zone: String, card_position: Vector2) -> int:
 	"""Detectar qué slot específico fue el target"""
-	var slots = []
+	# Zonas de slot único: siempre posición 0
+	match target_zone:
+		"field_helper", "field_occasion", "field_scenario":
+			return 0
 	
+	var slots = []
 	match target_zone:
 		"field_knight":
 			slots = board_renderer.player_knight_slots

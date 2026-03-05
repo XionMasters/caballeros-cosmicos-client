@@ -10,23 +10,60 @@ signal online_users_updated(users: Array)
 signal match_found(match_data: Dictionary)
 signal match_updated(match_data: Dictionary)
 signal match_error(error_code: String, message: String)
+## Emitida cuando comienza un ciclo de reconexión automática.
+## attempt = número de intento actual, delay_secs = segundos hasta el próximo intento.
+signal reconnecting(attempt: int, delay_secs: float)
+## Emitida cuando la reconexión automática se abandona (superó max intentos o no hay token).
+signal reconnect_failed()
 
 # Config
 var ws: WebSocketPeer = null
 var connected: bool = false
 var auth_token: String = ""
 var reconnect_attempts: int = 0
-@export var max_reconnect_attempts: int = 5
+## 0 = intentos ilimitados
+@export var max_reconnect_attempts: int = 0
 @export var reconnect_delay_base: float = 1.0
+@export var reconnect_delay_max: float = 30.0
+
+## match_id de una partida activa para re-pedir el estado tras reconectar.
+## Asignado desde el exterior (p.ej. GameBoard) o al recibir match_found.
+var active_match_id: String = ""
 
 # Internals
 var _processing: bool = false
+## true sólo cuando la desconexión fue pedida explícitamente por el cliente.
+var _intentional_disconnect: bool = false
+## Semáforo para evitar lanzar dos ciclos de reconexión en paralelo.
+var _reconnect_in_progress: bool = false
+
+# Heartbeat de aplicación
+## Segundos entre cada ping enviado al servidor.
+const HEARTBEAT_INTERVAL: float = 5.0
+## Segundos sin recibir pong antes de declarar la conexión muerta.
+const HEARTBEAT_TIMEOUT: float = 12.0
+var _heartbeat_elapsed: float = 0.0   # tiempo desde el último ping enviado
+var _last_pong_elapsed: float = 0.0   # tiempo desde el último pong recibido
+var _waiting_pong: bool = false       # estamos esperando pong
 
 func _ready():
 	print("🌐 WebSocketManager inicializado")
 
-func _process(_delta):
-	# Pollear socket si existe
+func _process(delta):
+	# ---------- heartbeat ----------
+	if connected:
+		_heartbeat_elapsed += delta
+		if _waiting_pong:
+			_last_pong_elapsed += delta
+			if _last_pong_elapsed >= HEARTBEAT_TIMEOUT:
+				print("💀 Conexión muerta (sin pong en %.0fs) — forzando reconexión" % HEARTBEAT_TIMEOUT)
+				_on_dead_connection()
+				return
+		if _heartbeat_elapsed >= HEARTBEAT_INTERVAL:
+			_heartbeat_elapsed = 0.0
+			_send_ping()
+
+	# ---------- poll socket ----------
 	if ws:
 		ws.poll()
 		var state := ws.get_ready_state()
@@ -38,13 +75,48 @@ func _process(_delta):
 				var message := packet.get_string_from_utf8()
 				_handle_message(message)
 
-		elif state == WebSocketPeer.STATE_CLOSED:
+		elif state == WebSocketPeer.STATE_CLOSED or state == WebSocketPeer.STATE_CLOSING:
 			if connected:
-				print("❌ WebSocket desconectado")
 				connected = false
-				emit_signal("disconnected_from_server")
-			# limpiar objeto para reintentos
+				_reset_heartbeat()
+				if _intentional_disconnect:
+					print("🔌 WebSocket cerrado intencionalmente")
+					emit_signal("disconnected_from_server")
+				else:
+					print("❌ WebSocket desconectado por el servidor — iniciando reconexión")
+					emit_signal("disconnected_from_server")
+					ws = null
+					_trigger_reconnect()
+					return
+			# limpiar objeto
 			ws = null
+
+# =========================
+# Heartbeat interno
+# =========================
+func _send_ping() -> void:
+	if not is_connected_to_server():
+		return
+	_waiting_pong = true
+	_last_pong_elapsed = 0.0
+	var err := ws.send_text(JSON.stringify({"event": "ping", "data": {}}))
+	if err != OK:
+		print("⚠️ Error enviando ping: ", err)
+
+func _reset_heartbeat() -> void:
+	_heartbeat_elapsed = 0.0
+	_last_pong_elapsed = 0.0
+	_waiting_pong = false
+
+func _on_dead_connection() -> void:
+	"""Llamado cuando se detecta conexión muerta (timeout de pong)."""
+	connected = false
+	_reset_heartbeat()
+	if ws:
+		ws.close()
+		ws = null
+	emit_signal("disconnected_from_server")
+	_trigger_reconnect()
 
 # =========================
 # Conexión / Reconexión
@@ -52,6 +124,7 @@ func _process(_delta):
 func connect_to_server(token: String) -> void:
 	"""Conectar al servidor WS. Pasa token (string) para handshake (?token=)."""
 	auth_token = token
+	_intentional_disconnect = false
 
 	# Si ya hay conexión abierta, evitar reconectar
 	if ws and ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
@@ -79,26 +152,62 @@ func connect_to_server(token: String) -> void:
 	if ws and ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
 		connected = true
 		reconnect_attempts = 0
+		_reconnect_in_progress = false
+		_reset_heartbeat()
 		print("✅ WebSocket conectado (handshake OK)")
 		emit_signal("connected_to_server")
+		# Si había una partida activa, re-solicitar su estado
+		if active_match_id != "":
+			print("🔄 Partida activa detectada tras reconexión — solicitando estado: ", active_match_id)
+			# Pequeño delay para que el server procese la autenticación
+			await get_tree().create_timer(0.3).timeout
+			request_match_state(active_match_id)
 	else:
 		@warning_ignore("incompatible_ternary")
-		print("⚠️ Handshake pendiente/ Falló. Estado:", ws.get_ready_state() if ws else "no socket")
+		print("⚠️ Handshake pendiente/Falló. Estado:", ws.get_ready_state() if ws else "no socket")
 		_schedule_reconnect()
 
+func _trigger_reconnect() -> void:
+	"""Inicia reconexión si no hay un ciclo activo ya."""
+	if _reconnect_in_progress:
+		return
+	if auth_token == "":
+		print("⚠️ Sin token — no se puede reconectar automáticamente")
+		emit_signal("reconnect_failed")
+		return
+	_reconnect_in_progress = true
+	reconnect_attempts = 0
+	_schedule_reconnect()
+
 func _schedule_reconnect() -> void:
-	if reconnect_attempts >= max_reconnect_attempts:
-		print("❌ Máximos intentos de reconexión alcanzados:", reconnect_attempts)
+	if not _reconnect_in_progress:
+		return
+	if _intentional_disconnect:
+		_reconnect_in_progress = false
+		return
+	if max_reconnect_attempts > 0 and reconnect_attempts >= max_reconnect_attempts:
+		print("❌ Máximos intentos de reconexión alcanzados (%d)" % max_reconnect_attempts)
+		_reconnect_in_progress = false
+		emit_signal("reconnect_failed")
 		return
 
 	reconnect_attempts += 1
-	var delay := reconnect_delay_base * float(reconnect_attempts)
-	print("🔁 Reintentando conexión en %s s (intento %d/%d)" % [str(delay), reconnect_attempts, max_reconnect_attempts])
+	# Backoff exponencial con cap
+	var delay := minf(reconnect_delay_base * pow(2.0, reconnect_attempts - 1), reconnect_delay_max)
+	var attempts_label := "∞" if max_reconnect_attempts == 0 else str(max_reconnect_attempts)
+	print("🔁 Reconectando en %.1f s (intento %d/%s)" % [delay, reconnect_attempts, attempts_label])
+	emit_signal("reconnecting", reconnect_attempts, delay)
 	await get_tree().create_timer(delay).timeout
-	# reintentar con el mismo token
+	if _intentional_disconnect:
+		_reconnect_in_progress = false
+		return
 	connect_to_server(auth_token)
 
 func disconnect_from_server() -> void:
+	_intentional_disconnect = true
+	_reconnect_in_progress = false
+	active_match_id = ""
+	_reset_heartbeat()
 	if ws:
 		ws.close()
 		ws = null
@@ -310,6 +419,15 @@ func start_first_turn(match_id: String) -> void:
 	print("🎮 [WebSocketManager] Iniciando primer turno para match: ", match_id)
 	send_event("start_first_turn", {"match_id": match_id})
 
+func request_match_state(match_id: String) -> void:
+	"""Solicitar al servidor el estado actual de una partida.
+	Útil tras reconexiones para recuperar el estado sin reiniciar la partida."""
+	if not is_connected_to_server():
+		push_error("No conectado - no se puede pedir estado de partida")
+		return
+	print("📡 [WebSocketManager] Solicitando estado de partida: ", match_id)
+	send_event("request_match_state", {"match_id": match_id})
+
 
 # =========================
 # Mensajes entrantes - dispatch
@@ -335,6 +453,11 @@ func _handle_message(message: String) -> void:
 	emit_signal("server_event", event, data)
 
 	match event:
+		"pong":
+			# Conexión viva
+			_waiting_pong = false
+			_last_pong_elapsed = 0.0
+
 		"connected":
 			print("✅ Servidor WS: conectado como", data.get("username", ""))
 			request_online_users()
@@ -347,9 +470,17 @@ func _handle_message(message: String) -> void:
 			emit_signal("online_users_updated", users)
 
 		"match_found":
+			# Guardar match_id para reconexiones
+			var mid: String = data.get("id", data.get("match_id", ""))
+			if mid != "":
+				active_match_id = mid
 			emit_signal("match_found", data)
 
 		"match_update":
+			# Mantener active_match_id actualizado
+			var mid2: String = data.get("id", data.get("match_id", ""))
+			if mid2 != "":
+				active_match_id = mid2
 			current_match_update(data)
 			emit_signal("match_updated", data)
 

@@ -9,18 +9,24 @@ var _player_panel: PlayerStatusPanel
 var _opponent_panel: PlayerStatusPanel
 var _player_deck: DeckDisplay
 var _opponent_deck: DeckDisplay
+var _player_piles: PilesPanel
+var _opponent_piles: PilesPanel
 
 
 func _init(
 	player_panel: PlayerStatusPanel,
 	opponent_panel: PlayerStatusPanel,
 	player_deck: DeckDisplay,
-	opponent_deck: DeckDisplay
+	opponent_deck: DeckDisplay,
+	player_piles: PilesPanel = null,
+	opponent_piles: PilesPanel = null
 ) -> void:
 	_player_panel = player_panel
 	_opponent_panel = opponent_panel
 	_player_deck = player_deck
 	_opponent_deck = opponent_deck
+	_player_piles = player_piles
+	_opponent_piles = opponent_piles
 
 
 # ============================================================================
@@ -59,6 +65,11 @@ func render(game_state: GameState, current_match: Dictionary) -> void:
 
 	_player_deck.setup(game_state.player_deck_count, player_id)
 	_opponent_deck.setup(game_state.opponent_deck_count, opponent_id)
+
+	if _player_piles:
+		_player_piles.update_yomotsu(game_state.player_graveyard_count)
+	if _opponent_piles:
+		_opponent_piles.update_yomotsu(game_state.opponent_graveyard_count)
 
 
 func render_fallback() -> void:

@@ -42,6 +42,8 @@ var current_health: int = 0
 var max_health: int = 0              # HP máximo (puede aumentar con buffs)
 var current_attack: int = 0
 var current_defense: int = 0
+var current_cosmos: int = 0
+var max_cosmos: int = 0               # CP máximo del caballero
 
 # ---------------------------------------------------------
 # Efectos temporales
@@ -79,6 +81,8 @@ static func from_card_data(card: CardData, owner: String) -> CardInstance:
 		inst.current_health = card.health
 		inst.current_attack = card.attack
 		inst.current_defense = card.defense
+		inst.max_cosmos = card.cosmos
+		inst.current_cosmos = card.cosmos
 
 	return inst
 
@@ -111,6 +115,8 @@ static func from_server_data(data: Dictionary) -> CardInstance:
 	inst.current_health = data.get("current_health", bd.health if bd else 0)
 	inst.current_attack = data.get("current_attack", bd.attack if bd else 0)
 	inst.current_defense = data.get("current_defense", bd.defense if bd else 0)
+	inst.max_cosmos = data.get("max_cosmos", bd.cosmos if bd else 0)
+	inst.current_cosmos = data.get("current_cosmos", bd.cosmos if bd else 0)
 
 	# Validar arrays
 	var raw_status = data.get("status_effects", [])
@@ -152,6 +158,8 @@ func update_from_server_data(data: Dictionary) -> void:
 	max_health = data.get("max_health", max_health)
 	current_attack = data.get("current_attack", current_attack)
 	current_defense = data.get("current_defense", current_defense)
+	max_cosmos = data.get("max_cosmos", max_cosmos)
+	current_cosmos = data.get("current_cosmos", current_cosmos)
 
 	status_effects = data.get("status_effects", status_effects)
 	temporary_buffs = data.get("buffs", temporary_buffs)
@@ -284,6 +292,7 @@ func _recalculate_stats():
 	current_attack = base_data.attack
 	current_defense = base_data.defense
 	max_health = base_data.health
+	max_cosmos = base_data.cosmos
 
 	# Buffs temporales
 	for buff in temporary_buffs:
@@ -291,6 +300,7 @@ func _recalculate_stats():
 			"attack": current_attack += buff["value"]
 			"defense": current_defense += buff["value"]
 			"max_health": max_health += buff["value"]  # Buffs aumentan HP máximo, no current
+			"cosmos": max_cosmos += buff["value"]
 
 	# Equipamiento (solo si tiene stats)
 	if equipped_item and equipped_item.base_data:
@@ -330,6 +340,8 @@ func to_dict() -> Dictionary:
 		"max_health": max_health,
 		"current_attack": current_attack,
 		"current_defense": current_defense,
+		"current_cosmos": current_cosmos,
+		"max_cosmos": max_cosmos,
 		"is_exhausted": is_exhausted,
 		"status_effects": status_effects,
 		"buffs": temporary_buffs,

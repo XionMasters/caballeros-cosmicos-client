@@ -1,4 +1,4 @@
-[gd_scene load_steps=11 format=3 uid="uid://cqhcm66m33h6w"]
+[gd_scene load_steps=12 format=3 uid="uid://cqhcm66m33h6w"]
 
 [ext_resource type="Script" uid="uid://dr6rbg7s4qae4" path="res://game/match/game_match.gd" id="1_cacvx"]
 [ext_resource type="PackedScene" uid="uid://bvmtnk4qe67i0" path="res://game/status/PlayerStatusPanel.tscn" id="2_cacvx"]
@@ -10,6 +10,7 @@
 [ext_resource type="Texture2D" uid="uid://dkraalehxqaon" path="res://assets/ui-icons/Designer.png" id="7_4gpco"]
 [ext_resource type="Script" uid="uid://bw5ydvi5j28b" path="res://game/deck/CardSlot.gd" id="7_u7rf6"]
 [ext_resource type="Script" uid="uid://ww1kn105pxpd" path="res://game/zones/TechniqueZone.gd" id="7_wyhu6"]
+[ext_resource type="PackedScene" uid="uid://xy8mdk5rntul2hc3" path="res://game/zones/PilesPanel.tscn" id="8_piles"]
 
 [node name="GameMatch" type="Control"]
 layout_mode = 3
@@ -61,6 +62,9 @@ layout_mode = 2
 script = ExtResource("3_toc0o")
 card_back_scene = ExtResource("4_nhra7")
 
+[node name="OpponentPiles" parent="RootColumns/LeftColumn/LeftStack" instance=ExtResource("8_piles")]
+layout_mode = 2
+
 [node name="Spacer" type="Control" parent="RootColumns/LeftColumn/LeftStack"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -70,6 +74,9 @@ custom_minimum_size = Vector2(0, 200)
 layout_mode = 2
 script = ExtResource("3_toc0o")
 card_back_scene = ExtResource("4_nhra7")
+
+[node name="PlayerPiles" parent="RootColumns/LeftColumn/LeftStack" instance=ExtResource("8_piles")]
+layout_mode = 2
 
 [node name="PlayerPanel" parent="RootColumns/LeftColumn/LeftStack" instance=ExtResource("2_cacvx")]
 layout_mode = 2

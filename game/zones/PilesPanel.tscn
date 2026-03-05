@@ -1,6 +1,6 @@
 [gd_scene load_steps=2 format=3 uid="uid://xy8mdk5rntul2hc3"]
 
-[ext_resource type="Script" path="res://scripts/game/components/PilesPanel.gd" id="1_pqrst"]
+[ext_resource type="Script" uid="uid://bwf60gq35t1w2" path="res://game/zones/PilesPanel.gd" id="1_pqrst"]
 
 [node name="PilesPanel" type="Control"]
 layout_mode = 3

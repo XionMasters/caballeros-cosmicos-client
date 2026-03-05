@@ -60,6 +60,12 @@ var opponent_graveyard: Array[CardInstance] = []
 var opponent_hand_count: int:
 	get: return opponent_hand.size()
 
+# Derivados: conteos de yomotsu
+var player_graveyard_count: int:
+	get: return player_graveyard.size()
+var opponent_graveyard_count: int:
+	get: return opponent_graveyard.size()
+
 # Zona compartida
 var scenario: CardInstance = null
 
@@ -187,8 +193,10 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 		elif zone == "yomotsu":
 			if is_mine:
 				state.player_graveyard.append(card_instance)
+				print("[GameState]   ☠️ Yomotsu (mio): %s" % card_instance.base_data.name)
 			else:
 				state.opponent_graveyard.append(card_instance)
+				print("[GameState]   ☠️ Yomotsu (oponente): %s" % card_instance.base_data.name)
 	
 	return state
 
@@ -218,6 +226,23 @@ static func _set_in_array(array: Array, index: int, value):
 func is_my_turn() -> bool:
 	"""Verificar si es el turno del jugador local"""
 	return active_player_number == player_number
+
+func debug_yomotsu() -> void:
+	"""Imprime el estado del yomotsu de ambos jugadores en consola."""
+	print("========== YOMOTSU DEBUG ==========")
+	print("Player graveyard (%d cartas):" % player_graveyard_count)
+	for card in player_graveyard:
+		print("  - %s  [HP: %d/%d  CE: %d  AR: %d  CP: %d/%d]" % [
+			card.base_data.name,
+			card.current_health, card.max_health,
+			card.current_attack,
+			card.current_defense,
+			card.current_cosmos, card.max_cosmos,
+		])
+	print("Opponent graveyard (%d cartas):" % opponent_graveyard_count)
+	for card in opponent_graveyard:
+		print("  - %s" % card.base_data.name)
+	print("===================================")
 
 
 # =========================================================
@@ -494,6 +519,12 @@ func _update_cards_in_play(cards_data: Array) -> void:
 		player_hand.clear()
 		opponent_hand.clear()
 
+	# Borrar yomotsu y reconstruir (siempre incluido en payload completo)
+	var has_yomotsu_data: bool = cards_data.any(func(c): return c.get("zone", "") == "yomotsu")
+	if has_yomotsu_data:
+		player_graveyard.clear()
+		opponent_graveyard.clear()
+
 	for info in cards_data:
 		var player_n = info.get("player_number")
 		var zone = info.get("zone")
@@ -529,6 +560,12 @@ func _update_cards_in_play(cards_data: Array) -> void:
 
 			"field_scenario":
 				new_scenario = card_instance
+
+			"yomotsu":
+				if is_mine:
+					player_graveyard.append(card_instance)
+				else:
+					opponent_graveyard.append(card_instance)
 
 	# Reconciliar zonas completas para eliminar cartas que ya no existen
 	_reconcile_zone_array(player_field_knights, new_knights_p1)

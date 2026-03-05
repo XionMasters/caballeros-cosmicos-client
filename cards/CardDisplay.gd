@@ -35,6 +35,18 @@ var highlight_overlay: ColorRect = null
 var click_timer: Timer = null
 var cost_badge: Label = null  # Badge que muestra el costo
 
+# ===== STATS OVERLAY (Mini HUD - visible solo en field_knight) =====
+var stats_overlay: Control = null
+var hp_label: Label = null
+var cp_label: Label = null
+
+# ===== STATS TOOLTIP (hover sobre field_knight) =====
+var stats_tooltip: PanelContainer = null
+var tooltip_ce_label: Label = null
+var tooltip_ar_label: Label = null
+var tooltip_mode_label: Label = null
+var tooltip_status_container: HBoxContainer = null
+
 # ===== STATE MACHINE PROPERTIES (From DraggableObject) =====
 var can_be_interacted_with: bool = true
 var is_mouse_inside: bool = false
@@ -225,6 +237,302 @@ func _create_cost_badge() -> void:
 	cost_badge.z_index = 100
 
 
+# ===== STATS OVERLAY METHODS =====
+
+func _create_stats_overlay() -> void:
+	"""Crear el Mini HUD de stats en la parte inferior de la carta"""
+	if stats_overlay and is_instance_valid(stats_overlay):
+		return
+
+	stats_overlay = Control.new()
+	stats_overlay.name = "StatsOverlay"
+	stats_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_overlay.visible = false
+
+	# Anclado al fondo de la carta (20% inferior)
+	stats_overlay.anchor_left = 0.0
+	stats_overlay.anchor_top = 0.8
+	stats_overlay.anchor_right = 1.0
+	stats_overlay.anchor_bottom = 1.0
+	stats_overlay.offset_left = 0
+	stats_overlay.offset_top = 0
+	stats_overlay.offset_right = 0
+	stats_overlay.offset_bottom = 0
+
+	add_child(stats_overlay)
+	stats_overlay.z_index = 50
+
+	# Panel de fondo semitransparente
+	var panel = PanelContainer.new()
+	panel.name = "StatsBg"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+
+	var bg_style = StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.04, 0.04, 0.10, 0.90)
+	bg_style.border_color = Color(0.55, 0.45, 0.18, 0.85)
+	bg_style.border_width_top = 1
+	bg_style.corner_radius_top_left = 3
+	bg_style.corner_radius_top_right = 3
+	panel.add_theme_stylebox_override("panel", bg_style)
+	stats_overlay.add_child(panel)
+
+	# HBox centrado con los dos stats
+	var hbox = HBoxContainer.new()
+	hbox.name = "StatsHBox"
+	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
+	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
+	panel.add_child(hbox)
+
+	# Label HP
+	hp_label = Label.new()
+	hp_label.name = "HPLabel"
+	hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	hp_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	hp_label.add_theme_font_size_override("font_size", 11)
+	hp_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4, 1.0))
+	hp_label.text = "\u2665 -/-"
+	hbox.add_child(hp_label)
+
+	# Separador
+	var sep = Label.new()
+	sep.name = "Separator"
+	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	sep.text = "|"
+	sep.add_theme_color_override("font_color", Color(0.5, 0.45, 0.25, 0.7))
+	sep.add_theme_font_size_override("font_size", 11)
+	hbox.add_child(sep)
+
+	# Label CP (Cosmos Points del caballero)
+	cp_label = Label.new()
+	cp_label.name = "CPLabel"
+	cp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	cp_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	cp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	cp_label.add_theme_font_size_override("font_size", 11)
+	cp_label.add_theme_color_override("font_color", Color(0.80, 0.55, 1.0, 1.0))
+	cp_label.text = "\u25C6 -/-"
+	hbox.add_child(cp_label)
+
+
+func update_stats_display() -> void:
+	"""Actualizar los labels del Mini HUD desde card_instance"""
+	if not stats_overlay or not is_instance_valid(stats_overlay):
+		return
+
+	# Mostrar solo si el caballero está en el campo
+	if not card_instance or card_instance.zone != "field_knight" or card_instance.base_data.type != "knight":
+		stats_overlay.visible = false
+		return
+
+	stats_overlay.visible = true
+
+	# --- HP label con color dinámico ---
+	if hp_label and is_instance_valid(hp_label):
+		hp_label.text = "\u2665 %d/%d" % [card_instance.current_health, card_instance.max_health]
+		var ratio: float = 1.0
+		if card_instance.max_health > 0:
+			ratio = float(card_instance.current_health) / float(card_instance.max_health)
+		if ratio <= 0.33:
+			hp_label.add_theme_color_override("font_color", Color(1.0, 0.15, 0.15, 1.0))  # Rojo critico
+		elif ratio <= 0.66:
+			hp_label.add_theme_color_override("font_color", Color(1.0, 0.60, 0.15, 1.0))  # Naranja
+		else:
+			hp_label.add_theme_color_override("font_color", Color(0.35, 1.0, 0.35, 1.0))  # Verde lleno
+
+	# --- CP label (Cosmos Points) ---
+	if cp_label and is_instance_valid(cp_label):
+		cp_label.text = "\u25C6 %d/%d" % [card_instance.current_cosmos, card_instance.max_cosmos]
+		var cp_ratio: float = 1.0
+		if card_instance.max_cosmos > 0:
+			cp_ratio = float(card_instance.current_cosmos) / float(card_instance.max_cosmos)
+		if cp_ratio <= 0.33:
+			cp_label.add_theme_color_override("font_color", Color(0.50, 0.20, 0.75, 1.0))
+		elif cp_ratio <= 0.66:
+			cp_label.add_theme_color_override("font_color", Color(0.75, 0.45, 1.0, 1.0))
+		else:
+			cp_label.add_theme_color_override("font_color", Color(0.88, 0.65, 1.0, 1.0))
+
+
+# ===== STATS TOOLTIP METHODS =====
+
+func _create_stats_tooltip() -> void:
+	"""Crear el tooltip de hover: CE, AR y estados del caballero"""
+	if stats_tooltip and is_instance_valid(stats_tooltip):
+		return
+
+	stats_tooltip = PanelContainer.new()
+	stats_tooltip.name = "StatsTooltip"
+	stats_tooltip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	stats_tooltip.visible = false
+	stats_tooltip.position = Vector2(-4, -96)
+	stats_tooltip.custom_minimum_size = Vector2(128, 0)
+	add_child(stats_tooltip)
+	stats_tooltip.z_index = 200
+
+	var bg_style = StyleBoxFlat.new()
+	bg_style.bg_color = Color(0.04, 0.04, 0.12, 0.96)
+	bg_style.border_color = Color(0.65, 0.55, 0.18, 1.0)
+	bg_style.set_border_width_all(1)
+	bg_style.set_corner_radius_all(5)
+	bg_style.content_margin_left = 7
+	bg_style.content_margin_right = 7
+	bg_style.content_margin_top = 5
+	bg_style.content_margin_bottom = 5
+	stats_tooltip.add_theme_stylebox_override("panel", bg_style)
+
+	var vbox = VBoxContainer.new()
+	vbox.name = "TooltipVBox"
+	vbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	vbox.add_theme_constant_override("separation", 3)
+	stats_tooltip.add_child(vbox)
+
+	# Fila 1: CE y AR
+	var row1 = HBoxContainer.new()
+	row1.name = "Row1"
+	row1.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row1.alignment = BoxContainer.ALIGNMENT_CENTER
+	row1.add_theme_constant_override("separation", 6)
+	vbox.add_child(row1)
+
+	tooltip_ce_label = Label.new()
+	tooltip_ce_label.name = "CELabel"
+	tooltip_ce_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_ce_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tooltip_ce_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tooltip_ce_label.add_theme_font_size_override("font_size", 11)
+	tooltip_ce_label.add_theme_color_override("font_color", Color(1.0, 0.75, 0.2, 1.0))
+	tooltip_ce_label.text = "\u26A1 CE: -"
+	row1.add_child(tooltip_ce_label)
+
+	var row1_sep = Label.new()
+	row1_sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	row1_sep.text = "|"
+	row1_sep.add_theme_color_override("font_color", Color(0.45, 0.40, 0.20, 0.6))
+	row1_sep.add_theme_font_size_override("font_size", 11)
+	row1.add_child(row1_sep)
+
+	tooltip_ar_label = Label.new()
+	tooltip_ar_label.name = "ARLabel"
+	tooltip_ar_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_ar_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	tooltip_ar_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tooltip_ar_label.add_theme_font_size_override("font_size", 11)
+	tooltip_ar_label.add_theme_color_override("font_color", Color(0.45, 0.78, 1.0, 1.0))
+	tooltip_ar_label.text = "\u25C9 AR: -"
+	row1.add_child(tooltip_ar_label)
+
+	# Fila 2: Modo (oculto si es "normal")
+	tooltip_mode_label = Label.new()
+	tooltip_mode_label.name = "ModeLabel"
+	tooltip_mode_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_mode_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	tooltip_mode_label.add_theme_font_size_override("font_size", 10)
+	tooltip_mode_label.visible = false
+	vbox.add_child(tooltip_mode_label)
+
+	# Fila 3: Status effects
+	tooltip_status_container = HBoxContainer.new()
+	tooltip_status_container.name = "StatusRow"
+	tooltip_status_container.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	tooltip_status_container.alignment = BoxContainer.ALIGNMENT_CENTER
+	tooltip_status_container.add_theme_constant_override("separation", 3)
+	vbox.add_child(tooltip_status_container)
+
+
+func _update_stats_tooltip() -> void:
+	"""Rellenar el tooltip con valores actuales del card_instance"""
+	if not stats_tooltip or not is_instance_valid(stats_tooltip):
+		return
+	if not card_instance:
+		return
+
+	# CE (Combat Energy = ataque actual)
+	if tooltip_ce_label and is_instance_valid(tooltip_ce_label):
+		tooltip_ce_label.text = "\u26A1 CE: %d" % card_instance.current_attack
+
+	# AR (Armor Rating = defensa actual)
+	if tooltip_ar_label and is_instance_valid(tooltip_ar_label):
+		tooltip_ar_label.text = "\u25C9 AR: %d" % card_instance.current_defense
+
+	# Modo (invisible si es "normal")
+	if tooltip_mode_label and is_instance_valid(tooltip_mode_label):
+		var mode_val = card_instance.mode
+		if mode_val != "normal":
+			tooltip_mode_label.visible = true
+			match mode_val:
+				"defense":
+					tooltip_mode_label.text = "\u26CA DEFENSA"
+					tooltip_mode_label.add_theme_color_override("font_color", Color(0.40, 0.75, 1.00))
+				"evade":
+					tooltip_mode_label.text = "\u21A9 EVASION"
+					tooltip_mode_label.add_theme_color_override("font_color", Color(0.40, 1.00, 0.65))
+				"prayer":
+					tooltip_mode_label.text = "\u2736 ORACION"
+					tooltip_mode_label.add_theme_color_override("font_color", Color(1.00, 0.90, 0.35))
+				_:
+					tooltip_mode_label.text = "[ %s ]" % mode_val.to_upper()
+					tooltip_mode_label.add_theme_color_override("font_color", Color.WHITE)
+		else:
+			tooltip_mode_label.visible = false
+
+	# Status effects
+	if tooltip_status_container and is_instance_valid(tooltip_status_container):
+		for child in tooltip_status_container.get_children():
+			child.queue_free()
+		for status in card_instance.status_effects:
+			var pill = _create_status_pill(status)
+			tooltip_status_container.add_child(pill)
+
+
+func _create_status_pill(status: Dictionary) -> Label:
+	"""Crear etiqueta-pastilla para un status effect"""
+	var pill = Label.new()
+	pill.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	pill.add_theme_font_size_override("font_size", 9)
+
+	var effect_type = str(status.get("type", "?"))
+	var duration = int(status.get("duration", 0))
+
+	var pill_bg = StyleBoxFlat.new()
+	pill_bg.set_corner_radius_all(4)
+	pill_bg.content_margin_left = 4
+	pill_bg.content_margin_right = 4
+	pill_bg.content_margin_top = 2
+	pill_bg.content_margin_bottom = 2
+
+	match effect_type.to_lower():
+		"poison", "veneno":
+			pill.text = "\u2620 %dt" % duration
+			pill_bg.bg_color = Color(0.22, 0.60, 0.12, 0.92)
+			pill.add_theme_color_override("font_color", Color(0.90, 1.00, 0.85))
+		"paralysis", "paralisis":
+			pill.text = "\u26A1 %dt" % duration
+			pill_bg.bg_color = Color(0.78, 0.70, 0.04, 0.92)
+			pill.add_theme_color_override("font_color", Color(0.08, 0.06, 0.00))
+		"frozen", "congelado":
+			pill.text = "\u2744 %dt" % duration
+			pill_bg.bg_color = Color(0.22, 0.52, 1.00, 0.92)
+			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
+		"burn", "quemado":
+			pill.text = "\u2605 %dt" % duration
+			pill_bg.bg_color = Color(0.90, 0.26, 0.04, 0.92)
+			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
+		"silenced", "silenciado":
+			pill.text = "\u2298 %dt" % duration
+			pill_bg.bg_color = Color(0.45, 0.24, 0.55, 0.92)
+			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
+		_:
+			pill.text = "%s %dt" % [effect_type.substr(0, 3).to_upper(), duration]
+			pill_bg.bg_color = Color(0.32, 0.32, 0.32, 0.92)
+			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
+
+	pill.add_theme_stylebox_override("normal", pill_bg)
+	return pill
+
+
 # ===== STATE MACHINE METHODS =====
 
 func change_state(new_state: DraggableState) -> bool:
@@ -334,17 +642,28 @@ func _handle_mouse_released() -> void:
 func _on_mouse_enter() -> void:
 	"""Handle mouse enter"""
 	is_mouse_inside = true
-	
+
 	if current_state == DraggableState.IDLE and _can_start_hovering():
 		change_state(DraggableState.HOVERING)
+
+	# Mostrar tooltip de stats solo en campo
+	if card_instance and card_instance.zone == "field_knight":
+		_create_stats_tooltip()
+		_update_stats_tooltip()
+		if stats_tooltip and is_instance_valid(stats_tooltip):
+			stats_tooltip.visible = true
 
 
 func _on_mouse_exit() -> void:
 	"""Handle mouse exit"""
 	is_mouse_inside = false
-	
+
 	if current_state == DraggableState.HOVERING:
 		change_state(DraggableState.IDLE)
+
+	# Ocultar tooltip
+	if stats_tooltip and is_instance_valid(stats_tooltip):
+		stats_tooltip.visible = false
 
 
 func _can_start_hovering() -> bool:
@@ -526,6 +845,21 @@ func setup_from_instance(instance: CardInstance) -> void:
 	setup(card_data)
 	update_visual_state()
 
+	# Crear overlay de stats si es knight
+	if card_data.type == "knight":
+		_create_stats_overlay()
+		if not instance.stats_changed.is_connected(_on_instance_stats_changed):
+			instance.stats_changed.connect(_on_instance_stats_changed)
+		update_stats_display()
+
+
+func _on_instance_stats_changed(_inst: CardInstance) -> void:
+	"""Llamado cuando CardInstance emite stats_changed"""
+	update_stats_display()
+	# Refrescar tooltip si está visible (evitar reconstruirlo)
+	if stats_tooltip and is_instance_valid(stats_tooltip) and stats_tooltip.visible:
+		_update_stats_tooltip()
+
 func play_spawn_animation() -> void:
 	"""Simple spawn animation for when the card appears"""
 	modulate.a = 0.0
@@ -582,6 +916,12 @@ func bind_instance(instance: CardInstance) -> void:
 	card_instance = instance
 	if instance:
 		instance_id = instance.instance_id
+		# Conectar señal y actualizar stats
+		if instance.base_data and instance.base_data.type == "knight":
+			_create_stats_overlay()
+			if not instance.stats_changed.is_connected(_on_instance_stats_changed):
+				instance.stats_changed.connect(_on_instance_stats_changed)
+			update_stats_display()
 
 
 func _on_click_timeout() -> void:
@@ -595,8 +935,14 @@ func _on_click_timeout() -> void:
 
 func unbind_instance() -> void:
 	"""Unbind CardInstance"""
+	if card_instance and card_instance.stats_changed.is_connected(_on_instance_stats_changed):
+		card_instance.stats_changed.disconnect(_on_instance_stats_changed)
 	card_instance = null
 	instance_id = ""
+	if stats_overlay and is_instance_valid(stats_overlay):
+		stats_overlay.visible = false
+	if stats_tooltip and is_instance_valid(stats_tooltip):
+		stats_tooltip.visible = false
 
 
 func get_instance() -> CardInstance:

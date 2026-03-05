@@ -20,6 +20,8 @@ extends Control
 @onready var opponent_panel: PlayerStatusPanel = $RootColumns/LeftColumn/LeftStack/OpponentPanel
 @onready var player_deck: DeckDisplay = $RootColumns/LeftColumn/LeftStack/PlayerDeck
 @onready var opponent_deck: DeckDisplay = $RootColumns/LeftColumn/LeftStack/OpponentDeck
+@onready var player_piles: PilesPanel = $RootColumns/LeftColumn/LeftStack/PlayerPiles
+@onready var opponent_piles: PilesPanel = $RootColumns/LeftColumn/LeftStack/OpponentPiles
 @onready var player_hand: HandLayout = $RootColumns/CenterColumn/PlayerHand/HandLayout
 @onready var opponent_hand_container: HandLayout = $RootColumns/CenterColumn/OpponentHand/HandLayout
 @onready var end_turn_button: Button = $RootColumns/RightColumn/PlayerEmpty/EndTurnButton
@@ -110,7 +112,7 @@ func _setup_controllers() -> void:
 	_knight_controller.setup()
 
 	# Paneles de estado
-	_status_controller = StatusPanelController.new(player_panel, opponent_panel, player_deck, opponent_deck)
+	_status_controller = StatusPanelController.new(player_panel, opponent_panel, player_deck, opponent_deck, player_piles, opponent_piles)
 
 	print("[GameMatch] ✅ Todos los controladores configurados")
 
