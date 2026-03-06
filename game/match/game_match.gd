@@ -43,6 +43,7 @@ var _knight_controller: KnightActionController = null
 var _status_controller: StatusPanelController = null
 
 var _last_player_number: int = 0  # Para detectar cambios de perspectiva (TEST match)
+var _orchestrator: AnimationOrchestrator = null
 
 # ============================================================================
 # CICLO DE VIDA
@@ -114,6 +115,19 @@ func _setup_controllers() -> void:
 	# Paneles de estado
 	_status_controller = StatusPanelController.new(player_panel, opponent_panel, player_deck, opponent_deck, player_piles, opponent_piles)
 
+	# Orquestador de animaciones
+	var effects_mgr := MatchEffectsManager.new()
+	add_child(effects_mgr)
+	_orchestrator = AnimationOrchestrator.new()
+	add_child(_orchestrator)
+	_orchestrator.setup(
+		player_hand_controller,
+		opponent_hand_controller,
+		_field_renderer,
+		_status_controller,
+		effects_mgr
+	)
+
 	print("[GameMatch] ✅ Todos los controladores configurados")
 
 
@@ -159,13 +173,10 @@ func _render_all(gs: GameState, cm: Dictionary) -> void:
 		opponent_hand_controller.reset()
 		_field_renderer.clear_all_slots(player_knight_slots_zone)
 		_field_renderer.clear_all_slots(opponent_knight_slots_zone)
+		_orchestrator.reset_state()
 	_last_player_number = gs.player_number
 
-	_status_controller.render(gs, cm)
-	_field_renderer.render_field(gs)
-	await player_hand_controller.update_from_state(gs)
-	await opponent_hand_controller.update_from_state(gs)
-
+	await _orchestrator.render_state(gs, cm)
 
 # ============================================================================
 # FIN DE PARTIDA
@@ -178,4 +189,4 @@ func _show_battle_summary(winner_id: String) -> void:
 		"won": winner_id != "" and winner_id == local_id,
 		"winner_id": winner_id
 	})
-	get_tree().change_scene_to_file("res://menus/battle_summary/BattleSummary.tscn")
+	SceneTransition.go_to_battle_summary()

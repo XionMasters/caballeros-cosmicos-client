@@ -102,7 +102,7 @@ func _send_abandon_request(match_id: String, loading_screen: Control) -> void:
 			if data is Dictionary:
 				winner_id = data.get("winner_id", "")
 			SceneTransition.set_pending_data({"won": false, "winner_id": winner_id})
-			game_match.get_tree().change_scene_to_file("res://menus/battle_summary/BattleSummary.tscn")
+			SceneTransition.go_to_battle_summary()
 		else:
 			print("[MatchOptionsMenu] ❌ Error abandonando partida: %s" % error)
 			if loading_screen:

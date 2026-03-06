@@ -34,6 +34,10 @@ var opponent_cosmos: int = 0
 
 var winner_id: String = ""  # UUID del ganador; vacío mientras la partida sigue
 
+## Última acción ejecutada (enviada por el servidor en cada match_update).
+## El cliente usa este campo para decidir qué animar, nunca infiere acciones solo.
+var last_action: Dictionary = {}
+
 # Cartas en juego por id
 var cards_by_id: Dictionary = {}
 var previous_snapshot: Dictionary = {}
@@ -464,8 +468,16 @@ func apply_update(data: Dictionary) -> void:
 
 	# opponent_hand_count es derivado de opponent_hand.size() — no asignar aquí
 
+	# Acción que disparó este update (usada por StateDiffer para animar)
+	if data.has("last_action") and data["last_action"] is Dictionary:
+		last_action = data["last_action"]
+	else:
+		last_action = {}
+
 func _build_snapshot() -> Dictionary:
-	"""Snapshot ligero del estado actual para comparar contra el próximo update"""
+	"""Snapshot del estado ANTES de apply_update.
+	Usado por StateDiffer para detectar diffs (HP, agotamiento, conteo de mano)
+	sin el problema de referencias mutables compartidas."""
 	return {
 		"player_field_knights": _array_instance_ids(player_field_knights),
 		"opponent_field_knights": _array_instance_ids(opponent_field_knights),
@@ -475,6 +487,11 @@ func _build_snapshot() -> Dictionary:
 		"opponent_hand_count": opponent_hand.size(),
 		"phase": current_phase,
 		"turn": current_turn,
+		# Stats de caballeros para detectar ataques
+		"player_knight_health":    _knight_health_map(player_field_knights),
+		"opponent_knight_health":  _knight_health_map(opponent_field_knights),
+		"player_knight_exhausted": _knight_exhausted_map(player_field_knights),
+		"opponent_knight_exhausted": _knight_exhausted_map(opponent_field_knights),
 	}
 
 func _array_instance_ids(array: Array) -> Array:
@@ -485,6 +502,22 @@ func _array_instance_ids(array: Array) -> Array:
 		else:
 			result.append(item.instance_id)
 	return result
+
+func _knight_health_map(knights: Array) -> Dictionary:
+	"""instance_id → current_health"""
+	var map: Dictionary = {}
+	for ci in knights:
+		if ci:
+			map[ci.instance_id] = ci.current_health
+	return map
+
+func _knight_exhausted_map(knights: Array) -> Dictionary:
+	"""instance_id → is_exhausted"""
+	var map: Dictionary = {}
+	for ci in knights:
+		if ci:
+			map[ci.instance_id] = ci.is_exhausted
+	return map
 
 func get_previous_snapshot() -> Dictionary:
 	"""Exponer snapshot anterior para inspección desde UI/controladores"""

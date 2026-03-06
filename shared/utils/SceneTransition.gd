@@ -23,6 +23,7 @@ var scene_paths = {
 	"game": "res://game/board/GameBoard.tscn",
 	"gamematch": "res://game/match/GameMatch.tscn",
 	"login": "res://menus/login/LoginScreen.tscn",
+	"battle_summary": "res://menus/battle_summary/BattleSummary.tscn",
 }
 
 # ============================================================================
@@ -55,6 +56,10 @@ func go_to_gamematch():
 func go_to_login():
 	"""Ir a la pantalla de login"""
 	_change_scene("login")
+
+func go_to_battle_summary():
+	"""Ir a la pantalla de resumen de partida"""
+	_change_scene("battle_summary")
 
 # ============================================================================
 # TRANSICIONES GENÉRICAS (Sin datos)

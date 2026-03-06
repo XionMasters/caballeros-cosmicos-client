@@ -17,6 +17,8 @@ func _ready():
 	# Capa superior dentro del CanvasLayer
 	effects_root = Control.new()
 	effects_root.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# CRÍTICO: ignorar input para no bloquear clics en las cartas y botones
+	effects_root.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	add_child(effects_root)
 
 # ---------------------------------------------------------

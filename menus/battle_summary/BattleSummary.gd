@@ -57,4 +57,4 @@ func _setup_ui(won: bool) -> void:
 # INTERACCIÓN
 # ============================================================================
 func _on_continue_pressed() -> void:
-	get_tree().change_scene_to_file("res://menus/lobby/MainLobby.tscn")
+	SceneTransition.go_to_mainlobby()

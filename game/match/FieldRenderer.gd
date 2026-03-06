@@ -83,6 +83,28 @@ func _clear_slot_fast(slot: CardSlot) -> void:
 		slot.watermark_label.visible = true
 
 
+func get_slot_center(is_opponent: bool, slot_index: int) -> Vector2:
+	"""Devuelve la posición global central del slot indicado.
+	Usado por AttackEvent para resolver coordenadas de pantalla."""
+	var zone := _opponent_zone if is_opponent else _player_zone
+	if not zone:
+		return Vector2.ZERO
+	var slots: Array = zone.get_children().filter(func(c: Node) -> bool: return c is CardSlot)
+	if slot_index < 0 or slot_index >= slots.size():
+		return Vector2.ZERO
+	var slot: CardSlot = slots[slot_index]
+	return slot.global_position + slot.size * 0.5
+
+
+func get_zone_center(is_opponent: bool) -> Vector2:
+	"""Devuelve el centro de la zona completa (para ataques directos sin carta defensora)."""
+	var zone := _opponent_zone if is_opponent else _player_zone
+	if not zone or not (zone is Control):
+		return Vector2.ZERO
+	var ctrl := zone as Control
+	return ctrl.global_position + ctrl.size * 0.5
+
+
 func _place_card_in_slot(slot: CardSlot, card_instance: CardInstance, is_opponent: bool) -> void:
 	"""Instanciar un CardDisplay y colocarlo en el slot."""
 	if not card_instance or not card_instance.base_data:

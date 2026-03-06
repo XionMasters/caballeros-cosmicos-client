@@ -39,7 +39,8 @@ func _ready():
 # DISPATCH PRINCIPAL DE EVENTOS DEL SERVIDOR
 # =====================================================
 func _on_server_event(event: String, data: Dictionary) -> void:
-	print('Server envia: ', event)
+	if event != "pong":
+		print('Server envia: ', event)
 	match event:
 		"match_found":
 			print("🎮 match_found recibido")
@@ -92,6 +93,9 @@ func _on_server_event(event: String, data: Dictionary) -> void:
 		
 		"connected":
 			print("Connected: No se para que es este")
+
+		"pong":
+			pass  # Keepalive del servidor, ignorar silenciosamente
 
 		_:
 			print("Evento desconocido: ", event)
@@ -728,20 +732,23 @@ func send_move_knight(card_in_play_id: String, target_position: int) -> void:
 
 func on_gamematch_ready() -> void:
 	"""Llamada por GameMatch cuando está lista la escena y todo está renderizado
-	
+
 	En este punto:
 	- GameMatch cargó todos los elementos UI
 	- Las imágenes están precargadas
 	- El tablero está renderizado
-	
-	Ahora enviamos mensaje WebSocket para iniciar el primer turno
+
+	Ahora enviamos mensaje WebSocket para iniciar el primer turno.
+	En TEST siempre lo envía el jugador. En PvP solo lo envía player1
+	para evitar que ambos jugadores disparen start_first_turn a la vez
+	(el servidor ya rechaza la segunda llamada si la fase ya cambió).
 	"""
-	if not is_test_mode or not is_in_match:
-		print("⚠️ [MatchSessionService] No estamos en partida TEST")
+	if not is_in_match:
+		print("⚠️ [MatchSessionService] No estamos en partida, saltando start_first_turn")
 		return
-	
+
 	print("🎮 [MatchSessionService] GameMatch está lista, iniciando primer turno por WebSocket...")
-	
+
 	var match_id = current_match.get("id", "")
 	_is_processing_update = false
 
@@ -750,6 +757,13 @@ func on_gamematch_ready() -> void:
 		_is_resuming = false
 		print("♻️ [MatchSessionService] Partida reanudada, saltando start_first_turn")
 		return
+
+	# En PvP solo player1 inicia el turno (evita doble disparo)
+	if not is_test_mode:
+		var local_player = game_state.player_number if game_state else 0
+		if local_player != 1:
+			print("🎮 [MatchSessionService] PvP: player%d espera que player1 inicie el turno" % local_player)
+			return
 
 	# Enviar por WebSocket para iniciar el primer turno
 	WebSocketManager.start_first_turn(match_id)
