@@ -38,6 +38,12 @@ var winner_id: String = ""  # UUID del ganador; vacío mientras la partida sigue
 ## El cliente usa este campo para decidir qué animar, nunca infiere acciones solo.
 var last_action: Dictionary = {}
 
+## Eventos del motor de juego emitidos durante la última acción.
+## Fuente autoritativa para animaciones: DAMAGE_DEALT, KNIGHT_DIED, HEAL_RECEIVED,
+## KNIGHT_SUMMONED, CARD_PLAYED, COSMOS_CHARGED, ALLY_DREW_CARD, OPPONENT_DREW_CARD, etc.
+## Cada evento: { "type": String, "playerNumber": int, "payload": Dictionary, ... }
+var engine_events: Array = []
+
 # Cartas en juego por id
 var cards_by_id: Dictionary = {}
 var previous_snapshot: Dictionary = {}
@@ -201,7 +207,11 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 			else:
 				state.opponent_graveyard.append(card_instance)
 				print("[GameState]   ☠️ Yomotsu (oponente): %s" % card_instance.base_data.name)
-	
+
+	# last_action y engine_events del payload inicial (normalmente vacíos en el primer render)
+	state.last_action = data.get("last_action", {})
+	state.engine_events = data.get("engine_events", [])
+
 	return state
 
 func _sync_card(info: Dictionary) -> CardInstance:
@@ -473,6 +483,12 @@ func apply_update(data: Dictionary) -> void:
 		last_action = data["last_action"]
 	else:
 		last_action = {}
+
+	# Eventos del motor del servidor — fuente autoritativa para animaciones
+	if data.has("engine_events") and data["engine_events"] is Array:
+		engine_events = data["engine_events"]
+	else:
+		engine_events = []
 
 func _build_snapshot() -> Dictionary:
 	"""Snapshot del estado ANTES de apply_update.

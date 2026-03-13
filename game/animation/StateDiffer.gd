@@ -30,13 +30,16 @@ extends RefCounted
 # prev_snapshot vacío ({}) → primer render (InitialDraw).
 ## Devuelve los eventos "interesantes" (draws, ataques, etc.) en orden cronológico.
 ## El Orchestrator añade siempre UpdateStatusEvent y RenderFieldEvent por su cuenta.
-static func compute(prev_snapshot: Dictionary, gs: GameState) -> Array:
+##
+## has_engine_damage: si true, los ataques/daños ya vienen de engine_events →
+##   NO generar AttackEvent duplicados con last_action ni con el diff de HP.
+static func compute(prev_snapshot: Dictionary, gs: GameState, has_engine_damage: bool = false) -> Array:
 	if gs == null:
 		push_warning("[StateDiffer] gs es null")
 		return []
 	if prev_snapshot.is_empty():
 		return _initial_events(gs)
-	return _incremental_events(prev_snapshot, gs)
+	return _incremental_events(prev_snapshot, gs, has_engine_damage)
 
 
 # ============================================================================
@@ -56,16 +59,17 @@ static func _initial_events(gs: GameState) -> Array:
 # RENDER INCREMENTAL (snapshot no vacío)
 # ============================================================================
 
-static func _incremental_events(prev: Dictionary, gs: GameState) -> Array:
+static func _incremental_events(prev: Dictionary, gs: GameState, has_engine_damage: bool = false) -> Array:
 	"""Detectar cambios entre el snapshot anterior y el estado actual."""
 	var events: Array = []
 
-	# 1. Acción del servidor (fuente de verdad para animaciones)
-	#    Si last_action está vacío, fallback a detección por diff de HP.
-	var action_events := _events_from_last_action(gs)
-	if action_events.is_empty():
-		action_events = _detect_attacks(prev, gs)
-	events.append_array(action_events)
+	# 1. Acción del servidor (fuente de verdad para animaciones).
+	#    Si engine_events ya cubre el daño/muerte, no generamos AttackEvents duplicados.
+	if not has_engine_damage:
+		var action_events := _events_from_last_action(gs)
+		if action_events.is_empty():
+			action_events = _detect_attacks(prev, gs)
+		events.append_array(action_events)
 
 	# 2. Comparar conteos de mano con los del snapshot
 	var prev_pl_hand: int  = prev.get("player_hand_count", 0)

@@ -37,7 +37,8 @@ func setup(
 	opponent_hand: OpponentHandController,
 	field: FieldRenderer,
 	status: StatusPanelController,
-	effects: MatchEffectsManager
+	effects: MatchEffectsManager,
+	player_number: int = 1
 ) -> void:
 	_ctx = AnimationContext.new(
 		player_hand,
@@ -45,7 +46,8 @@ func setup(
 		field,
 		status,
 		effects,
-		self
+		self,
+		player_number
 	)
 	_queue = AnimationQueue.new()
 	print("[AnimationOrchestrator] Listo")
@@ -70,12 +72,20 @@ func render_state(gs: GameState, match_data: Dictionary) -> void:
 		print("[AnimationOrchestrator] Esperando animaciones previas (lockstep)...")
 		await playback_finished
 
+	# 0. Actualizar perspectiva del jugador en el contexto
+	if _ctx:
+		_ctx.player_number_hint = gs.player_number
+
 	# 1. Diff usando el snapshot capturado ANTES de apply_update (evita el problema
 	#    de referencias mutables compartidas entre prev y next state).
 	#    Si _force_initial=true, pasamos {} para forzar InitialDraw.
 	var prev_snap: Dictionary = {} if _force_initial else gs.previous_snapshot
-	var diff_events: Array = StateDiffer.compute(prev_snap, gs)
-	print("[AnimationOrchestrator] %d evento(s) detectados" % diff_events.size())
+	# Pre-chequeo: ¿el servidor mandó engine_events con daño/muerte?
+	var has_engine_damage: bool = gs.engine_events.any(
+		func(ev): return ev.get("type","") in ["DAMAGE_DEALT","DAMAGE_LETHAL","KNIGHT_DIED","ALLY_DIED"]
+	)
+	var diff_events: Array = StateDiffer.compute(prev_snap, gs, has_engine_damage)
+	print("[AnimationOrchestrator] %d diff evento(s) detectados" % diff_events.size())
 
 	# 2. Construir cola (el Orchestrator decide el agrupado y el orden)
 	_build_queue(diff_events, gs, match_data)
@@ -95,28 +105,64 @@ func _build_queue(diff_events: Array, gs: GameState, cm: Dictionary) -> void:
 	# 1. Status siempre primero (sincrono, no bloquea)
 	_queue.add(UpdateStatusEvent.new(gs, cm))
 
-	# 2. Separar por tipo para controlar el orden visual
-	var attacks: Array = diff_events.filter(func(e): return e is AttackEvent)
-	var draws: Array   = diff_events.filter(func(e): return e is DrawCardsEvent or e is DrawOpponentCardsEvent)
-	var others: Array  = diff_events.filter(func(e): return not (e is AttackEvent or e is DrawCardsEvent or e is DrawOpponentCardsEvent))
+	# 2. ENGINE EVENTS — fuente autoritativa del servidor.
+	#    Traducimos los eventos tipados a AnimationEvents concretos.
+	var engine_anim_events: Array = []
+	if not gs.engine_events.is_empty():
+		engine_anim_events = EngineEventTranslator.translate(gs.engine_events, gs.player_number)
+		print("[AnimationOrchestrator] %d engine_events → %d anim events" % [
+			gs.engine_events.size(), engine_anim_events.size()
+		])
 
-	# Orden: Ataques → Robo de cartas → Resto
-	# (primero se ve el golpe, luego llegan las nuevas cartas a la mano)
+	# Tipos de events cubiertos por engine_events — el StateDiffer NO debe duplicarlos.
+	var has_damage	:= engine_anim_events.any(func(e): return e is DamageEvent)
+	var has_death	:= engine_anim_events.any(func(e): return e is KnightDiedEvent)
+	var has_summon	:= engine_anim_events.any(func(e): return e is KnightSummonedEvent)
+
+	# Si hay eventos de combate del motor, los ataques del StateDiffer son redundantes.
+	var filtered_diff: Array
+	if has_damage or has_death:
+		filtered_diff = diff_events.filter(func(e): return not (e is AttackEvent))
+	else:
+		filtered_diff = diff_events
+
+	# 3. Separar por tipo para controlar el orden visual
+	var attacks: Array = filtered_diff.filter(func(e): return e is AttackEvent)
+	var draws:   Array = filtered_diff.filter(func(e): return e is DrawCardsEvent or e is DrawOpponentCardsEvent)
+	var others:  Array = filtered_diff.filter(func(e): return not (e is AttackEvent or e is DrawCardsEvent or e is DrawOpponentCardsEvent))
+
+	# Orden: engine events (daño + muerte) → invocación → robo → ataques diff → resto
+
+	# 3a. Engine events: daño propio + muerte (antes de que el campo se limpie)
+	var pre_summon: Array = engine_anim_events.filter(
+		func(e): return not (e is KnightSummonedEvent)
+	)
+	var summon_events: Array = engine_anim_events.filter(
+		func(e): return e is KnightSummonedEvent
+	)
+	for e in pre_summon:
+		_queue.add(e)
+
+	# 3b. Ataques del diff (solo si no los cubió engine_events)
 	for e in attacks:
 		_queue.add(e)
 
-	# Draws: paralelo si hay jugador Y oponente a la vez, secuencial si solo uno
+	# 3c. Draws
 	if draws.size() > 1:
 		_queue.add_parallel(draws)
 	elif draws.size() == 1:
 		_queue.add(draws[0])
 
-	# Otros eventos en orden
+	# 3d. Otros eventos del diff
 	for e in others:
 		_queue.add(e)
 
-	# 3. Field siempre al final (despues de que las cartas llegaron a la mano)
+	# 4. Field sync — siempre ANTES de las invocaciones para que el slot esté listo
 	_queue.add(RenderFieldEvent.new(gs))
+
+	# 5. Invocaciones (Ikki/Shun) DESPUÉS del field sync
+	for e in summon_events:
+		_queue.add(e)
 
 
 # ============================================================================

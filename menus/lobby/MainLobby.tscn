@@ -41,7 +41,7 @@ layout_mode = 2
 [node name="Title" type="Label" parent="MainContainer/Header/HeaderContent"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
-text = "âš”ï¸ Caballeros CÃ³smicos"
+text = "Saint Seiya - TCGO"
 vertical_alignment = 1
 
 [node name="Spacer" type="Control" parent="MainContainer/Header/HeaderContent"]
@@ -90,7 +90,7 @@ layout_mode = 2
 
 [node name="ChatTitle" type="Label" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "ðŸ’¬ Chat Global"
+text = "Chat Global"
 horizontal_alignment = 1
 
 [node name="HSeparator" type="HSeparator" parent="MainContainer/TopArea/ChatPanel/MarginContainer/VBoxContainer"]
@@ -239,38 +239,39 @@ alignment = 1
 custom_minimum_size = Vector2(120, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "ðŸ“š ColecciÃ³n"
+text = "Colección"
 
 [node name="ProfileButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
 custom_minimum_size = Vector2(120, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "ðŸ‘¤ Perfil"
+text = "Perfil"
 
 [node name="ShopButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
 custom_minimum_size = Vector2(120, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "ðŸ›’ Tienda"
+text = "Tienda"
 
 [node name="DecksButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
 custom_minimum_size = Vector2(120, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
-text = "ðŸŽ´ Mazos"
+text = "Mazos"
 
 [node name="MatchButton2" parent="MainContainer/NavigationBar/MarginContainer/NavButtons" instance=ExtResource("4_qffja")]
 layout_mode = 2
 
 [node name="TestButton" parent="MainContainer/NavigationBar/MarginContainer/NavButtons" instance=ExtResource("5_fpjcq")]
 layout_mode = 2
+text = "Partida de Test"
 
 [node name="ChatButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
 custom_minimum_size = Vector2(120, 70)
 layout_mode = 2
 theme_override_font_sizes/font_size = 16
 disabled = true
-text = "ðŸ’¬ Chat"
+text = "Chat"
 
 [node name="LogoutButton" type="Button" parent="MainContainer/NavigationBar/MarginContainer/NavButtons"]
 custom_minimum_size = Vector2(120, 70)

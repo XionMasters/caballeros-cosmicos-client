@@ -136,7 +136,7 @@ func _setup_controllers() -> void:
 # ============================================================================
 func _on_match_state_updated(_match_data: Dictionary) -> void:
 	var gs := MatchSessionService.game_state
-	if gs and str(gs.current_phase).to_lower() == "game_over":
+	if gs and str(gs.current_phase).to_lower() in ["game_over", "finished"]:
 		_show_battle_summary(gs.winner_id)
 		return
 	await _render_from_match_state()

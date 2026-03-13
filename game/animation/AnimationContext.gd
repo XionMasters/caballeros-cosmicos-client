@@ -20,6 +20,10 @@ var effects_mgr: MatchEffectsManager
 ## Nodo padre (GameMatch) necesario para get_tree(), create_tween(), etc.
 var parent_node: Node
 
+## Número de jugador local — usado por eventos que necesitan resolver perspectiva
+## (ej. KnightSummonedEvent para saber si el dueño es oponente o jugador).
+var player_number_hint: int = 1
+
 # ============================================================================
 # CONSTRUCTOR
 # ============================================================================
@@ -29,7 +33,8 @@ func _init(
 	field: FieldRenderer,
 	status: StatusPanelController,
 	effects: MatchEffectsManager,
-	parent: Node
+	parent: Node,
+	p_player_number: int = 1
 ) -> void:
 	player_hand_ctrl = p_hand
 	opponent_hand_ctrl = o_hand
@@ -37,3 +42,4 @@ func _init(
 	status_ctrl = status
 	effects_mgr = effects
 	parent_node = parent
+	player_number_hint = p_player_number

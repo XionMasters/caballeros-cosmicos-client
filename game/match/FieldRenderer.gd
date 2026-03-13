@@ -105,6 +105,34 @@ func get_zone_center(is_opponent: bool) -> Vector2:
 	return ctrl.global_position + ctrl.size * 0.5
 
 
+func find_card_position(instance_id: String) -> Vector2:
+	"""Devuelve la posición global del slot que contiene la carta con ese instance_id.
+	Busca en ambas zonas. Retorna Vector2.ZERO si no la encuentra."""
+	for zone in [_player_zone, _opponent_zone]:
+		if not zone:
+			continue
+		for slot in zone.get_children():
+			if not (slot is CardSlot):
+				continue
+			if slot.card_instance and slot.card_instance.instance_id == instance_id:
+				return slot.global_position + slot.size * 0.5
+	return Vector2.ZERO
+
+
+func find_card_node(instance_id: String) -> Control:
+	"""Devuelve el nodo CardDisplay del slot que contiene la carta con ese instance_id.
+	Retorna null si no se encuentra."""
+	for zone in [_player_zone, _opponent_zone]:
+		if not zone:
+			continue
+		for slot in zone.get_children():
+			if not (slot is CardSlot):
+				continue
+			if slot.card_instance and slot.card_instance.instance_id == instance_id:
+				return slot.card_display_node
+	return null
+
+
 func _place_card_in_slot(slot: CardSlot, card_instance: CardInstance, is_opponent: bool) -> void:
 	"""Instanciar un CardDisplay y colocarlo en el slot."""
 	if not card_instance or not card_instance.base_data:
