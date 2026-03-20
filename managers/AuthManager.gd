@@ -307,7 +307,10 @@ func _preload_essentials() -> void:
 	# 2. Cargar metadatos de todas las cartas
 	if has_node("/root/CardDatabase"):
 		print("[Auth]   → Cargando CardDatabase...")
-		get_node("/root/CardDatabase").fetch_all_cards()
+		var lang := "en"
+		if has_node("/root/LocalizationManager"):
+			lang = get_node("/root/LocalizationManager").get_language_code()
+		get_node("/root/CardDatabase").fetch_all_cards(lang)
 	
 	# 3. Precargar imágenes del MAZO ACTIVO (HIGH priority)
 	_preload_active_deck_images()

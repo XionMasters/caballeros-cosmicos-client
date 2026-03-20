@@ -69,6 +69,39 @@ Cada jugador tiene:
 - **Caballeros**: No puede haber duplicados en campo
 - **Acciones por turno**: Cada caballero puede realizar una acción (atacar, usar técnica, o activar habilidad que consuma turno)
 
+### 📚 Convenciones y abreviaturas
+- `Ar` — Armadura / Defensa del caballero (reduce daño recibido).
+- `Ce` — Combate / Capacidad de ataque del caballero (valor base de daño en ataques).
+- `Cp` — Cosmos Points del caballero (recurso interno de la carta para técnicas u habilidades).
+- `Lp` — Life Points del caballero (vida individual del caballero en tablero).
+- `PLP` — Player Life Points (vida del jugador; si llega a 0, pierde la partida).
+- `PCP` — Player Cosmos Points (recursos del jugador para jugar cartas o activar habilidades a nivel de jugador).
+
+Usar estas abreviaturas en reglas y ejemplos para mantener consistencia en el documento y en el cliente.
+
+### 🗡️ Ataques: BA (Basic Attack) vs TA (Technique Attack)
+- `BA` (Basic Attack): ataque básico que realiza un caballero sin requerir cartas adicionales. Se calcula con la estadística `Ce` del atacante.
+- `TA` (Technique Attack): requiere una carta de `Technique` compatible jugada; puede tener efectos adicionales. El caballero debe ser compatible con la técnica.
+
+Reglas específicas:
+- Evasión (`Evade`) afecta solo a `BA`. Cuando un caballero está en `Evasion`, los `BA` tienen un 50% de probabilidad de fallar (mecánica de moneda: cara = golpe, cruz = falla).
+- Las `TA` no son afectadas por `Evasion`: si el ataque procede, impacta según cálculos normales (es decir, las técnicas conectan incluso contra evasión).
+- El `Modo Defensivo` (Block) sí afecta tanto a `BA` como a `TA` (reduce el daño según la fórmula de defensa).
+
+Fórmulas de daño (orden de cálculo):
+- **Normal**: damage = Ce_atacante - Ar_defensor
+- **Block (Modo Defensa)**: damage = (Ce_atacante / 2) - Ar_defensor
+- **Daño mínimo**: si el resultado <= 0, se aplica daño mínimo = 1
+
+Ejemplo:
+```
+Seiya (Ce: 10) BA ataca a Shiryu (Ar: 8) en modo normal:
+- damage = 10 - 8 = 2 → Shiryu pierde 2 Lp
+
+Si Shiryu está en Modo Defensa:
+- damage = (10/2) -8 = 5 - 8 = -3 → aplica daño mínimo = 1 → Shiryu pierde 1 Lp
+```
+
 ### 🔄 Flujo del Turno
 
 #### Fases del Turno:
@@ -88,9 +121,9 @@ Cada jugador tiene:
 ## ⚔️ Mecánicas de Combate
 
 ### 🛡️ Modo Defensivo
-- **Ventaja**: Reduce el daño recibido en 50%
-- **Desventaja**: No se puede atacar
-- **Activación**: Consume la acción del turno del caballero
+- **Ventaja**: Reduce el daño recibido aplicando la fórmula de `Block` (ver arriba).
+- **Desventaja**: El caballero en modo defensivo no puede atacar mientras mantiene la postura.
+- **Activación**: Consumirá la acción del turno del caballero.
 
 ### 📝 Efectos Múltiples
 
@@ -145,10 +178,11 @@ interface CardRarity {
 - **Progresión por experiencia**: Subir de nivel desbloquea cartas especiales
 
 ### 🎭 Estados Alterados
-- **Veneno**: -1 de vida por turno
-- **Congelado**: No puede atacar por 1 turno  
-- **Quemado**: -1 de ataque permanente
+- **Veneno**: -1 de vida por turno durante x turnos
+- **Congelado**: No puede atacar ni  utilizar habilidades por x turno 
+- **Quemado**: -2 de vida al actuar
 - **Bendito**: +1 en todas las estadísticas
+- **Paralizado**: Igual que congelado por ahora
 
 ---
 
@@ -221,6 +255,7 @@ Seiya (ATK: 100) ataca a Shiryu (DEF: 80, Modo Defensivo)
 ## 🔮 Futuras Expansiones
 
 ### 📦 Contenido Planificado
+- **Santuario**: Base inicial
 - **Saga de Poseidón**: Generales Marinos
 - **Saga de Hades**: Espectros del Inframundo
 - **Saga de Asgard**: Guerreros Divinos

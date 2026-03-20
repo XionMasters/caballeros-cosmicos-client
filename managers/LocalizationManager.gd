@@ -23,6 +23,13 @@ const LANGUAGE_SAVE_KEY = "user_language"
 func _ready():
 	load_translations()
 	load_saved_language()
+	# Recargar cartas cuando cambie el idioma (si CardDatabase ya está cargado)
+	language_changed.connect(_on_language_changed)
+
+
+func _on_language_changed(new_lang: String) -> void:
+	if has_node("/root/CardDatabase"):
+		get_node("/root/CardDatabase").reload_for_language(new_lang)
 
 # Cargar todas las traducciones
 func load_translations():

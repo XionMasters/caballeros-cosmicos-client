@@ -44,7 +44,17 @@ func _ready() -> void:
 			api_client.request_completed.connect(_on_api_request_completed)
 
 
-func fetch_all_cards(lang: String = "es") -> void:
+func reload_for_language(new_lang: String) -> void:
+	"""Recargar todas las cartas cuando el usuario cambia de idioma."""
+	if new_lang == _language and is_loaded:
+		return
+	is_loaded = false
+	is_loading = false
+	print("[CardDatabase] 🌐 Recargando para idioma: %s" % new_lang)
+	fetch_all_cards(new_lang)
+
+
+func fetch_all_cards(lang: String = "en") -> void:
 	"""
 	Cargar todos los metadatos de cartas del servidor.
 	Usa PAGINACIÓN para ser escalable (si el servidor crece a 1000+ cartas).
