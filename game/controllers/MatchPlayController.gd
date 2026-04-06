@@ -541,11 +541,14 @@ func _is_valid_zone_for_card(card_instance: CardInstance, target_zone: String) -
 		"field_knight":
 			return card_type == "knight"
 		"field_technique":
-			return card_type == "technique"
+			# Técnicas y objetos comparten los 5 slots
+			return card_type == "technique" or card_type == "item"
 		"field_helper":
 			return card_type == "helper"
 		"field_occasion":
 			return card_type == "event"
+		"field_scenario":
+			return card_type == "stage"
 		_:
 			return false
 
@@ -575,6 +578,10 @@ func _detect_drop_zone(card_position: Vector2) -> String:
 	# Verificar occasion
 	if board_renderer.player_occasion_slot and _is_position_in_rect(card_position, board_renderer.player_occasion_slot.get_global_rect()):
 		return "field_occasion"
+	
+	# Verificar scenario (slot compartido)
+	if board_renderer.scenario_slot and _is_position_in_rect(card_position, board_renderer.scenario_slot.get_global_rect()):
+		return "field_scenario"
 	
 	return ""
 
