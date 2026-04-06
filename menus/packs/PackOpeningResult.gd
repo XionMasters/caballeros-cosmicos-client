@@ -20,7 +20,7 @@ func _ready():
 
 func show_cards(pack_name: String, cards: Array):
 	cards_data = cards
-	pack_name_label.text = "âœ¨ " + pack_name + " Abierto âœ¨"
+	pack_name_label.text = "✨ " + pack_name + " Abierto ✨"
 	
 	# Limpiar contenedor
 	for child in cards_container.get_children():
@@ -35,15 +35,15 @@ func show_cards(pack_name: String, cards: Array):
 		var card = CardData.from_json(card_json)
 		card_display.setup(card)
 		
-		# Conectar seÃ±al de clic para mostrar detalle
+		# Conectar senal de clic para mostrar detalle
 		card_display.card_clicked.connect(_on_card_clicked)
 		
 		# Agregar efecto de brillo si es foil
 		if card_json.get("is_foil", false):
 			add_foil_effect(card_display)
 		
-		# Cargar imagen usando CardsManager (con cachÃ©)
-		# Conectar la seÃ±al directamente al mÃ©todo del card_display
+		# Cargar imagen usando CardsManager (con cache)
+		# Conectar la senal directamente al metodo del card_display
 		if card.image_url != "":
 			_load_card_image_for_display(card.id, card.image_url, card_display)
 	
@@ -51,14 +51,14 @@ func show_cards(pack_name: String, cards: Array):
 	animate_entrance()
 
 func _load_card_image_for_display(card_id: String, image_url: String, display: CardDisplay):
-	"""Carga la imagen para un display especÃ­fico, evitando capturar referencias en lambdas"""
-	# Verificar si ya estÃ¡ en cachÃ©
+	"""Carga la imagen para un display especifico, evitando capturar referencias en lambdas"""
+	# Verificar si ya esta en cache
 	if CardsManager._image_cache.has(card_id):
 		if is_instance_valid(display):
 			display.set_card_image(CardsManager._image_cache[card_id])
 		return
 	
-	# Crear una funciÃ³n con weak reference
+	# Crear una funcion con weak reference
 	var callback = func(loaded_id: String, texture: ImageTexture):
 		if loaded_id == card_id and is_instance_valid(display):
 			display.set_card_image(texture)
@@ -76,21 +76,21 @@ func _load_card_image_for_display(card_id: String, image_url: String, display: C
 func add_foil_effect(card_display: Control):
 	"""Agrega un efecto visual para cartas foil"""
 	var foil_label = Label.new()
-	foil_label.text = "âœ¨ FOIL"
+	foil_label.text = "✨ FOIL"
 	foil_label.add_theme_color_override("font_color", Color.GOLD)
 	foil_label.add_theme_font_size_override("font_size", 16)
 	foil_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	foil_label.position = Vector2(0, -25)
 	card_display.add_child(foil_label)
 	
-	# AnimaciÃ³n de brillo
+	# Animacion de brillo
 	var tween = create_tween()
 	tween.set_loops()
 	tween.tween_property(foil_label, "modulate:a", 0.5, 0.8)
 	tween.tween_property(foil_label, "modulate:a", 1.0, 0.8)
 
 func animate_entrance():
-	"""AnimaciÃ³n de entrada de las cartas"""
+	"""Animacion de entrada de las cartas"""
 	modulate.a = 0
 	scale = Vector2(0.8, 0.8)
 	
@@ -104,7 +104,7 @@ func animate_entrance():
 	animate_cards_reveal()
 
 func animate_cards_reveal():
-	"""Anima la apariciÃ³n de cada carta"""
+	"""Anima la aparicion de cada carta"""
 	var delay = 0.0
 	for card in cards_container.get_children():
 		card.modulate.a = 0
@@ -135,7 +135,7 @@ func _on_background_clicked(event: InputEvent):
 func _on_card_clicked(card: CardData):
 	"""Cuando se hace clic en una carta, mostrar su detalle usando el manager global"""
 	var texture = null
-	# Intentar obtener la textura del cachÃ©
+	# Intentar obtener la textura del cache
 	if CardsManager._image_cache.has(card.id):
 		texture = CardsManager._image_cache[card.id]
 	

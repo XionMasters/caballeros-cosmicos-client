@@ -759,16 +759,16 @@ func _on_deck_validated(validation: Dictionary):
 	
 	if not is_valid and errors.size() > 0:
 		# Mostrar primer error
-		validation_label.text = "âŒ " + errors[0]
+		validation_label.text = "❌ " + errors[0]
 		validation_label.add_theme_color_override("font_color", Color.RED)
 		save_button.disabled = true
 	elif warnings.size() > 0:
 		# Mostrar primera advertencia
-		validation_label.text = "âš  " + warnings[0]
+		validation_label.text = "⚠ " + warnings[0]
 		validation_label.add_theme_color_override("font_color", Color.ORANGE)
 	else:
-		# Deck vÃ¡lido sin advertencias
-		validation_label.text = "âœ“ Mazo vÃ¡lido"
+		# Deck valido sin advertencias
+		validation_label.text = "✓ Mazo valido"
 		validation_label.add_theme_color_override("font_color", Color.GREEN)
 
 func _on_error_occurred(error_message: String):
@@ -777,17 +777,17 @@ func _on_error_occurred(error_message: String):
 	show_error(error_message)
 
 func _on_card_image_loaded(card_id: String, texture: ImageTexture):
-	# Actualizar imÃ¡genes en colecciÃ³n
+	# Actualizar imagenes en coleccion
 	for child in collection_container.get_children():
 		if child.has_method("set_card_image") and "card_data" in child and child.card_data and child.card_data.id == card_id:
 			child.set_card_image(texture)
-	# Actualizar imÃ¡genes en mazo
+	# Actualizar imagenes en mazo
 	for child in deck_container.get_children():
 		if child.has_method("set_card_image") and "card_data" in child and child.card_data and child.card_data.id == card_id:
 			child.set_card_image(texture)
 
 func _on_deck_generated(deck: Dictionary, info: Dictionary):
-	"""Callback cuando se genera el deck automÃ¡ticamente"""
+	"""Callback cuando se genera el deck automaticamente"""
 	loading_label.visible = false
 	
 	# Actualizar current_deck con el deck generado
@@ -810,17 +810,17 @@ func _on_deck_generated(deck: Dictionary, info: Dictionary):
 	update_deck_stats()
 	validate_deck()  # This will disable the save button since is_modified = false
 	
-	# Mostrar informaciÃ³n de generaciÃ³n
+	# Mostrar informacion de generacion
 	var stats = info.get("stats", {})
 	var total = stats.get("total_cards", 0)
 	var avg_cost = stats.get("avg_cost", 0)
 	var strategy = info.get("strategy_used", "balanced")
 	
-	show_error("âœ… Mazo generado y guardado: %d cartas, costo promedio: %.1f\nEstrategia: %s" % [total, avg_cost, strategy], Color.GREEN)
+	show_error("✅ Mazo generado y guardado: %d cartas, costo promedio: %.1f\nEstrategia: %s" % [total, avg_cost, strategy], Color.GREEN)
 
 func _on_auto_generate_pressed():
-	"""Mostrar diÃ¡logo de selecciÃ³n de estrategia"""
-	# TODO: Crear diÃ¡logo con opciones de estrategia
+	"""Mostrar dialogo de seleccion de estrategia"""
+	# TODO: Crear dialogo con opciones de estrategia
 	# Por ahora, usar estrategia balanceada
 	var deck_id = current_deck.get("id", "")
 	if deck_id == "":
