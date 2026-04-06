@@ -5,7 +5,7 @@ extends Control
 signal closed
 
 @onready var pack_name_label: Label = $Panel/MarginContainer/VBoxContainer/PackNameLabel
-@onready var cards_container: HBoxContainer = $Panel/MarginContainer/VBoxContainer/ScrollContainer/CardsContainer
+@onready var cards_container: FlowContainer = $Panel/MarginContainer/VBoxContainer/ScrollContainer/CardsContainer
 @onready var close_button: Button = $Panel/MarginContainer/VBoxContainer/CloseButton
 @onready var background: ColorRect = $Background
 
@@ -50,7 +50,7 @@ func show_cards(pack_name: String, cards: Array):
 	show()
 	animate_entrance()
 
-func _load_card_image_for_display(card_id: String, image_url: String, display: Control):
+func _load_card_image_for_display(card_id: String, image_url: String, display: CardDisplay):
 	"""Carga la imagen para un display especÃ­fico, evitando capturar referencias en lambdas"""
 	# Verificar si ya estÃ¡ en cachÃ©
 	if CardsManager._image_cache.has(card_id):

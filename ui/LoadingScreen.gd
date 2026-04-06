@@ -13,6 +13,7 @@ var spinner: Label = null
 var current_loaded: int = 0
 var total_to_load: int = 0
 var is_complete: bool = false
+var pending_title: String = "Cargando colección..."
 
 
 func _ready() -> void:
@@ -62,7 +63,7 @@ func _ready() -> void:
 	
 	# Loading label
 	loading_label = Label.new()
-	loading_label.text = "Cargando colección..."
+	loading_label.text = pending_title
 	loading_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	loading_label.add_theme_font_size_override("font_size", 16)
 	vbox.add_child(loading_label)
@@ -139,5 +140,6 @@ func _on_loading_complete() -> void:
 
 func set_title(title: String) -> void:
 	"""Establecer título de la pantalla"""
+	pending_title = title
 	if loading_label:
 		loading_label.text = title

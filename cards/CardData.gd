@@ -74,10 +74,17 @@ func get_power_score() -> int:
 
 static func from_json(json: Dictionary) -> CardData:
 	var card = CardData.new()
+
+	var _safe_string = func(value: Variant, default_value: String = "") -> String:
+		if value == null:
+			return default_value
+		if typeof(value) == TYPE_STRING:
+			return value
+		return str(value)
 	
 	# Identidad
-	card.id = json.get("id", "")
-	card.name = json.get("name", "")
+	card.id = _safe_string.call(json.get("id", ""), "")
+	card.name = _safe_string.call(json.get("name", ""), "")
 	
 	# Tipo y rareza: pueden venir en español del servidor
 	var type_val = json.get("type", "")
@@ -113,8 +120,8 @@ static func from_json(json: Dictionary) -> CardData:
 	card.power_level = int(power_level_val) if power_level_val != null else 0
 	
 	# Imagen y descripción
-	card.description = json.get("description", "")
-	card.image_url = json.get("image_url", "")
+	card.description = _safe_string.call(json.get("description", ""), "")
+	card.image_url = _safe_string.call(json.get("image_url", ""), "")
 	
 	# Reglas
 	card.max_copies = int(json.get("max_copies", 3)) if json.get("max_copies") != null else 3

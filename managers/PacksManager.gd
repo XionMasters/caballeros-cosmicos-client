@@ -89,7 +89,7 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 					payload = (data as Dictionary).get("data", data) as Dictionary
 				var user_pack_id: String = payload.get("user_pack_id", "")
 				var pack_data: Dictionary = payload.get("pack", payload.get("pack_data", {}))
-				var new_currency: int = payload.get("currency", UserManager.get_currency())
+				var new_currency: int = payload.get("currency", payload.get("remaining_currency", UserManager.get_currency()))
 				if new_currency != UserManager.get_currency():
 					UserManager.update_currency(new_currency)
 				if user_pack_id == "":

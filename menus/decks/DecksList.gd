@@ -49,7 +49,7 @@ func load_decks():
 	loading_label.visible = true
 	error_label.visible = false
 	clear_decks()
-	DecksManager.fetch_user_decks()
+	DecksManager.fetch_user_decks(true)
 
 func clear_decks():
 	"""Limpia la lista de mazos"""

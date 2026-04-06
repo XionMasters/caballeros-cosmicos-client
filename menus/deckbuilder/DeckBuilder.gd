@@ -6,7 +6,7 @@ extends Control
 const CARD_DISPLAY_TEMPLATE = preload("res://cards/CardDisplay.tscn")
 const CARD_DETAIL_VIEW_SCENE = preload("res://cards/CardDetailView.tscn")
 const MIN_DECK_SIZE = 40
-const MAX_DECK_SIZE = 50
+const MAX_DECK_SIZE = 60
 const MAX_COPIES_PER_CARD = 3
 
 # Estado
@@ -204,6 +204,20 @@ func display_deck_cards():
 		quantity_label.add_theme_color_override("font_color", Color.YELLOW)
 		quantity_label.position = Vector2(10, 10)
 		card_display.add_child(quantity_label)
+		
+		# Botón de portada (estrella) en esquina superior derecha
+		var is_cover = current_deck.get("deck_cover_card_id", "") == card_id
+		var cover_btn = Button.new()
+		cover_btn.text = "★" if is_cover else "☆"
+		cover_btn.tooltip_text = "Portada del mazo" if is_cover else "Usar como portada"
+		cover_btn.add_theme_font_size_override("font_size", 16)
+		cover_btn.add_theme_color_override("font_color", Color(1.0, 0.84, 0.0) if is_cover else Color.WHITE)
+		cover_btn.flat = true
+		cover_btn.size = Vector2(26, 26)
+		cover_btn.set_anchors_preset(Control.PRESET_TOP_RIGHT)
+		cover_btn.position = Vector2(-30, 4)
+		cover_btn.pressed.connect(_on_set_cover_card.bind(card_id))
+		card_display.add_child(cover_btn)
 
 func _on_collection_card_clicked(card: CardData):
 	"""Mostrar detalle de carta con opciÃ³n de agregar al mazo"""
@@ -451,25 +465,27 @@ func _display_deck_back_options() -> void:
 			if loading_label and not loading_label.visible:
 				loading_label.visible = true
 				loading_label.text = "Cargando imÃ¡genes..."
-			
+
+			var image_callback = func(image: Image, _tag = null) -> void:
+				if image:
+					var texture = ImageTexture.create_from_image(image)
+					preview.texture = texture
+					print("[DeckBuilder] âœ… Imagen cargada: %s" % back.get("name", ""))
+				else:
+					print("[DeckBuilder] âš ï¸  No se pudo cargar imagen de: %s" % image_url)
+
+				# Decrementar contador
+				_loading_dorso_images -= 1
+				print("[DeckBuilder] ðŸ“Š ImÃ¡genes pendientes: %d" % _loading_dorso_images)
+
+				# Ocultar loader cuando terminen todas
+				if _loading_dorso_images <= 0 and loading_label:
+					loading_label.visible = false
+					_loading_dorso_images = 0
+
 			ApiClient.get_image_with_callback(
 				image_url,
-				func(image: Image, _tag = null):
-					if image:
-						var texture = ImageTexture.create_from_image(image)
-						preview.texture = texture
-						print("[DeckBuilder] âœ… Imagen cargada: %s" % back.get("name", ""))
-					else:
-						print("[DeckBuilder] âš ï¸  No se pudo cargar imagen de: %s" % image_url)
-					
-					# Decrementar contador
-					_loading_dorso_images -= 1
-					print("[DeckBuilder] ðŸ“Š ImÃ¡genes pendientes: %d" % _loading_dorso_images)
-					
-					# Ocultar loader cuando terminen todas
-					if _loading_dorso_images <= 0 and loading_label:
-						loading_label.visible = false
-						_loading_dorso_images = 0,
+				image_callback,
 				"available_back_%s" % back.get("id", "")
 			)
 		
@@ -477,6 +493,7 @@ func _display_deck_back_options() -> void:
 		var select_btn = Button.new()
 		var back_id = back.get("id", "")
 		var is_selected = selected_deck_back.get("id") == back_id
+		select_btn.set_meta("back_id", back_id)
 		select_btn.text = "âœ“ Seleccionado" if is_selected else "Seleccionar"
 		select_btn.disabled = is_selected
 		select_btn.size_flags_horizontal = Control.SIZE_EXPAND_FILL
@@ -508,13 +525,14 @@ func _update_deck_back_preview() -> void:
 		)
 	
 	# Actualizar botones de selecciÃ³n
+	var selected_back_id = selected_deck_back.get("id", "")
 	for child in available_dorsos_grid.get_children():
 		if child is PanelContainer:
 			var vbox = child.get_child(0)
 			if vbox is VBoxContainer and vbox.get_child_count() >= 3:
-				var btn = vbox.get_child(2)
+				var btn = vbox.get_child(vbox.get_child_count() - 1)
 				if btn is Button:
-					var is_selected = btn.is_connected("pressed", Callable(_on_deck_back_selected))
+					var is_selected = btn.has_meta("back_id") and btn.get_meta("back_id") == selected_back_id
 					if is_selected:
 						btn.text = "âœ“ Seleccionado"
 						btn.disabled = true
@@ -569,6 +587,7 @@ func _save_deck_back_selection() -> void:
 		if success:
 			print("[DeckBuilder] Dorso guardado correctamente")
 			current_deck["current_deck_back_id"] = back_id
+			show_error("Dorso guardado automáticamente", Color.GREEN)
 		else:
 			print("[DeckBuilder] Error guardando dorso: " + error)
 			show_error("Error al guardar dorso: " + error, Color.RED)
@@ -581,10 +600,42 @@ func _save_deck_back_selection() -> void:
 	)
 
 
+# ============================================================
+#   COVER CARD
+# ============================================================
+
+func _on_set_cover_card(card_id: String) -> void:
+	"""Establece (o quita) la carta de portada del mazo"""
+	var deck_id = current_deck.get("id", "")
+	if deck_id.is_empty():
+		return
+	
+	# Toggle: si ya es portada, limpiar
+	var new_cover_id = null if current_deck.get("deck_cover_card_id", "") == card_id else card_id
+	
+	var callback = func(success: bool, _data: Variant, error: String) -> void:
+		if not success:
+			show_error("Error al guardar portada: " + error)
+			return
+		current_deck["deck_cover_card_id"] = new_cover_id
+		display_deck_cards()
+		show_error("Portada guardada automáticamente", Color.GREEN)
+	
+	var body = { "card_id": new_cover_id }
+	ApiClient.put_request_with_callback(
+		"/decks/%s/cover-card" % deck_id,
+		body,
+		"set_cover_card",
+		callback
+	)
+
+
 func find_card_dict_by_id(card_id: String):
 	"""Busca una carta (como diccionario) por ID en la colecciÃ³n del usuario"""
 	for card in user_cards:
-		if card.id == card_id:
+		if card is CardData and card.id == card_id:
+			return card
+		if card is Dictionary and card.get("id", "") == card_id:
 			return card
 	return null
 
@@ -603,7 +654,7 @@ func get_user_card_quantity(card_id: String) -> int:
 	"""Obtiene la cantidad disponible de una carta en la colecciÃ³n del usuario"""
 	# Buscar en user_cards directamente (como diccionarios)
 	for card_dict in user_cards:
-		if card_dict.get("id") == card_id:
+		if card_dict is Dictionary and card_dict.get("id", "") == card_id:
 			# La cantidad viene en UserCard.quantity
 			return card_dict.get("quantity", 0)
 	return 0
@@ -694,7 +745,7 @@ func _on_deck_updated(deck: Dictionary):
 			validate_deck()  # Update save button state
 
 func _on_card_added(_deck_id: String, _card_id: String):
-	_refresh_deck_from_server
+	_refresh_deck_from_server()
 
 func _on_card_removed(_deck_id: String, _card_id: String):
 	"""Callback cuando se remueve una carta del mazo"""
@@ -751,8 +802,8 @@ func _on_deck_generated(deck: Dictionary, info: Dictionary):
 		if card_id != "":
 			deck_cards[card_id] = quantity
 	
-	# Marcar como NO modificado (el deck ya fue guardado automÃ¡ticamente)
-	is_modified = true
+	# Marcar como no modificado porque el backend ya guardÃ³ el deck generado.
+	is_modified = false
 	
 	# Actualizar vistas
 	display_deck_cards()
@@ -836,4 +887,3 @@ func show_error(message: String, color: Color = Color.RED):
 	# Ocultar despuÃ©s de 3 segundos
 	await get_tree().create_timer(3.0).timeout
 	error_label.visible = false
-

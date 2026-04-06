@@ -14,14 +14,31 @@ var _pending_deck_images: int = 0
 var _pending_collection_images: int = 0
 var _collection_total: int = 0
 var _collection_loaded: int = 0
+var _collection_failed: int = 0
+var _fallback_texture: ImageTexture = null
 
 # Señales
-signal cards_loaded()
+signal cards_loaded(cards: Array)
 signal card_image_loaded(card_id: String, texture: ImageTexture)
 signal card_back_loaded(texture: ImageTexture)
 signal deck_images_preloaded()
 signal collection_loading_progress(loaded: int, total: int)
 signal collection_images_preloaded()
+signal error_occurred(message: String)
+
+func _get_fallback_texture() -> ImageTexture:
+	if _fallback_texture != null:
+		return _fallback_texture
+
+	var fallback_image = Image.create(120, 168, false, Image.FORMAT_RGB8)
+	fallback_image.fill(Color(0.2, 0.2, 0.25, 1.0))
+	_fallback_texture = ImageTexture.create_from_image(fallback_image)
+	return _fallback_texture
+
+func _cache_fallback_for_card(card_id: String) -> ImageTexture:
+	var fallback = _get_fallback_texture()
+	_image_cache[card_id] = fallback
+	return fallback
 
 func fetch_user_cards() -> void:
 	"""Obtener todas las cartas del usuario desde la API"""
@@ -47,9 +64,9 @@ func fetch_card_image(card_id: String, image_url: String):
 	
 	# Validar que la URL sea válida
 	if image_url == null or image_url.is_empty():
-		push_error("CardsManager: image_url vacía para carta " + card_id)
-		# Emitir null para notificar que falló
-		card_image_loaded.emit(card_id, null)
+		push_warning("CardsManager: image_url vacía para carta " + card_id)
+		var fallback = _cache_fallback_for_card(card_id)
+		card_image_loaded.emit(card_id, fallback)
 		return
 
 	print("CardsManager: Descargando imagen de %s: %s" % [card_id, image_url])	
@@ -62,7 +79,9 @@ func fetch_card_image(card_id: String, image_url: String):
 
 func _on_card_image_loaded(card_id: String, image: Image) -> void:
 	if image == null:
-		push_error("CardsManager: Error cargando imagen de carta " + card_id)
+		push_warning("CardsManager: Error cargando imagen de carta " + card_id)
+		var fallback = _cache_fallback_for_card(card_id)
+		card_image_loaded.emit(card_id, fallback)
 		return
 	
 	var texture := ImageTexture.create_from_image(image)
@@ -175,6 +194,7 @@ func preload_collection_images(card_ids: Array, priority: String = "low"):
 	
 	_collection_total = cards_to_load.size()
 	_collection_loaded = 0
+	_collection_failed = 0
 	_pending_collection_images = _collection_total
 
 	if _pending_collection_images == 0:
@@ -223,18 +243,25 @@ func _start_collection_image_load(card_data: Dictionary) -> void:
 	
 	if _image_cache.has(card_id):
 		return
+
+	if image_url == null or str(image_url).is_empty():
+		_cache_fallback_for_card(card_id)
+		_on_collection_image_loaded(card_id, null, true)
+		return
 	
 	ApiClient.get_image_with_callback(
 		image_url,
 		func(image: Image, _tag = null):
-			_on_collection_image_loaded(card_id, image)
+			_on_collection_image_loaded(card_id, image, image == null)
 	)
 
-func _on_collection_image_loaded(card_id: String, image: Image) -> void:
-	if image == null:
-		push_error("❌ CardsManager: Error cargando imagen colección " + card_id)
-	elif image:
+func _on_collection_image_loaded(card_id: String, image: Image, had_error: bool = false) -> void:
+	if image and not had_error:
 		_image_cache[card_id] = ImageTexture.create_from_image(image)
+	else:
+		_collection_failed += 1
+		_cache_fallback_for_card(card_id)
+		push_warning("CardsManager: Fallback aplicado para imagen de colección " + card_id)
 
 	_collection_loaded += 1
 	_pending_collection_images -= 1
@@ -245,7 +272,8 @@ func _on_collection_image_loaded(card_id: String, image: Image) -> void:
 	)
 
 	if _pending_collection_images == 0:
-		var success_rate = (_collection_total - _collection_loaded) / float(_collection_total) * 100.0 if _collection_total > 0 else 0.0
+		var ok_count = _collection_total - _collection_failed
+		var success_rate = (ok_count / float(_collection_total)) * 100.0 if _collection_total > 0 else 100.0
 		print("✅ CardsManager: Colección precargada. Éxito: %.1f%%" % success_rate)
 		collection_images_preloaded.emit()
 
@@ -270,8 +298,10 @@ func get_cached_image(card_id: String, image_url: String, on_loaded: Callable) -
 		image_url,
 		func(image: Image, _tag = null):
 			if image == null:
-				print("[CardsManager] ❌ Imagen null para: %s" % card_id)
-				push_error("CardsManager: Error cargando imagen " + card_id)
+				print("[CardsManager] ⚠️ Imagen null para: %s (fallback)" % card_id)
+				var fallback = _cache_fallback_for_card(card_id)
+				for cb in _pending_requests[card_id]:
+					cb.call(fallback)
 				_pending_requests.erase(card_id)
 				return
 

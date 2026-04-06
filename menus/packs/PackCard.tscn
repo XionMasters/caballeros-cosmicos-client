@@ -9,22 +9,40 @@ script = ExtResource("1_packcard_script")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
+theme_override_constants/separation = 8
 
 [node name="PackName" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 text = "Sobre BÃ¡sico"
 horizontal_alignment = 1
 
-[node name="PackImage" type="ColorRect" parent="VBoxContainer"]
+[node name="PackImage" type="TextureRect" parent="VBoxContainer"]
 custom_minimum_size = Vector2(180, 180)
 layout_mode = 2
 size_flags_vertical = 3
-color = Color(0.3, 0.3, 0.5, 1)
+expand_mode = 1
+stretch_mode = 5
+
+[node name="PackDescription" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+autowrap_mode = 3
+text = "Descripción del sobre"
 
 [node name="CardCount" type="Label" parent="VBoxContainer"]
 layout_mode = 2
 text = "5 cartas"
 horizontal_alignment = 1
+
+[node name="GuaranteedRarity" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+horizontal_alignment = 1
+visible = false
+text = "✨ Garantiza: Rara"
+
+[node name="ProbabilitiesButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+text = "📊 Ver Probabilidades"
 
 [node name="PriceContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2

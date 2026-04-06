@@ -852,6 +852,13 @@ func setup_from_instance(instance: CardInstance) -> void:
 			instance.stats_changed.connect(_on_instance_stats_changed)
 		update_stats_display()
 
+func set_card_image(texture: Texture2D) -> void:
+	"""Compat helper for screens that need to set artwork directly."""
+	if not is_instance_valid(card_image):
+		_ensure_ui_structure()
+	if is_instance_valid(card_image):
+		card_image.texture = texture
+
 
 func _on_instance_stats_changed(_inst: CardInstance) -> void:
 	"""Llamado cuando CardInstance emite stats_changed"""

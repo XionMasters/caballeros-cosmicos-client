@@ -1,266 +1,161 @@
-# 🎯 Caballeros Cósmicos - Especificación del Juego
-
-## 📖 Descripción General
-
-**Caballeros Cósmicos** es un juego de cartas coleccionables digital inspirado en el universo de los Caballeros del Zodiaco, desarrollado como proyecto de hobby personal. Dos jugadores se enfrentan utilizando mazos de 40 cartas, desplegando caballeros, técnicas, objetos y ayudantes en un campo de batalla estratégico por turnos.
-
----
+# Caballeros Cosmicos - Documento Principal de Diseno
+
+## Objetivo del Documento
+Este archivo define las reglas base del juego para diseno, implementacion y pruebas.
+Es la fuente principal de verdad para mecanicas de partida 1v1.
+
+## Resumen Rapido
+- Formato base: 1v1, mazos de 40 cartas.
+- Vida inicial del jugador (PLP): 12.
+- Recurso principal: cosmos del jugador (PCP).
+- Victoria base: bajar PLP rival a 0.
+
+## Tipos de Cartas y Funcion
+
+Valores internos de backend/cliente (en ingles):
+- `knight` -> Caballero
+- `technique` -> Tecnica
+- `item` -> Objeto
+- `stage` -> Escenario
+- `helper` -> Ayudante
+- `event` -> Ocasion
+
+### Caballero (`knight`)
+- Unidad principal de combate.
+- Tiene estadisticas de combate y puede cambiar de postura.
+- Puede atacar con BA o usar TA si tiene tecnica compatible.
+
+### Tecnica (`technique`)
+- Habilita ataques tecnicos (TA) y/o efectos.
+- Requiere compatibilidad con el caballero que la use.
+- Permanece en el area de soporte mientras este activa.
+
+### Objeto (`item`)
+- Modificador para una carta/unidad objetivo.
+- Suele otorgar bonos o efectos persistentes.
+
+### Escenario (`stage`)
+- Regla global que afecta a ambos jugadores.
+- Solo puede existir 1 escenario activo en la partida.
+
+### Ayudante (`helper`)
+- Soporte propio del jugador con efecto continuo o activable.
+- Cada jugador puede tener solo 1 ayudante activo.
+
+### Ocasion (`event`)
+- Efecto instantaneo.
+- Se resuelve al jugarse y luego va a Yomotsu, salvo que el texto diga exiliar.
+
+## Sistema de Energia (Cosmos)
+
+### Recurso del Jugador
+- Nombre: PCP (Player Cosmos Points).
+- Ganancia base: +1 PCP al inicio de tu turno.
+- Maximo recomendado: 10 PCP.
+- Persistencia: el PCP restante no se reinicia al cambiar turno.
+
+### Gastos de Cosmos
+- Jugar cartas desde mano (caballero, tecnica, objeto, ayudante, escenario, ocasion).
+- Activar habilidades que indiquen costo de cosmos.
+
+### Recurso del Caballero
+- Algunas cartas tambien usan CP propio del caballero para habilidades especificas.
+- Si una habilidad requiere CP del caballero, no consume PCP salvo que lo indique.
+
+## Combate: Ataque, Defensa, Posturas y Danio
+
+## Convenciones de Valores
+- `Ce`: capacidad de ataque del caballero.
+- `Ar`: armadura/defensa del caballero.
+- `Lp`: vida de la unidad.
+- `PLP`: vida del jugador.
+
+### Tipos de Ataque
+- BA (Basic Attack): ataque basico del caballero.
+- TA (Technique Attack): ataque que usa una tecnica compatible.
+
+### Posturas
+- Normal: estado por defecto.
+- Defensa (Block): reduce el ataque recibido usando media CE del atacante.
+- Evasion (Evade): contra BA, tiene 50% de probabilidad de evitar el impacto completo.
+
+Reglas clave:
+- Evasion solo aplica a BA.
+- Block aplica a BA y TA.
+- Danio minimo por impacto exitoso: 1.
+
+### Formula de Danio
+Normal:
+`danio = Ce_atacante - Ar_defensor`
+
+Defensa (Block):
+`danio = (Ce_atacante / 2) - Ar_defensor`
+
+Aplicacion final:
+- Si el resultado es menor o igual a 0 y el ataque conecto, el danio aplicado es 1.
+
+### Ejemplo
+Si un caballero con `Ce = 10` ataca a uno con `Ar = 8`:
+- En normal: `10 - 8 = 2` danio.
+- En defensa: `(10 / 2) - 8 = -3` -> danio final `1`.
+
+## Yomotsu y Cositos
 
-## 🃏 Tipos de Cartas
-
-### 1. 🛡️ Caballeros
-- **Atributos**: Ataque, Defensa, Vida, Cosmos
-- **Características**:
-  - Pueden tener 1-3 habilidades (activas o pasivas)
-  - Pueden entrar en modo defensivo (reciben 50% menos daño, pero no pueden atacar)
-  - No se permiten duplicados en el campo
-- **Ejemplo**: Seiya de Pegaso, Shiryu de Dragón
-
-### 2. ⚡ Técnicas
-- **Función**: Efectos específicos para ciertos caballeros o grupos
-- **Restricción**: Compatible solo con caballeros específicos
-- **Ejemplo**: "Meteoros de Pegaso" (solo para caballeros de Pegaso)
+### Yomotsu (cementerio)
+- Zona de descarte normal.
+- Van aqui cartas usadas, destruidas o descartadas por reglas generales.
 
-### 3. 🏺 Objetos
-- **Función**: Bonificaciones equipables a caballeros
-- **Límite**: 1 objeto por caballero
-- **Ejemplo**: "Armadura de Bronce" (+50 de defensa)
+### Cositos (exilio)
+- Zona de removido de partida.
+- Se usa para efectos que dicen exiliar/remover.
+- Por defecto, una carta en Cositos no vuelve al mazo/hand salvo efecto explicito.
 
-### 4. 🏛️ Escenarios
-- **Función**: Efectos globales que afectan a ambos jugadores
-- **Regla**: Solo un escenario activo a la vez
-- **Ejemplo**: "Campo de Energía" (nadie puede entrar en modo defensivo)
+## Limites de Campo y Zonas
 
-### 5. 🤝 Ayudantes
-- **Función**: Efectos unilaterales (solo para tu campo)
-- **Regla**: Un ayudante activo por jugador
-- **Ejemplo**: "Caballero Dorado de Leo" (+1 cosmos a tus caballeros de Athena)
+Por jugador:
+- Caballeros en campo: maximo 5.
+- Ayudantes: maximo 1.
+- Soporte (tecnicas/objetos): hasta 5 espacios de soporte.
+- Mano: maximo 7.
 
-### 6. ⭐ Ocasiones
-- **Función**: Efectos instantáneos (como magias)
-- **Uso**: Se resuelve inmediatamente y se descarta
-- **Ejemplo**: "Refugio de Athena" (+2 defensa a todos tus caballeros este turno)
+Compartido:
+- Escenario global: maximo 1 activo en toda la partida.
 
----
+Notas:
+- Si una regla de carta contradice estos limites, prevalece el texto de la carta.
+- No se permiten caballeros duplicados en campo del mismo jugador (regla de diseno actual).
 
-## 🎮 Reglas del Juego
+## Estructura del Turno (Fases)
 
-### 🏟️ Estructura del Tablero
+1. Inicio
+- Ganar +1 PCP.
+- Robar 1 carta.
+- Resolver efectos de inicio de turno.
 
-Cada jugador tiene:
-- **5 espacios** para caballeros
-- **1 espacio** para ayudante
-- **5 espacios** para técnicas/objetos activos
-- **1 espacio** de ocasión (se resuelve y descarta)
-- **Mazo** (40 cartas)
-- **Mano** (máximo 7 cartas)
-- **Yomotsu** (descarte normal)
-- **Cositos** (descarte especial/exilio)
+2. Principal
+- Jugar cartas pagando cosmos.
+- Activar habilidades permitidas en fase principal.
+- Cambiar posturas de unidades que puedan hacerlo.
 
-### ⚡ Sistema de Energía Cósmica
+3. Combate
+- Declarar BA o TA con caballeros habilitados.
+- Rival responde con efectos defensivos validos.
+- Resolver impacto, postura, formula y efectos secundarios.
 
-- **Acumulación**: +1 por turno (máximo 10)
-- **Persistencia**: No se reinicia automáticamente
-- **Uso**: Pagar costos de cartas
+4. Cierre
+- Resolver efectos de fin de turno.
+- Limpiar efectos temporales.
+- Verificar condicion de victoria.
 
-### 🚫 Restricciones
+## Condiciones de Victoria
+- Un jugador gana cuando el PLP rival llega a 0.
+- Pueden existir victorias alternativas por efecto de carta.
 
-- **Mano**: Máximo 7 cartas (descartar si se excede al inicio del turno)
-- **Caballeros**: No puede haber duplicados en campo
-- **Acciones por turno**: Cada caballero puede realizar una acción (atacar, usar técnica, o activar habilidad que consuma turno)
+## Estado del Documento
+Version: Abril 2026.
+Este documento define la base jugable actual y puede refinarse con resultados de testing.
 
-### 📚 Convenciones y abreviaturas
-- `Ar` — Armadura / Defensa del caballero (reduce daño recibido).
-- `Ce` — Combate / Capacidad de ataque del caballero (valor base de daño en ataques).
-- `Cp` — Cosmos Points del caballero (recurso interno de la carta para técnicas u habilidades).
-- `Lp` — Life Points del caballero (vida individual del caballero en tablero).
-- `PLP` — Player Life Points (vida del jugador; si llega a 0, pierde la partida).
-- `PCP` — Player Cosmos Points (recursos del jugador para jugar cartas o activar habilidades a nivel de jugador).
-
-Usar estas abreviaturas en reglas y ejemplos para mantener consistencia en el documento y en el cliente.
-
-### 🗡️ Ataques: BA (Basic Attack) vs TA (Technique Attack)
-- `BA` (Basic Attack): ataque básico que realiza un caballero sin requerir cartas adicionales. Se calcula con la estadística `Ce` del atacante.
-- `TA` (Technique Attack): requiere una carta de `Technique` compatible jugada; puede tener efectos adicionales. El caballero debe ser compatible con la técnica.
-
-Reglas específicas:
-- Evasión (`Evade`) afecta solo a `BA`. Cuando un caballero está en `Evasion`, los `BA` tienen un 50% de probabilidad de fallar (mecánica de moneda: cara = golpe, cruz = falla).
-- Las `TA` no son afectadas por `Evasion`: si el ataque procede, impacta según cálculos normales (es decir, las técnicas conectan incluso contra evasión).
-- El `Modo Defensivo` (Block) sí afecta tanto a `BA` como a `TA` (reduce el daño según la fórmula de defensa).
-
-Fórmulas de daño (orden de cálculo):
-- **Normal**: damage = Ce_atacante - Ar_defensor
-- **Block (Modo Defensa)**: damage = (Ce_atacante / 2) - Ar_defensor
-- **Daño mínimo**: si el resultado <= 0, se aplica daño mínimo = 1
-
-Ejemplo:
-```
-Seiya (Ce: 10) BA ataca a Shiryu (Ar: 8) en modo normal:
-- damage = 10 - 8 = 2 → Shiryu pierde 2 Lp
-
-Si Shiryu está en Modo Defensa:
-- damage = (10/2) -8 = 5 - 8 = -3 → aplica daño mínimo = 1 → Shiryu pierde 1 Lp
-```
-
-### 🔄 Flujo del Turno
-
-#### Fases del Turno:
-1. **Inicio**: Ganar +1 energía, robar carta, aplicar efectos de inicio
-2. **Principal**: Jugar cartas, activar habilidades, cambiar posturas
-3. **Ataque**: Los caballeros en postura ofensiva pueden atacar
-4. **Defensa**: El oponente puede activar defensas
-5. **Fin**: Limpiar efectos temporales, verificar condiciones de victoria
-
-### 🏆 Condiciones de Victoria
-
-- Reducir los **12 puntos de vida** del oponente a 0
-- Efectos especiales de cartas que establezcan victoria alternativa
-
----
-
-## ⚔️ Mecánicas de Combate
-
-### 🛡️ Modo Defensivo
-- **Ventaja**: Reduce el daño recibido aplicando la fórmula de `Block` (ver arriba).
-- **Desventaja**: El caballero en modo defensivo no puede atacar mientras mantiene la postura.
-- **Activación**: Consumirá la acción del turno del caballero.
-
-### 📝 Efectos Múltiples
-
-Las cartas pueden tener múltiples efectos simultáneos:
-
-```json
-"efectos": [
-  { "tipo": "bono_defensa", "valor": 50 },
-  { "tipo": "mod_vida", "valor": -20 }
-]
-```
-
-### 🔗 Compatibilidad de Técnicas
-Las técnicas pueden ser usadas por varios caballeros compatibles:
-- **Ejemplo**: "Meteoros de Pegaso" puede ser usada por Seiya y Tenma
-
----
-
-## � Características de Diseño
-
-### ⚖️ Balance
-- Costos de energía proporcionales al poder de las cartas
-- Límites estrictos en número de cartas en campo para evitar acumulaciones excesivas
-- Sinergias entre facciones (Athena, Hades, etc.)
-
-### 🧠 Estrategia
-- **Gestión de recursos** (energía vs. poder de cartas)
-- **Elección de posturas** (ofensiva vs. defensiva)
-- **Construcción de mazos** temáticos o mixtos
-
----
-
-*Este documento representa la visión base del juego, sujeta a ajustes durante el desarrollo y testing.*
-
----
-
-## 💎 Sistema de Colección
-
-### 🌟 Rarezas
-```typescript
-interface CardRarity {
-  nivel: "común" | "rara" | "épica" | "legendaria";
-  efectos_exclusivos: string[];
-  arte_alternativo: boolean;
-  brillo_animado: boolean;
-}
-```
-
-### 🔓 Sistema de Desbloqueo
-- **Logros**: "Gana 10 partidas con caballeros de Athena"
-- **Misiones diarias**: "Juega 3 cartas de ocasión"
-- **Progresión por experiencia**: Subir de nivel desbloquea cartas especiales
-
-### 🎭 Estados Alterados
-- **Veneno**: -1 de vida por turno durante x turnos
-- **Congelado**: No puede atacar ni  utilizar habilidades por x turno 
-- **Quemado**: -2 de vida al actuar
-- **Bendito**: +1 en todas las estadísticas
-- **Paralizado**: Igual que congelado por ahora
-
----
-
-## 🏆 Modos de Juego
-
-### 🎲 Modos Principales
-- **Clásico**: Partidas estándar 1v1
-- **Clasificatoria**: Sistema de ranking competitivo
-- **Casual**: Partidas sin afectar ranking
-
-### 🎪 Modos Especiales
-- **Draft**: Construir mazo al azar con cartas random
-- **Solo Caballeros**: Solo se permiten cartas de caballeros
-- **Modo Historia**: Campaña con mazos predefinidos y narrativa
-- **Desafíos semanales**: Reglas especiales rotativas
-
----
-
-## ⚔️ Resolución de Combate Detallada
-
-### 🎯 Orden de Resolución:
-1. **Declarar ataques**
-2. **Activar habilidades de defensa**
-3. **Aplicar modificadores** (objetos, técnicas)
-4. **Calcular daño final**
-5. **Aplicar efectos secundarios**
-
-### 📊 Ejemplo de Combate:
-```
-Seiya (ATK: 100) ataca a Shiryu (DEF: 80, Modo Defensivo)
-- Daño base: 100 - 80 = 20
-- Modo defensivo: 20 * 0.5 = 10
-- Shiryu pierde 10 de vida
-```
-
----
-
-## 🎨 Interfaz de Usuario
-
-### 📱 Pantallas Principales
-- **Colección de cartas**: Filtros por tipo, rareza, facción
-- **Constructor de mazos**: Drag & drop, validación de 40 cartas
-- **Campo de batalla**: Zonas claramente marcadas
-- **Tienda de sobres**: Con preview de probabilidades
-
-### ✨ UX Crítico
-- Tooltips detallados al hacer hover sobre cartas
-- Animaciones suaves para transiciones
-- Feedback visual para acciones válidas/inválidas
-- Sistema de ayuda contextual
-
----
-
-## 🛠️ Implementación Técnica
-
-### 🎮 Cliente (Godot)
-- **Escenas modulares** por pantalla
-- **Sistema de estados** para el juego
-- **Animaciones** con Tween
-- **Audio dinámico** y efectos visuales
-
-### 🖥️ Servidor (Node.js)
-- **WebSockets** para tiempo real
-- **Sistema de matchmaking**
-- **Validación de movimientos** server-side
-- **Logging de partidas** para balance
-
----
-
-## 🔮 Futuras Expansiones
-
-### 📦 Contenido Planificado
-- **Santuario**: Base inicial
-- **Saga de Poseidón**: Generales Marinos
-- **Saga de Hades**: Espectros del Inframundo
-- **Saga de Asgard**: Guerreros Divinos
-- **Lost Canvas**: Caballeros alternativos
-
-### 🆕 Mecánicas Futuras
-- **Torneos Automatizados**: Brackets de eliminación
+## Documentos Relacionados
+- Guia UX rapida para cliente: docs/GAMEPLAY-UX-QUICK-GUIDE.md
+- Guia tecnica de reglas para backend: ../../Server-SS/docs/GAMEPLAY-RULES-TECHNICAL.md
 

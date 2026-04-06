@@ -12,6 +12,7 @@ signal cards_revealed(cards: Array)
 const CARD_DISPLAY_SCENE = preload("res://cards/CardDisplay.tscn")
 
 var current_pack_id: String = ""
+var current_pack_image_url: String = ""
 var revealed_cards: Array = []
 var is_opening: bool = false
 
@@ -24,10 +25,23 @@ func _ready():
 		PacksManager.pack_opened.connect(_on_pack_opened)
 		PacksManager.error_occurred.connect(show_error)
 
-func setup_pack(pack_id: String, pack_name: String):
+func setup_pack(pack_id: String, pack_name: String, image_url: String = ""):
 	current_pack_id = pack_id
-	# TODO: Cargar imagen del pack
+	current_pack_image_url = image_url
+	_load_pack_image()
 	open_button.text = "Abrir " + pack_name
+
+func _load_pack_image() -> void:
+	if current_pack_image_url.is_empty():
+		return
+
+	ApiClient.get_image_with_callback(
+		current_pack_image_url,
+		func(image: Image, _tag = null) -> void:
+			if image and is_instance_valid(pack_sprite):
+				pack_sprite.texture = ImageTexture.create_from_image(image),
+		"pack_opening_image"
+	)
 
 func _on_open_pressed():
 	if is_opening:
@@ -83,7 +97,7 @@ func reveal_single_card(card_data: Dictionary, index: int):
 	var card = CardData.new()
 	card.id = card_data.get("id", "")
 	card.name = card_data.get("name", "")
-	card.rarity = card_data.get("rarity", "comun")
+	card.rarity = card_data.get("rarity", "common")
 	card.type = card_data.get("type", "")
 	card.attack = card_data.get("attack", 0)
 	card.defense = card_data.get("defense", 0)
@@ -104,7 +118,7 @@ func reveal_single_card(card_data: Dictionary, index: int):
 	tween.parallel().tween_property(card_display, "position:y", 0, 0.4).set_trans(Tween.TRANS_BOUNCE).set_ease(Tween.EASE_OUT)
 
 	# Efecto especial para raras+
-	if card.rarity in ["epica", "legendaria"]:
+	if card.rarity in ["epic", "legendary", "epica", "legendaria"]:
 		add_sparkle_effect(card_display)
 
 	await tween.finished
@@ -154,7 +168,7 @@ func _on_skip_pressed():
 			var card = CardData.new()
 			card.id = card_data.get("id", "")
 			card.name = card_data.get("name", "")
-			card.rarity = card_data.get("rarity", "comun")
+			card.rarity = card_data.get("rarity", "common")
 			card.type = card_data.get("type", "")
 			
 			card_display.setup(card)

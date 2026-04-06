@@ -31,6 +31,12 @@ func _ready():
 		CardsManager.collection_loading_progress.connect(_on_collection_loading_progress)
 	if CardsManager.has_signal("collection_images_preloaded"):
 		CardsManager.collection_images_preloaded.connect(_on_collection_loading_complete)
+
+	# Conectar estado de CardDatabase para no mostrar falso "sin cartas"
+	if CardDatabase.has_signal("cards_loaded"):
+		CardDatabase.cards_loaded.connect(_on_card_database_loaded)
+	if CardDatabase.has_signal("cards_failed"):
+		CardDatabase.cards_failed.connect(_on_card_database_failed)
 	
 	# Conectar botones de filtro
 	for button in filter_buttons.get_children():
@@ -38,6 +44,8 @@ func _ready():
 			button.pressed.connect(_on_filter_pressed.bind(button.name))
 	
 	# Cargar cartas del usuario
+	resized.connect(_on_resized)
+	_update_grid_columns()
 	_check_collection_and_load()
 
 func _on_back_pressed():
@@ -46,6 +54,16 @@ func _on_back_pressed():
 func _check_collection_and_load() -> void:
 	"""Verificar si la colecciÃ³n estÃ¡ lista, mostrar loading si es necesario"""
 	print("ðŸ“š Cargando cartas del usuario...")
+
+	if not CardDatabase.is_loaded:
+		loading_label.show()
+		loading_label.text = "Cargando colección..."
+		if not CardDatabase.is_loading:
+			var lang = "es"
+			if LocalizationManager and LocalizationManager.has_method("get_language_code"):
+				lang = LocalizationManager.get_language_code()
+			CardDatabase.fetch_all_cards(lang)
+		return
 	
 	# Obtener colecciÃ³n del usuario
 	var user_cards = _get_user_collection()
@@ -82,6 +100,9 @@ func _check_collection_and_load() -> void:
 
 func _show_loading_screen() -> void:
 	"""Mostrar pantalla de loading"""
+	if loading_screen and is_instance_valid(loading_screen) and not loading_screen.is_queued_for_deletion():
+		return
+
 	loading_screen = LOADING_SCREEN_SCENE.instantiate()
 	# Agregar a la raÃ­z del Ã¡rbol (CanvasLayer debe estar al nivel superior)
 	get_tree().root.add_child(loading_screen)
@@ -162,6 +183,7 @@ func _on_cards_loaded(cards: Array[CardData]):
 	apply_filter()
 
 func apply_filter():
+	_update_grid_columns()
 	clear_cards()
 	
 	var filtered_cards = all_user_cards
@@ -225,16 +247,40 @@ func _on_filter_pressed(filter_name: String):
 		"AllButton":
 			current_filter = "all"
 		"CommonButton":
-			current_filter = "comun"
+			current_filter = "common"
 		"RareButton":
-			current_filter = "rara"
+			current_filter = "rare"
 		"EpicButton":
-			current_filter = "epica"
+			current_filter = "epic"
 		"LegendaryButton":
-			current_filter = "legendaria"
+			current_filter = "legendary"
 	
 	apply_filter()
 
+func _on_card_database_loaded(_count: int) -> void:
+	_check_collection_and_load()
+
+func _on_card_database_failed(message: String) -> void:
+	_on_error(message)
+
 func _on_error(message: String):
+	if loading_screen and is_instance_valid(loading_screen):
+		loading_screen.queue_free()
+		loading_screen = null
+
 	loading_label.text = "Error: " + message
 	loading_label.add_theme_color_override("font_color", Color.RED)
+
+func _on_resized() -> void:
+	_update_grid_columns()
+
+func _update_grid_columns() -> void:
+	if not is_instance_valid(cards_grid):
+		return
+
+	var viewport_width = get_viewport_rect().size.x
+	var content_width = max(280.0, viewport_width - 80.0)
+	var target_card_width = 140.0
+	var gap = 15.0
+	var columns = int(floor((content_width + gap) / (target_card_width + gap)))
+	cards_grid.columns = clamp(columns, 1, 8)
