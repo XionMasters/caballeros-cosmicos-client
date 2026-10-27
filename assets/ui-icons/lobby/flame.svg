@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 128 128">
+  <defs>
+    <!-- userSpaceOnUse: con objectBoundingBox una línea horizontal (alto 0) no se pinta -->
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="118">
+      <stop offset="0" stop-color="#FFF4C9"/>
+      <stop offset="0.45" stop-color="#F6C55A"/>
+      <stop offset="1" stop-color="#B9791C"/>
+    </linearGradient>
+    <linearGradient id="gf" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="118">
+      <stop offset="0" stop-color="#FFE7A3" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#C98A2A" stop-opacity="0.12"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M64 114 C40 114 26 98 26 78 C26 56 44 46 46 24 C58 34 64 46 62 60 C70 54 74 44 74 34 C92 48 102 64 102 80 C102 100 88 114 64 114 Z" fill="url(#gf)"/>
+    <path d="M64 114 C54 114 48 106 48 96 C48 86 56 80 60 70 C70 80 80 86 80 96 C80 106 74 114 64 114 Z" fill="url(#g)" stroke="none"/>
+  </g>
+</svg>

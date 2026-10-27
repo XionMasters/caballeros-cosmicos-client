@@ -15,6 +15,16 @@ signal match_error(error_code: String, message: String)
 signal reconnecting(attempt: int, delay_secs: float)
 ## Emitida cuando la reconexión automática se abandona (superó max intentos o no hay token).
 signal reconnect_failed()
+## Emitida cuando el servidor rechaza la sesión (token inválido/revocado, usuario
+## bloqueado o desconectado por un admin). No se reintenta la conexión.
+signal session_rejected(code: String, message: String)
+
+## Códigos de error de autenticación del servidor: reintentar no sirve.
+const AUTH_ERROR_CODES := ["NO_TOKEN", "INVALID_TOKEN", "SESSION_INVALIDATED", "USER_NOT_FOUND"]
+## Close code 1008 (policy violation): el servidor rechazó la autenticación.
+const CLOSE_CODE_POLICY_VIOLATION := 1008
+## Tiempo máximo para completar el handshake antes de reintentar.
+const HANDSHAKE_TIMEOUT: float = 10.0
 
 # Config
 var ws: WebSocketPeer = null
@@ -36,6 +46,10 @@ var _processing: bool = false
 var _intentional_disconnect: bool = false
 ## Semáforo para evitar lanzar dos ciclos de reconexión en paralelo.
 var _reconnect_in_progress: bool = false
+## Tiempo transcurrido esperando el handshake (-1 = no hay handshake pendiente).
+var _handshake_elapsed: float = -1.0
+## true cuando el servidor rechazó la sesión: no reconectar hasta un nuevo login.
+var _session_rejected: bool = false
 
 # Heartbeat de aplicación
 ## Segundos entre cada ping enviado al servidor.
@@ -68,28 +82,48 @@ func _process(delta):
 		ws.poll()
 		var state := ws.get_ready_state()
 
+		if state == WebSocketPeer.STATE_CONNECTING:
+			_handshake_elapsed += delta
+			if _handshake_elapsed >= HANDSHAKE_TIMEOUT:
+				print("⚠️ Handshake WebSocket sin respuesta en %.0fs" % HANDSHAKE_TIMEOUT)
+				_handshake_elapsed = -1.0
+				ws.close()
+				ws = null
+				_trigger_reconnect()
+			return
+
 		if state == WebSocketPeer.STATE_OPEN:
+			if not connected:
+				_on_handshake_completed()
 			# leer mensajes
-			while ws.get_available_packet_count():
+			while ws and ws.get_available_packet_count():
 				var packet := ws.get_packet()
 				var message := packet.get_string_from_utf8()
 				_handle_message(message)
 
 		elif state == WebSocketPeer.STATE_CLOSED or state == WebSocketPeer.STATE_CLOSING:
-			if connected:
-				connected = false
-				_reset_heartbeat()
-				if _intentional_disconnect:
-					print("🔌 WebSocket cerrado intencionalmente")
-					emit_signal("disconnected_from_server")
-				else:
-					print("❌ WebSocket desconectado por el servidor — iniciando reconexión")
-					emit_signal("disconnected_from_server")
-					ws = null
-					_trigger_reconnect()
-					return
-			# limpiar objeto
+			if state == WebSocketPeer.STATE_CLOSING:
+				return  # esperar a CLOSED para leer el close code
+			var close_code := ws.get_close_code()
+			var close_reason := ws.get_close_reason()
+			var was_connected := connected
+			connected = false
+			_handshake_elapsed = -1.0
+			_reset_heartbeat()
 			ws = null
+
+			if close_code == CLOSE_CODE_POLICY_VIOLATION and not _session_rejected:
+				_reject_session("CONNECTION_REJECTED", close_reason if close_reason != "" else "Sesión rechazada por el servidor")
+
+			if was_connected:
+				emit_signal("disconnected_from_server")
+
+			if _intentional_disconnect or _session_rejected:
+				print("🔌 WebSocket cerrado (code=%d) — sin reconexión" % close_code)
+				return
+
+			print("❌ WebSocket cerrado por el servidor (code=%d) — iniciando reconexión" % close_code)
+			_trigger_reconnect()
 
 # =========================
 # Heartbeat interno
@@ -122,61 +156,68 @@ func _on_dead_connection() -> void:
 # Conexión / Reconexión
 # =========================
 func connect_to_server(token: String) -> void:
-	"""Conectar al servidor WS. Pasa token (string) para handshake (?token=)."""
+	"""Conectar al servidor WS. El token viaja en el header Authorization."""
+	if token != auth_token:
+		_session_rejected = false  # nuevo token (nuevo login): volver a intentar
 	auth_token = token
 	_intentional_disconnect = false
 
-	# Si ya hay conexión abierta, evitar reconectar
-	if ws and ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
-		print("⚠️ WebSocket ya conectado")
+	if _session_rejected:
+		print("⚠️ Sesión rechazada por el servidor — se requiere iniciar sesión de nuevo")
 		return
 
-	var full_url := GameConfig.WS_URL + "?token=" + auth_token
-	print("🔌 Conectando a WebSocket: ", full_url)
+	# Si ya hay conexión abierta o en curso, no abrir otra
+	if ws and ws.get_ready_state() in [WebSocketPeer.STATE_OPEN, WebSocketPeer.STATE_CONNECTING]:
+		print("⚠️ WebSocket ya conectado o conectando")
+		return
+
+	print("🔌 Conectando a WebSocket: ", GameConfig.WS_URL)
 
 	ws = WebSocketPeer.new()
-	var err := ws.connect_to_url(full_url)
+	ws.handshake_headers = PackedStringArray(["Authorization: Bearer %s" % auth_token])
+	var err := ws.connect_to_url(GameConfig.WS_URL)
 	if err != OK:
 		print("❌ Error conectando WebSocket:", err)
-		_schedule_reconnect()
+		ws = null
+		_trigger_reconnect()
 		return
 
-	# activar process para poll
+	_handshake_elapsed = 0.0
+
+	# activar process para poll; el handshake se completa en _process
 	if not _processing:
 		set_process(true)
 		_processing = true
 
-	# Esperar handshake (no bloqueante)
-	await get_tree().create_timer(0.5).timeout
+func _on_handshake_completed() -> void:
+	connected = true
+	_handshake_elapsed = -1.0
+	reconnect_attempts = 0
+	_reconnect_in_progress = false
+	_reset_heartbeat()
+	print("✅ WebSocket conectado (handshake OK)")
+	emit_signal("connected_to_server")
 
-	if ws and ws.get_ready_state() == WebSocketPeer.STATE_OPEN:
-		connected = true
-		reconnect_attempts = 0
-		_reconnect_in_progress = false
-		_reset_heartbeat()
-		print("✅ WebSocket conectado (handshake OK)")
-		emit_signal("connected_to_server")
-		# Si había una partida activa, re-solicitar su estado
-		if active_match_id != "":
-			print("🔄 Partida activa detectada tras reconexión — solicitando estado: ", active_match_id)
-			# Pequeño delay para que el server procese la autenticación
-			await get_tree().create_timer(0.3).timeout
-			request_match_state(active_match_id)
-	else:
-		@warning_ignore("incompatible_ternary")
-		print("⚠️ Handshake pendiente/Falló. Estado:", ws.get_ready_state() if ws else "no socket")
-		_schedule_reconnect()
+func _reject_session(code: String, message: String) -> void:
+	"""El servidor rechazó la sesión: cortar reconexiones y avisar a la app."""
+	if _session_rejected:
+		return
+	_session_rejected = true
+	_reconnect_in_progress = false
+	active_match_id = ""
+	print("⛔ Sesión WebSocket rechazada (%s): %s" % [code, message])
+	emit_signal("session_rejected", code, message)
 
 func _trigger_reconnect() -> void:
 	"""Inicia reconexión si no hay un ciclo activo ya."""
-	if _reconnect_in_progress:
+	if _reconnect_in_progress or _session_rejected or _intentional_disconnect:
 		return
 	if auth_token == "":
 		print("⚠️ Sin token — no se puede reconectar automáticamente")
 		emit_signal("reconnect_failed")
 		return
 	_reconnect_in_progress = true
-	reconnect_attempts = 0
+	# reconnect_attempts se reinicia solo al completar un handshake (backoff creciente)
 	_schedule_reconnect()
 
 func _schedule_reconnect() -> void:
@@ -198,9 +239,11 @@ func _schedule_reconnect() -> void:
 	print("🔁 Reconectando en %.1f s (intento %d/%s)" % [delay, reconnect_attempts, attempts_label])
 	emit_signal("reconnecting", reconnect_attempts, delay)
 	await get_tree().create_timer(delay).timeout
-	if _intentional_disconnect:
+	if _intentional_disconnect or _session_rejected:
 		_reconnect_in_progress = false
 		return
+	# El ciclo sigue activo: si este intento falla, _process vuelve a programar otro
+	_reconnect_in_progress = false
 	connect_to_server(auth_token)
 
 func disconnect_from_server() -> void:
@@ -461,6 +504,27 @@ func _handle_message(message: String) -> void:
 		"connected":
 			print("✅ Servidor WS: conectado como", data.get("username", ""))
 			request_online_users()
+			# Tras reconectar, recuperar el estado de la partida en curso
+			if active_match_id != "":
+				print("🔄 Partida activa tras reconexión — solicitando estado: ", active_match_id)
+				request_match_state(active_match_id)
+
+		"error":
+			var error_code: String = data.get("code", "")
+			if error_code in AUTH_ERROR_CODES:
+				_reject_session(error_code, data.get("message", "Sesión inválida"))
+
+		"admin_disconnect":
+			# Desconexión forzada por un admin: no reconectar automáticamente
+			_intentional_disconnect = true
+			_reject_session("ADMIN_DISCONNECT", data.get("message", "Desconectado por un administrador"))
+
+		"admin_blocked":
+			_reject_session("ADMIN_BLOCKED", data.get("message", "Cuenta bloqueada"))
+
+		"match_state":
+			# Respuesta a request_match_state: mismo formato que match_update
+			emit_signal("match_updated", data)
 
 		"chat_message":
 			emit_signal("chat_message_received", data)

@@ -15,6 +15,8 @@ func _ready():
 		websocket_manager = get_node("/root/WebSocketManager")
 		if websocket_manager.has_signal("chat_message_received"):
 			websocket_manager.chat_message_received.connect(_on_chat_message_received)
+		if websocket_manager.has_signal("server_event"):
+			websocket_manager.server_event.connect(_on_server_event)
 	
 	# Conectar eventos de UI
 	send_button.pressed.connect(_send_message)
@@ -41,16 +43,28 @@ func _send_message():
 		_show_error("Mensaje muy largo (máximo 500 caracteres)")
 		return
 	
-	if websocket_manager and websocket_manager.has_method("send_chat_message"):
-		websocket_manager.send_chat_message(message_text)
-		message_input.clear()
-		message_input.grab_focus()
-	else:
-		_show_error("No estás conectado al servidor")
+	# Sin conexión el mensaje se perdería: avisar y conservar el texto
+	if not websocket_manager or not websocket_manager.is_connected_to_server():
+		_show_error("No estás conectado al servidor. Tu mensaje no se ha enviado.")
+		return
+
+	websocket_manager.send_chat_message(message_text)
+	message_input.clear()
+	message_input.grab_focus()
 
 func _on_chat_message_received(data: Dictionary):
 	"""Evento recibido del WebSocket cuando llega un nuevo mensaje"""
 	_add_message_to_ui(data)
+
+func _on_server_event(event: String, data: Dictionary):
+	"""Mostrar en el chat los rechazos del servidor en vez de ignorarlos"""
+	match event:
+		"chat_error":
+			# Mensaje vacío, demasiado largo, demasiado rápido...
+			_show_error(str(data.get("error", "No se pudo enviar el mensaje")))
+		"error":
+			if data.get("code", "") == "RATE_LIMITED":
+				_show_error(str(data.get("message", "Demasiados mensajes, espera un momento")))
 
 func _add_message_to_ui(message_data: Dictionary):
 	"""Agregar un mensaje al contenedor de mensajes"""

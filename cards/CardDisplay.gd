@@ -809,20 +809,29 @@ func setup(data: CardData) -> void:
 	var in_cache = CardsManager._image_cache.has(card_data.id)
 	print("[CardDisplay] setup(%s) - en cache: %s, image_url: %s" % [card_data.name, in_cache, card_data.image_url])
 
-	CardsManager.get_cached_image(card_data.id, card_data.image_url, func(texture):
-		if texture == null:
-			print("[CardDisplay] ⚠️ Texture es null para: %s (image_url: %s)" % [card_data.id, card_data.image_url])
-			push_error("[CardDisplay] ❌ Error cargando imagen para: %s" % card_data.id)
-			# Mostrar placeholder si la imagen no se pudo cargar
-			if is_instance_valid(card_image):
-				_show_placeholder()
-			return
+	# Referencia débil: si la carta se libera (p. ej. al cambiar un filtro de la
+	# colección) antes de que llegue la imagen, el callback no debe tocarla.
+	CardsManager.get_cached_image(card_data.id, card_data.image_url, _texture_callback(weakref(self)))
+
+
+# Estática a propósito: una lambda creada en un método de instancia queda ligada
+# a `self` y Godot falla al llamarla si el nodo ya se liberó.
+static func _texture_callback(display_ref: WeakRef) -> Callable:
+	return func(texture):
+		var display = display_ref.get_ref()
+		if display != null:
+			display._apply_loaded_texture(texture)
+
+
+func _apply_loaded_texture(texture) -> void:
+	if texture == null:
+		push_error("[CardDisplay] ❌ Error cargando imagen para: %s" % card_data.id)
+		# Mostrar placeholder si la imagen no se pudo cargar
 		if is_instance_valid(card_image):
-			card_image.texture = texture
-			print("[CardDisplay] ✅ Imagen asignada a %s (size: %.0fx%.0f)" % [card_data.name, texture.get_size().x, texture.get_size().y])
-		else:
-			print("[CardDisplay] ⚠️ card_image no es válido para: %s (node queue freed?)" % card_data.name)
-	)
+			_show_placeholder()
+		return
+	if is_instance_valid(card_image):
+		card_image.texture = texture
 
 func setup_from_instance(instance: CardInstance) -> void:
 	"""Setup from CardInstance and refresh visuals"""

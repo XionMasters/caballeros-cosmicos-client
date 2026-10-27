@@ -697,10 +697,7 @@ func _on_save_pressed():
 func _on_set_active_pressed():
 	"""Marcar el mazo como activo"""
 	loading_label.visible = true
-	var deck_id = current_deck.get("id", "")
-	var deck_name = current_deck.get("name", "")
-	var desc = current_deck.get("description", "")
-	DecksManager.update_deck(deck_id, deck_name, desc, true)
+	DecksManager.set_active_deck(current_deck.get("id", ""))
 
 
 

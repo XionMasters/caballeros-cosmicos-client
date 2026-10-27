@@ -124,16 +124,25 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 		_loading_failed("Respuesta inválida: no es diccionario")
 		return
 	
-	var cards_in_response = data.get("cards", [])
-	var total_on_server = data.get("total", 0)
-	
-	if total_on_server == 0:
+	var cards_in_response: Array = data.get("cards", [])
+	# `total` es el tamaño de la página (contrato antiguo del servidor); el total
+	# real llega en `total_count`. Antes se usaba `total` y la carga se detenía
+	# tras la primera página: las cartas a partir de la 101 no existían en el juego.
+	var total_count = data.get("total_count")
+
+	if _loaded_so_far == 0 and cards_in_response.is_empty():
 		_loading_failed("Respuesta vacía del servidor")
 		return
-	
-	# Primera página: guardar el total real
+
+	if total_count != null:
+		_total_cards_on_server = int(total_count)
+	elif cards_in_response.size() == CARDS_PER_PAGE:
+		# Servidor sin total_count: seguir mientras lleguen páginas completas
+		_total_cards_on_server = _loaded_so_far + cards_in_response.size() + 1
+	else:
+		_total_cards_on_server = _loaded_so_far + cards_in_response.size()
+
 	if _loaded_so_far == 0:
-		_total_cards_on_server = total_on_server
 		print("[CardDatabase] 📊 Total de cartas en servidor: %d" % _total_cards_on_server)
 	
 	print("[CardDatabase] 📦 Recibida página con %d cartas" % cards_in_response.size())
@@ -147,8 +156,8 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 	# Limpiar contador de reintentos para esta página
 	_page_retry_count.erase(_loaded_so_far)
 	
-	# ¿Hay más páginas?
-	if _loaded_so_far < _total_cards_on_server:
+	# ¿Hay más páginas? (una página vacía termina la carga para no repetir el offset)
+	if _loaded_so_far < _total_cards_on_server and not cards_in_response.is_empty():
 		# Pedir siguiente página
 		_fetch_cards_page(_loaded_so_far)
 	else:

@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="400" height="560" viewBox="0 0 200 280">
+  <defs>
+    <linearGradient id="metal" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8FA6C8"/>
+      <stop offset="0.45" stop-color="#3E5683"/>
+      <stop offset="1" stop-color="#1B2A4A"/>
+    </linearGradient>
+    <linearGradient id="sheen" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0"/>
+      <stop offset="0.5" stop-color="#FFFFFF" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity="0"/>
+    </linearGradient>
+    <linearGradient id="rim" gradientUnits="userSpaceOnUse" x1="0" y1="80" x2="0" y2="200">
+      <stop offset="0" stop-color="#FFFFFF"/>
+      <stop offset="1" stop-color="#C9D6EA"/>
+    </linearGradient>
+    <radialGradient id="core" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity="0.95"/>
+      <stop offset="0.35" stop-color="#9FC2FF" stop-opacity="0.7"/>
+      <stop offset="1" stop-color="#9FC2FF" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <polygon points="10,24 10,16 16,8 22,16 28,8 34,16 40,8 46,16 52,8 58,16 64,8 70,16 76,8 82,16 88,8 94,16 100,8 106,16 112,8 118,16 124,8 130,16 136,8 142,16 148,8 154,16 160,8 166,16 172,8 178,16 184,8 190,16 190,24 190,256 190,264 190,264 184,272 178,264 172,272 166,264 160,272 154,264 148,272 142,264 136,272 130,264 124,272 118,264 112,272 106,264 100,272 94,264 88,272 82,264 76,272 70,264 64,272 58,264 52,272 46,264 40,272 34,264 28,272 22,264 16,272 10,264 10,256" fill="url(#metal)" stroke="#C9D6EA" stroke-width="2.5" stroke-linejoin="round"/>
+  <polygon points="40,24 70,24 20,256 10,256 10,210" fill="url(#sheen)"/>
+  <rect x="10" y="38" width="180" height="3" fill="#C9D6EA" opacity="0.7"/>
+  <rect x="10" y="239" width="180" height="3" fill="#C9D6EA" opacity="0.7"/>
+  <path d="M107.18302469135803 65.72038751714678 L108.35051440329218 68.44453017832647 L111.07465706447188 69.61201989026063 L108.35051440329218 70.77950960219478 L107.18302469135803 73.50365226337448 L106.01553497942388 70.77950960219478 L103.29139231824418 69.61201989026063 L106.01553497942388 68.44453017832647 Z" fill="#FFFFFF" opacity="0.42"/>
+  <path d="M137.04441015089162 180.55922496570645 L139.10405521262 185.3650634430727 L143.90989368998626 187.4247085048011 L139.10405521262 189.48435356652948 L137.04441015089162 194.29019204389573 L134.98476508916323 189.48435356652948 L130.17892661179698 187.4247085048011 L134.98476508916323 185.3650634430727 Z" fill="#FFFFFF" opacity="0.99"/>
+  <path d="M106.00044581618656 194.48448216735252 L106.96459190672154 196.73415637860083 L109.21426611796981 197.6983024691358 L106.96459190672154 198.66244855967076 L106.00044581618656 200.91212277091907 L105.03629972565157 198.66244855967076 L102.7866255144033 197.6983024691358 L105.03629972565157 196.73415637860083 Z" fill="#FFFFFF" opacity="0.50"/>
+  <path d="M165.70545267489712 221.31097393689987 L166.34570473251028 222.80489540466394 L167.83962620027435 223.4451474622771 L166.34570473251028 224.08539951989027 L165.70545267489712 225.57932098765434 L165.06520061728395 224.08539951989027 L163.57127914951988 223.4451474622771 L165.06520061728395 222.80489540466394 Z" fill="#FFFFFF" opacity="0.88"/>
+  <circle cx="100" cy="140" r="78" fill="url(#core)"/>
+  <circle cx="100" cy="140" r="58" fill="none" stroke="url(#rim)" stroke-width="2.5"/>
+  <circle cx="100" cy="140" r="46" fill="none" stroke="url(#rim)" stroke-width="1.2" opacity="0.8"/>
+  <circle cx="100.0" cy="88.0" r="3.5" fill="url(#rim)"/>
+  <circle cx="126.0" cy="95.0" r="2.2" fill="url(#rim)"/>
+  <circle cx="145.0" cy="114.0" r="2.2" fill="url(#rim)"/>
+  <circle cx="152.0" cy="140.0" r="3.5" fill="url(#rim)"/>
+  <circle cx="145.0" cy="166.0" r="2.2" fill="url(#rim)"/>
+  <circle cx="126.0" cy="185.0" r="2.2" fill="url(#rim)"/>
+  <circle cx="100.0" cy="192.0" r="3.5" fill="url(#rim)"/>
+  <circle cx="74.0" cy="185.0" r="2.2" fill="url(#rim)"/>
+  <circle cx="55.0" cy="166.0" r="2.2" fill="url(#rim)"/>
+  <circle cx="48.0" cy="140.0" r="3.5" fill="url(#rim)"/>
+  <circle cx="55.0" cy="114.0" r="2.2" fill="url(#rim)"/>
+  <circle cx="74.0" cy="95.0" r="2.2" fill="url(#rim)"/>
+  <polygon points="100.0,106.0 103.4,131.7 117.0,123.0 108.3,136.6 134.0,140.0 108.3,143.4 117.0,157.0 103.4,148.3 100.0,174.0 96.6,148.3 83.0,157.0 91.7,143.4 66.0,140.0 91.7,136.6 83.0,123.0 96.6,131.7" fill="url(#rim)" stroke="#FFFFFF" stroke-width="1"/>
+  <circle cx="100" cy="140" r="5" fill="#FFFFFF"/>
+</svg>

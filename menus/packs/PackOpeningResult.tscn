@@ -50,10 +50,10 @@ theme_override_constants/separation = 20
 
 [node name="PackNameLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "âœ¨ Pack Abierto âœ¨"
+text = "¡Sobre abierto!"
 horizontal_alignment = 1
 theme_override_font_sizes/font_size = 32
-theme_override_colors/font_color = Color(1, 0.84, 0, 1)
+theme_type_variation = &"HeroTitle"
 
 [node name="ScrollContainer" type="ScrollContainer" parent="Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
@@ -63,11 +63,12 @@ horizontal_scroll_mode = 0
 
 [node name="CardsContainer" type="HFlowContainer" parent="Panel/MarginContainer/VBoxContainer/ScrollContainer"]
 layout_mode = 2
+alignment = 1
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 20
 
 [node name="CloseButton" type="Button" parent="Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "Cerrar"
+text = "Continuar"
 theme_override_font_sizes/font_size = 20

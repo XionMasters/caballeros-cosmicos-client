@@ -1,7 +1,11 @@
-[gd_scene load_steps=2 format=3 uid="uid://bajepaslt3x3v"]
+[gd_scene format=3 uid="uid://bajepaslt3x3v"]
 
 [ext_resource type="Script" uid="uid://c7yby6kd1qucd" path="res://menus/decks/DecksList.gd" id="1"]
-
+[ext_resource type="Theme" path="res://menus/lobby/lobby_theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://menus/login/LoginBackground.gd" id="3_background"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/back.svg" id="4_back"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/decks.svg" id="5_decks"]
+[ext_resource type="Script" path="res://ui/ToastNotice.gd" id="6_toast"]
 
 [node name="DecksList" type="Control"]
 layout_mode = 3
@@ -10,188 +14,214 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="Background" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 20.0
-offset_top = 20.0
-offset_right = -20.0
-offset_bottom = -20.0
 grow_horizontal = 2
 grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("3_background")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
+[node name="Root" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="Layout" type="VBoxContainer" parent="Root"]
 layout_mode = 2
+theme_override_constants/separation = 16
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
+[node name="Header" type="PanelContainer" parent="Root/Layout"]
 layout_mode = 2
+theme_type_variation = &"HeaderPanel"
 
-[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="Row" type="HBoxContainer" parent="Root/Layout/Header"]
 layout_mode = 2
-theme_override_font_sizes/font_size = 20
-text = "â† Volver"
+theme_override_constants/separation = 14
 
-[node name="TitleLabel" type="Label" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="BackButton" type="Button" parent="Root/Layout/Header/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 48)
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Volver al menú principal"
+theme_override_constants/icon_max_width = 22
+text = "Volver"
+icon = ExtResource("4_back")
+expand_icon = true
+
+[node name="Icon" type="TextureRect" parent="Root/Layout/Header/Row"]
+custom_minimum_size = Vector2(44, 44)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("5_decks")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="TitleBox" type="VBoxContainer" parent="Root/Layout/Header/Row"]
+layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = -2
+
+[node name="Title" type="Label" parent="Root/Layout/Header/Row/TitleBox"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "MIS MAZOS"
+
+[node name="Subtitle" type="Label" parent="Root/Layout/Header/Row/TitleBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "El mazo activo es el que usarás en las partidas"
+
+[node name="Spacer" type="Control" parent="Root/Layout/Header/Row"]
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Mis Mazos"
-theme_type_variation = &"HeaderLarge"
 
-[node name="CreateDeckButton" type="Button" parent="MarginContainer/VBoxContainer/HBoxContainer"]
+[node name="CreateDeckButton" type="Button" parent="Root/Layout/Header/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(200, 48)
 layout_mode = 2
-text = "Crear Nuevo Mazo"
+size_flags_vertical = 4
+theme_type_variation = &"PlayButton"
+theme_override_font_sizes/font_size = 18
+text = "+ Nuevo mazo"
 
-[node name="ScrollContainer" type="ScrollContainer" parent="MarginContainer/VBoxContainer"]
+[node name="ListPanel" type="PanelContainer" parent="Root/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="DecksContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ScrollContainer"]
+[node name="VBox" type="VBoxContainer" parent="Root/Layout/ListPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="LoadingLabel" type="Label" parent="Root/Layout/ListPanel/VBox"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Cargando mazos…"
+horizontal_alignment = 1
+
+[node name="ScrollContainer" type="ScrollContainer" parent="Root/Layout/ListPanel/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="DecksContainer" type="VBoxContainer" parent="Root/Layout/ListPanel/VBox/ScrollContainer"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/separation = 12
 
-[node name="LoadingLabel" type="Label" parent="."]
+[node name="CreateOverlay" type="ColorRect" parent="."]
+unique_name_in_owner = true
 visible = false
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -100.0
-offset_top = -12.0
-offset_right = 100.0
-offset_bottom = 12.0
-grow_horizontal = 2
-grow_vertical = 2
-text = "Cargando mazos..."
-horizontal_alignment = 1
-
-[node name="ErrorLabel" type="Label" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 7
-anchor_left = 0.5
-anchor_top = 1.0
-anchor_right = 0.5
-anchor_bottom = 1.0
-offset_left = -200.0
-offset_top = -50.0
-offset_right = 200.0
-offset_bottom = -20.0
-grow_horizontal = 2
-grow_vertical = 0
-theme_override_colors/font_color = Color(1, 0.3, 0.3, 1)
-text = "Error"
-horizontal_alignment = 1
-
-[node name="CreateDeckDialog" type="Panel" parent="."]
-visible = false
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -150.0
-offset_right = 200.0
-offset_bottom = 150.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="CreateDeckDialog"]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
+grow_horizontal = 2
+grow_vertical = 2
+color = Color(0, 0, 0, 0.6)
+
+[node name="Center" type="CenterContainer" parent="CreateOverlay"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="TitleLabel" type="Label" parent="CreateDeckDialog/VBoxContainer"]
+[node name="CreatePanel" type="PanelContainer" parent="CreateOverlay/Center"]
+custom_minimum_size = Vector2(460, 0)
 layout_mode = 2
-text = "Crear Nuevo Mazo"
+theme_type_variation = &"BannerPanel"
+
+[node name="Margin" type="MarginContainer" parent="CreateOverlay/Center/CreatePanel"]
+layout_mode = 2
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 20
+theme_override_constants/margin_right = 24
+theme_override_constants/margin_bottom = 20
+
+[node name="VBox" type="VBoxContainer" parent="CreateOverlay/Center/CreatePanel/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Title" type="Label" parent="CreateOverlay/Center/CreatePanel/Margin/VBox"]
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 24
+text = "Nuevo mazo"
 horizontal_alignment = 1
 
-[node name="DeckNameLabel" type="Label" parent="CreateDeckDialog/VBoxContainer"]
+[node name="NameLabel" type="Label" parent="CreateOverlay/Center/CreatePanel/Margin/VBox"]
 layout_mode = 2
-text = "Nombre del Mazo:"
+text = "Nombre"
 
-[node name="DeckNameInput" type="LineEdit" parent="CreateDeckDialog/VBoxContainer"]
+[node name="DeckNameInput" type="LineEdit" parent="CreateOverlay/Center/CreatePanel/Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
-placeholder_text = "Mi Mazo Ã‰pico"
+placeholder_text = "Ej.: Caballeros de Bronce"
 max_length = 50
 
-[node name="DeckDescLabel" type="Label" parent="CreateDeckDialog/VBoxContainer"]
+[node name="DescLabel" type="Label" parent="CreateOverlay/Center/CreatePanel/Margin/VBox"]
 layout_mode = 2
-text = "DescripciÃ³n (opcional):"
+text = "Descripción (opcional)"
 
-[node name="DeckDescInput" type="TextEdit" parent="CreateDeckDialog/VBoxContainer"]
-custom_minimum_size = Vector2(0, 100)
+[node name="DeckDescInput" type="LineEdit" parent="CreateOverlay/Center/CreatePanel/Margin/VBox"]
+unique_name_in_owner = true
 layout_mode = 2
+placeholder_text = "Estrategia, tema…"
+max_length = 200
 
-[node name="HBoxContainer" type="HBoxContainer" parent="CreateDeckDialog/VBoxContainer"]
-layout_mode = 2
-
-[node name="CancelButton" type="Button" parent="CreateDeckDialog/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Cancelar"
-
-[node name="ConfirmButton" type="Button" parent="CreateDeckDialog/VBoxContainer/HBoxContainer"]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Crear"
-
-[node name="DeleteConfirmationDialog" type="Panel" parent="."]
+[node name="CreateError" type="Label" parent="CreateOverlay/Center/CreatePanel/Margin/VBox"]
+unique_name_in_owner = true
 visible = false
-layout_mode = 1
-anchors_preset = 8
-anchor_left = 0.5
-anchor_top = 0.5
-anchor_right = 0.5
-anchor_bottom = 0.5
-offset_left = -200.0
-offset_top = -75.0
-offset_right = 200.0
-offset_bottom = 75.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="DeleteConfirmationDialog"]
-layout_mode = 1
-anchors_preset = 15
-anchor_right = 1.0
-anchor_bottom = 1.0
-offset_left = 10.0
-offset_top = 10.0
-offset_right = -10.0
-offset_bottom = -10.0
-grow_horizontal = 2
-grow_vertical = 2
-
-[node name="Label" type="Label" parent="DeleteConfirmationDialog/VBoxContainer"]
 layout_mode = 2
-text = "Â¿EstÃ¡s seguro de eliminar este mazo?"
-horizontal_alignment = 1
-autowrap_mode = 3
+theme_override_colors/font_color = Color(1, 0.6, 0.6, 1)
+text = "El nombre no puede estar vacío"
 
-[node name="HBoxContainer" type="HBoxContainer" parent="DeleteConfirmationDialog/VBoxContainer"]
+[node name="Buttons" type="HBoxContainer" parent="CreateOverlay/Center/CreatePanel/Margin/VBox"]
 layout_mode = 2
+theme_override_constants/separation = 10
 
-[node name="CancelButton" type="Button" parent="DeleteConfirmationDialog/VBoxContainer/HBoxContainer"]
+[node name="CancelButton" type="Button" parent="CreateOverlay/Center/CreatePanel/Margin/VBox/Buttons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Cancelar"
 
-[node name="ConfirmButton" type="Button" parent="DeleteConfirmationDialog/VBoxContainer/HBoxContainer"]
+[node name="ConfirmButton" type="Button" parent="CreateOverlay/Center/CreatePanel/Margin/VBox/Buttons"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Eliminar"
+theme_type_variation = &"PlayButton"
+theme_override_font_sizes/font_size = 18
+text = "Crear y editar"
+
+[node name="DeleteConfirmationDialog" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Eliminar mazo"
+initial_position = 2
+size = Vector2i(420, 140)
+ok_button_text = "Eliminar"
+cancel_button_text = "Cancelar"
+dialog_autowrap = true
+
+[node name="Toast" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+script = ExtResource("6_toast")

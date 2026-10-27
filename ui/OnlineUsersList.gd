@@ -1,8 +1,8 @@
 # OnlineUsersList.gd
 extends VBoxContainer
 
-@onready var users_title = $UsersTitle
-@onready var users_list = $UsersScroll/UsersList
+@onready var users_title = %UsersTitle
+@onready var users_list = %UsersList
 
 var websocket_manager
 var user_entries = {}  # Dictionary para trackear entries por user_id
@@ -17,7 +17,7 @@ func _ready():
 func _on_online_users_updated(users: Array):
 	"""Actualizar lista de usuarios en línea"""
 	# Actualizar título con cantidad
-	users_title.text = "👥 Usuarios en línea (%d)" % users.size()
+	users_title.text = "En línea (%d)" % users.size()
 	
 	# Limpiar usuarios que ya no están
 	var current_user_ids = []

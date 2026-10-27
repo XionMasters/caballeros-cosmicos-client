@@ -1,54 +1,98 @@
-[gd_scene load_steps=2 format=3 uid="uid://bxl0dk3lmj6ap"]
+[gd_scene format=3 uid="uid://bxl0dk3lmj6ap"]
 
 [ext_resource type="Script" uid="uid://buxxkv3ruvimm" path="res://menus/decks/DeckItem.gd" id="1"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/decks.svg" id="2_decks"]
 
 [node name="DeckItem" type="PanelContainer"]
-custom_minimum_size = Vector2(0, 80)
+custom_minimum_size = Vector2(0, 130)
+theme_type_variation = &"ItemCard"
 script = ExtResource("1")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="HBoxContainer" type="HBoxContainer" parent="."]
 layout_mode = 2
-theme_override_constants/margin_left = 10
-theme_override_constants/margin_top = 10
-theme_override_constants/margin_right = 10
-theme_override_constants/margin_bottom = 10
+theme_override_constants/separation = 16
 
-[node name="HBoxContainer" type="HBoxContainer" parent="MarginContainer"]
+[node name="CoverThumbnail" type="TextureRect" parent="HBoxContainer"]
+custom_minimum_size = Vector2(78, 110)
 layout_mode = 2
-
-[node name="ActiveIndicator" type="ColorRect" parent="MarginContainer/HBoxContainer"]
-visible = false
-custom_minimum_size = Vector2(5, 0)
-layout_mode = 2
-color = Color(0.2, 0.8, 0.2, 1)
-
-[node name="CoverThumbnail" type="TextureRect" parent="MarginContainer/HBoxContainer"]
-custom_minimum_size = Vector2(54, 76)
-layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("2_decks")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/HBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="HBoxContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
+size_flags_vertical = 4
+theme_override_constants/separation = 6
 
-[node name="DeckNameLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="TitleRow" type="HBoxContainer" parent="HBoxContainer/VBoxContainer"]
 layout_mode = 2
-theme_type_variation = &"HeaderMedium"
-text = "Nombre del Mazo"
+theme_override_constants/separation = 10
 
-[node name="DeckInfoLabel" type="Label" parent="MarginContainer/HBoxContainer/VBoxContainer"]
+[node name="DeckNameLabel" type="Label" parent="HBoxContainer/VBoxContainer/TitleRow"]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.7, 0.7, 0.7, 1)
+theme_type_variation = &"SectionTitle"
+theme_override_font_sizes/font_size = 22
+text = "Nombre del mazo"
+
+[node name="ActiveIndicator" type="PanelContainer" parent="HBoxContainer/VBoxContainer/TitleRow"]
+visible = false
+layout_mode = 2
+size_flags_vertical = 4
+theme_type_variation = &"Chip"
+
+[node name="Label" type="Label" parent="HBoxContainer/VBoxContainer/TitleRow/ActiveIndicator"]
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.52, 1)
+theme_override_font_sizes/font_size = 13
+text = "★ ACTIVO"
+
+[node name="DeckInfoLabel" type="Label" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Sin descripción"
+autowrap_mode = 3
+max_lines_visible = 2
+
+[node name="StatusRow" type="HBoxContainer" parent="HBoxContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="CountBar" type="ProgressBar" parent="HBoxContainer/VBoxContainer/StatusRow"]
+custom_minimum_size = Vector2(160, 14)
+layout_mode = 2
+size_flags_vertical = 4
+max_value = 40.0
+show_percentage = false
+
+[node name="StatusLabel" type="Label" parent="HBoxContainer/VBoxContainer/StatusRow"]
+layout_mode = 2
 text = "0 cartas"
 
-[node name="ButtonsContainer" type="HBoxContainer" parent="MarginContainer/HBoxContainer"]
+[node name="ButtonsContainer" type="VBoxContainer" parent="HBoxContainer"]
+custom_minimum_size = Vector2(190, 0)
 layout_mode = 2
+size_flags_vertical = 4
+theme_override_constants/separation = 8
 
-[node name="EditButton" type="Button" parent="MarginContainer/HBoxContainer/ButtonsContainer"]
+[node name="ActivateButton" type="Button" parent="HBoxContainer/ButtonsContainer"]
 layout_mode = 2
+theme_type_variation = &"PlayButton"
+theme_override_font_sizes/font_size = 16
+text = "Usar este mazo"
+
+[node name="Row" type="HBoxContainer" parent="HBoxContainer/ButtonsContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="EditButton" type="Button" parent="HBoxContainer/ButtonsContainer/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
 text = "Editar"
 
-[node name="DeleteButton" type="Button" parent="MarginContainer/HBoxContainer/ButtonsContainer"]
+[node name="DeleteButton" type="Button" parent="HBoxContainer/ButtonsContainer/Row"]
 layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(1, 0.65, 0.65, 1)
 text = "Eliminar"

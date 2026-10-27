@@ -47,7 +47,8 @@ func _on_server_event(event: String, data: Dictionary) -> void:
 			var mode = "test" if is_test_mode else "pvp"
 			await _initialize_match(data, mode)
 
-		"match_update":
+		"match_update", "match_state":
+			# match_state = respuesta a request_match_state tras reconectar
 			_on_match_updated(data)
 			
 		"card_played":
@@ -365,6 +366,12 @@ func _on_match_end(data: Dictionary) -> void:
 # =====================================================
 func _on_match_error(code: String, message: String) -> void:
 	print("❌ Error Match (%s): %s" % [code, message])
+
+	# Email sin verificar: el diálogo de AuthManager permite reenviar el correo
+	if code == "EMAIL_NOT_VERIFIED":
+		AuthManager.show_email_verification()
+		emit_signal("match_error", "Verifica tu email para poder jugar partidas")
+		return
 
 	# Partida TEST activa: ofrecemos reanudar o abandonar
 	if code == "ALREADY_IN_MATCH":

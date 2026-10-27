@@ -150,33 +150,49 @@ static func from_json(json: Dictionary) -> CardData:
 	return card
 
 
-# Normalizar tipos de carta: caballero → knight, etc
+# Normalizar tipos de carta al vocabulario del cliente:
+# knight / technique / item / helper / stage / event.
+# La BD guarda la mayoría en español y SIN tilde ("tecnica", "ayudante",
+# "ocasion"); antes solo se reconocían otras variantes, así que técnicas,
+# ayudantes y ocasiones no encajaban en ninguna zona del tablero.
 static func _normalize_type(type_str: String) -> String:
-	match type_str.to_lower():
-		"caballero":
+	match type_str.strip_edges().to_lower():
+		"caballero", "knight":
 			return "knight"
-		"técnica":
+		"tecnica", "técnica", "technique":
 			return "technique"
-		"objeto":
+		"objeto", "object", "item":
 			return "item"
-		"escenario":
+		"escenario", "stage":
 			return "stage"
-		"asistente":
+		"ayudante", "asistente", "helper":
 			return "helper"
-		"evento":
+		"ocasion", "ocasión", "occasion", "evento", "event":
 			return "event"
 		_:
 			return type_str
 
 
+## Nombre en español para mostrar el tipo en la interfaz
+static func get_type_label(t: String) -> String:
+	match t:
+		"knight": return "Caballero"
+		"technique": return "Técnica"
+		"item": return "Objeto"
+		"stage": return "Escenario"
+		"helper": return "Ayudante"
+		"event": return "Ocasión"
+		_: return t.capitalize()
+
+
 # Normalizar rareza: rara → rare, etc
 static func _normalize_rarity(rarity_str: String) -> String:
 	match rarity_str.to_lower():
-		"común":
+		"común", "comun":
 			return "common"
 		"rara":
 			return "rare"
-		"épica":
+		"épica", "epica":
 			return "epic"
 		"legendaria":
 			return "legendary"

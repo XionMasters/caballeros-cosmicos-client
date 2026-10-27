@@ -20,7 +20,7 @@ func _ready():
 
 func show_cards(pack_name: String, cards: Array):
 	cards_data = cards
-	pack_name_label.text = "✨ " + pack_name + " Abierto ✨"
+	pack_name_label.text = "¡%s abierto!" % pack_name
 	
 	# Limpiar contenedor
 	for child in cards_container.get_children():

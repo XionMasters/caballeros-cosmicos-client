@@ -7,6 +7,8 @@ extends RefCounted
 var id: String = ""
 var username: String = ""
 var email: String = ""
+## Sin verificar, el servidor bloquea packs, mazos, transacciones y partidas
+var is_email_verified: bool = true
 
 # Datos de juego
 var currency: int = 0
@@ -36,7 +38,8 @@ static func from_dict(data: Dictionary) -> UserProfile:
 	profile.id = data.get("id", "")
 	profile.username = data.get("username", "")
 	profile.email = data.get("email", "")
-	
+	profile.is_email_verified = data.get("is_email_verified", true)
+
 	# Datos de juego
 	profile.currency = data.get("currency", 0)
 	profile.avatar_url = data.get("avatar_url", "")
@@ -65,6 +68,7 @@ func to_dict() -> Dictionary:
 		"id": id,
 		"username": username,
 		"email": email,
+		"is_email_verified": is_email_verified,
 		"currency": currency,
 		"avatar_url": avatar_url,
 		"level": level,
@@ -100,6 +104,7 @@ func update_from_dict(data: Dictionary) -> void:
 	"""Actualizar campos desde diccionario (merge parcial)"""
 	if data.has("username"): username = data.get("username")
 	if data.has("email"): email = data.get("email")
+	if data.has("is_email_verified"): is_email_verified = data.get("is_email_verified")
 	if data.has("currency"): currency = data.get("currency")
 	if data.has("avatar_url"): avatar_url = data.get("avatar_url")
 	if data.has("level"): level = data.get("level")

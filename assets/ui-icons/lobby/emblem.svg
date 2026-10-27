@@ -1,0 +1,48 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 256 256">
+  <defs>
+    <linearGradient id="g" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#FFF4C9"/>
+      <stop offset="0.5" stop-color="#F6C55A"/>
+      <stop offset="1" stop-color="#B9791C"/>
+    </linearGradient>
+    <radialGradient id="core" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#FFF8E0"/>
+      <stop offset="0.35" stop-color="#F6C55A" stop-opacity="0.8"/>
+      <stop offset="1" stop-color="#7A3FB8" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="disc" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#3A1E78"/>
+      <stop offset="1" stop-color="#0B0626"/>
+    </radialGradient>
+  </defs>
+  <circle cx="128" cy="128" r="122" fill="url(#disc)" stroke="url(#g)" stroke-width="5"/>
+  <circle cx="128" cy="128" r="116" fill="none" stroke="url(#g)" stroke-width="1.5" opacity="0.7"/>
+  <circle cx="128" cy="128" r="92" fill="none" stroke="url(#g)" stroke-width="2" opacity="0.8"/>
+  <circle cx="128.0" cy="24.0" r="6" fill="url(#g)"/>
+  <line x1="151.8" y1="39.1" x2="158.0" y2="16.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="180.0" cy="37.9" r="4" fill="url(#g)"/>
+  <line x1="193.1" y1="62.9" x2="210.0" y2="46.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="218.1" cy="76.0" r="4" fill="url(#g)"/>
+  <line x1="216.9" y1="104.2" x2="240.0" y2="98.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="232.0" cy="128.0" r="6" fill="url(#g)"/>
+  <line x1="216.9" y1="151.8" x2="240.0" y2="158.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="218.1" cy="180.0" r="4" fill="url(#g)"/>
+  <line x1="193.1" y1="193.1" x2="210.0" y2="210.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="180.0" cy="218.1" r="4" fill="url(#g)"/>
+  <line x1="151.8" y1="216.9" x2="158.0" y2="240.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="128.0" cy="232.0" r="6" fill="url(#g)"/>
+  <line x1="104.2" y1="216.9" x2="98.0" y2="240.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="76.0" cy="218.1" r="4" fill="url(#g)"/>
+  <line x1="62.9" y1="193.1" x2="46.0" y2="210.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="37.9" cy="180.0" r="4" fill="url(#g)"/>
+  <line x1="39.1" y1="151.8" x2="16.0" y2="158.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="24.0" cy="128.0" r="6" fill="url(#g)"/>
+  <line x1="39.1" y1="104.2" x2="16.0" y2="98.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="37.9" cy="76.0" r="4" fill="url(#g)"/>
+  <line x1="62.9" y1="62.9" x2="46.0" y2="46.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="76.0" cy="37.9" r="4" fill="url(#g)"/>
+  <line x1="104.2" y1="39.1" x2="98.0" y2="16.0" stroke="url(#g)" stroke-width="2" opacity="0.6"/>
+  <circle cx="128" cy="128" r="80" fill="url(#core)"/>
+  <polygon points="128.0,58.0 134.9,111.4 161.9,94.1 144.6,121.1 198.0,128.0 144.6,134.9 161.9,161.9 134.9,144.6 128.0,198.0 121.1,144.6 94.1,161.9 111.4,134.9 58.0,128.0 111.4,121.1 94.1,94.1 121.1,111.4" fill="url(#g)" stroke="#FFF4C9" stroke-width="1.5"/>
+  <circle cx="128" cy="128" r="10" fill="#FFF8E0"/>
+</svg>

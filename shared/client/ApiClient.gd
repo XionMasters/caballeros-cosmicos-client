@@ -4,6 +4,8 @@
 extends Node
 
 signal request_completed(tag: String, success: bool, data: Variant, error: String)
+## El servidor rechazó una request porque el email no está verificado (403 verification_required)
+signal email_verification_required()
 
 # -------------------------------------------------------------------
 # Configuración
@@ -39,11 +41,14 @@ func _ready():
 func set_auth_token(token: String) -> void:
 	auth_token = token
 
-func get_auth_headers() -> PackedStringArray:
-	if auth_token != "":
+## token vacío = usar el token actual
+func get_auth_headers(token: String = "") -> PackedStringArray:
+	if token == "":
+		token = auth_token
+	if token != "":
 		return [
 			"Content-Type: application/json",
-			"Authorization: Bearer %s" % auth_token
+			"Authorization: Bearer %s" % token
 		]
 	if OS.is_debug_build():
 		push_warning("⚠️ [ApiClient] auth_token vacío para request autenticado")
@@ -104,6 +109,8 @@ func request(method: String, endpoint: String, body: Dictionary, tag: String, us
 		"endpoint": endpoint,
 		"body": body,
 		"use_auth": use_auth,
+		# Token vigente al encolar: un logout posterior no deja la request sin auth
+		"auth_token": auth_token,
 		"tag": tag,
 		"timeout": timeout,
 		"attempt": 0
@@ -151,7 +158,7 @@ func _start_request(req: Dictionary):
 	timer.one_shot = true
 	add_child(timer)
 
-	var headers := get_auth_headers() if req.use_auth else default_headers.duplicate()
+	var headers := get_auth_headers(req.auth_token) if req.use_auth else default_headers.duplicate()
 	var body := ""
 
 	if req.method != "GET" and not req.body.is_empty():
@@ -246,6 +253,8 @@ func _on_request_completed(result: int, response_code: int, _headers: PackedStri
 		_finish_request(req, true, data, "")
 	else:
 		error_msg = data.get("error", "Error HTTP %d" % response_code) if data is Dictionary else "Error HTTP %d" % response_code
+		if response_code == 403 and data is Dictionary and data.get("verification_required", false):
+			email_verification_required.emit()
 		_finish_request(req, false, data, error_msg)
 
 	_process_queue()
@@ -305,6 +314,10 @@ func _on_image_timeout(
 # -------------------------------------------------------------------
 
 func _retry_or_fail(req: Dictionary, _reason: String) -> bool:
+	# Solo se reintentan GET. Un POST/PUT/DELETE con timeout puede haber llegado
+	# al servidor: repetirlo duplicaría compras de sobres, aperturas, etc.
+	if req.method != "GET":
+		return false
 	if req.attempt < MAX_RETRIES:
 		req.attempt += 1
 		_queue.push_front(req)

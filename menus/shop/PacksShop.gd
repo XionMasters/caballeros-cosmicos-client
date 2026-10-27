@@ -1,22 +1,11 @@
 # PacksShop.gd
-# Tienda de sobres con probabilidades
+# Tienda de sobres: catálogo, compra (abrir ahora o guardar), sobres sin abrir
+# y apertura con revelado de cartas.
 extends Control
-
-@onready var back_button: Button = $MarginContainer/VBoxContainer/TopBar/BackButton
-@onready var packs_grid: GridContainer = $MarginContainer/VBoxContainer/ScrollContainer/PacksGrid
-@onready var currency_label: Label = $MarginContainer/VBoxContainer/TopBar/CurrencyLabel
-@onready var loading_label: Label = $MarginContainer/VBoxContainer/LoadingLabel
-@onready var pack_details_panel: Panel = $PackDetailsPanel
-@onready var pack_opening_result: Control = $PackOpeningResult
 
 const PACK_CARD_SCENE = preload("res://menus/packs/PackCard.tscn")
 
-var available_packs: Array = []
-var user_currency: int = 0
-var last_purchased_pack_id: String = ""  # Para abrir automáticamente después de comprar
-var last_purchased_pack_data: Dictionary = {}
-
-# Probabilidades (del backend)
+# Probabilidades por carta (mismos pesos que RARITY_WEIGHTS del servidor)
 const RARITY_PROBABILITIES = {
 	"common": 60,
 	"rare": 25,
@@ -24,287 +13,301 @@ const RARITY_PROBABILITIES = {
 	"legendary": 3
 }
 
+@onready var back_button: Button = %BackButton
+@onready var packs_grid: HFlowContainer = %PacksGrid
+@onready var currency_label: Label = %CurrencyLabel
+@onready var coin_icon: TextureRect = %CoinIcon
+@onready var loading_label: Label = %LoadingLabel
+@onready var my_packs_panel: PanelContainer = %MyPacksPanel
+@onready var my_packs_row: HBoxContainer = %MyPacksRow
+@onready var pack_opening_result: Control = %PackOpeningResult
+@onready var toast: ToastNotice = %Toast
+
+var available_packs: Array = []
+var user_currency: int = 0
+# Sobre que se está abriendo (user_pack_id); evita mostrar aperturas ajenas
+var _opening_user_pack_id: String = ""
+# Tras comprar: abrir el sobre al momento o guardarlo
+var _open_after_purchase := true
+var _busy := false
+
+
 func _ready():
-	# Conectar botón volver
 	back_button.pressed.connect(_on_back_pressed)
-	
-	# Conectar señal de cambio de monedas desde UserManager
-	if UserManager:
-		UserManager.currency_changed.connect(_on_currency_changed)
+	UserManager.currency_changed.connect(_on_currency_changed)
 
-	if PacksManager:
-		PacksManager.available_packs_loaded.connect(_on_available_packs_loaded)
-		PacksManager.pack_purchased.connect(_on_pack_purchased)
-		PacksManager.pack_opened.connect(_on_pack_opened)
-		PacksManager.error_occurred.connect(show_error)
-	
+	PacksManager.available_packs_loaded.connect(_on_available_packs_loaded)
+	PacksManager.user_packs_loaded.connect(_on_user_packs_loaded)
+	PacksManager.pack_purchased.connect(_on_pack_purchased)
+	PacksManager.pack_opened.connect(_on_pack_opened)
+	PacksManager.error_occurred.connect(_on_error)
+
+	pack_opening_result.closed.connect(_on_pack_result_closed)
+
+	user_currency = UserManager.get_currency()
+	update_currency_display()
 	load_available_packs()
-	load_user_currency()
-	
-	# Conectar señal de cierre del resultado
-	if pack_opening_result:
-		pack_opening_result.closed.connect(_on_pack_result_closed)
+	PacksManager.fetch_user_packs()
 
-	resized.connect(_on_resized)
-	_update_grid_columns()
+
 
 func _on_back_pressed():
 	SceneTransition.go_to_mainlobby()
 
-func _on_currency_changed(new_amount: int):
-	"""Callback cuando las monedas cambian"""
-	user_currency = new_amount
-	update_currency_display()
+
+# ============================================================================
+# CATÁLOGO
+# ============================================================================
 
 func load_available_packs():
 	loading_label.show()
-	loading_label.text = "Cargando sobres disponibles..."
+	loading_label.text = "Cargando sobres…"
 	PacksManager.fetch_available_packs()
 
-func load_user_currency():
-	user_currency = UserManager.get_currency()
-	update_currency_display()
 
 func _on_available_packs_loaded(packs: Array):
 	loading_label.hide()
 	available_packs = packs
-	print("📦 Packs disponibles: ", available_packs.size())
 	display_packs()
 
+
 func display_packs():
-	print("📦 Mostrando packs en el grid...")
-	# Limpiar grid
 	for child in packs_grid.get_children():
 		child.queue_free()
-	
-	if available_packs.size() == 0:
+
+	if available_packs.is_empty():
 		loading_label.show()
-		loading_label.text = "No hay sobres disponibles"
+		loading_label.text = "No hay sobres a la venta ahora mismo"
 		return
-	
-	# Mostrar cada pack disponible
+
 	for pack_data in available_packs:
-		print("  - Creando card para pack: ", pack_data.get("name", "???"))
-		var pack_card = create_pack_card(pack_data)
+		var pack_card = PACK_CARD_SCENE.instantiate()
+		pack_card.pack_selected.connect(buy_pack)
+		pack_card.probabilities_requested.connect(show_probabilities)
 		packs_grid.add_child(pack_card)
 		pack_card.setup(pack_data)
 		pack_card.set_can_afford(user_currency >= int(pack_data.get("price", 0)))
 
-func create_pack_card(pack_data: Dictionary) -> Control:
-	var card = PACK_CARD_SCENE.instantiate()
-	card.pack_selected.connect(buy_pack)
-	card.probabilities_requested.connect(show_probabilities)
-	return card
 
-func show_probabilities(pack_data: Dictionary):
-	# Mostrar panel con gráfico de probabilidades
-	var dialog = AcceptDialog.new()
-	dialog.title = "Probabilidades - " + pack_data.get("name", "")
-	dialog.size = Vector2(400, 500)
-	
-	var vbox = VBoxContainer.new()
-	vbox.add_theme_constant_override("separation", 10)
-	
-	# Título
-	var title = Label.new()
-	title.text = "Probabilidades de Rareza"
-	title.add_theme_font_size_override("font_size", 20)
-	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	vbox.add_child(title)
-	
-	# Barras de probabilidad
-	for rarity in ["common", "rare", "epic", "legendary"]:
-		var hbox = HBoxContainer.new()
-		hbox.add_theme_constant_override("separation", 10)
-		
-		# Nombre rareza
-		var name_label = Label.new()
-		name_label.text = _rarity_label_es(rarity)
-		name_label.custom_minimum_size = Vector2(100, 0)
-		name_label.add_theme_color_override("font_color", get_rarity_color(rarity))
-		hbox.add_child(name_label)
-		
-		# Barra de progreso
-		var progress = ProgressBar.new()
-		progress.custom_minimum_size = Vector2(200, 30)
-		progress.max_value = 100
-		progress.value = RARITY_PROBABILITIES[rarity]
-		progress.show_percentage = true
-		
-		# Color de la barra según rareza
-		var style = StyleBoxFlat.new()
-		style.bg_color = get_rarity_color(rarity)
-		progress.add_theme_stylebox_override("fill", style)
-		
-		hbox.add_child(progress)
-		
-		# Porcentaje
-		var percent_label = Label.new()
-		percent_label.text = "%d%%" % RARITY_PROBABILITIES[rarity]
-		percent_label.add_theme_font_size_override("font_size", 16)
-		hbox.add_child(percent_label)
-		
-		vbox.add_child(hbox)
-	
-	# Nota sobre rareza garantizada
-	if pack_data.has("guaranteed_rarity") and pack_data.guaranteed_rarity:
-		var note = Label.new()
-		note.text = "\n⭐ Este sobre garantiza al menos\nuna carta %s" % _rarity_label_es(pack_data.guaranteed_rarity)
-		note.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		note.add_theme_color_override("font_color", get_rarity_color(pack_data.guaranteed_rarity))
-		vbox.add_child(note)
-	
-	dialog.add_child(vbox)
-	add_child(dialog)
-	dialog.popup_centered()
+func _refresh_affordability() -> void:
+	for card in packs_grid.get_children():
+		if card.has_method("set_can_afford") and not card.is_queued_for_deletion():
+			card.set_can_afford(user_currency >= int(card.pack_data.get("price", 0)))
+
+
+# ============================================================================
+# COMPRA
+# ============================================================================
 
 func buy_pack(pack_data: Dictionary):
-	var pack_id = pack_data.get("id", "")
-	var price = pack_data.get("price", 0)
-	
+	var price := int(pack_data.get("price", 0))
 	if user_currency < price:
-		show_error("No tienes suficientes monedas!\nNecesitas: %d\nTienes: %d" % [price, user_currency])
+		toast.show_message("Te faltan %s monedas para este sobre" % PackArt.format_coins(price - user_currency), true)
 		return
-	
-	# Confirmar compra
-	var dialog = ConfirmationDialog.new()
+	if _busy:
+		return
+
+	var dialog := ConfirmationDialog.new()
 	dialog.title = "Confirmar compra"
-	dialog.ok_button_text = "Comprar"
+	dialog.dialog_text = "¿Comprar «%s» por %s monedas?\nTe quedarán %s." % [
+		pack_data.get("name", ""), PackArt.format_coins(price), PackArt.format_coins(user_currency - price)]
+	dialog.ok_button_text = "Comprar y abrir"
 	dialog.cancel_button_text = "Cancelar"
-	dialog.dialog_text = "¿Comprar %s por %d monedas?" % [pack_data.get("name", ""), price]
-	dialog.confirmed.connect(func(): confirm_purchase(pack_id, price))
+	dialog.add_button("Comprar y guardar", true, "save")
+	dialog.confirmed.connect(func(): _confirm_purchase(pack_data, true))
+	dialog.custom_action.connect(func(action: StringName):
+		if action == &"save":
+			dialog.hide()
+			_confirm_purchase(pack_data, false)
+	)
+	dialog.visibility_changed.connect(func(): if not dialog.visible: dialog.queue_free())
 	add_child(dialog)
 	dialog.popup_centered()
 
-func _on_resized() -> void:
-	_update_grid_columns()
 
-func _update_grid_columns() -> void:
-	if not is_instance_valid(packs_grid):
-		return
+func _confirm_purchase(pack_data: Dictionary, open_now: bool) -> void:
+	_busy = true
+	_open_after_purchase = open_now
+	loading_label.show()
+	loading_label.text = "Comprando…"
+	PacksManager.purchase_pack(pack_data.get("id", ""), 1)
 
-	var viewport_width = get_viewport_rect().size.x
-	var content_width = max(320.0, viewport_width - 80.0)
-	var target_card_width = 280.0
-	var gap = 20.0
-	var columns = int(floor((content_width + gap) / (target_card_width + gap)))
-	packs_grid.columns = clamp(columns, 1, 4)
-
-func confirm_purchase(pack_id: String, _price: int):
-	PacksManager.purchase_pack(pack_id, 1)
 
 func _on_pack_purchased(user_pack_id: String, pack_data: Dictionary, new_currency: int):
-	last_purchased_pack_id = user_pack_id
-	last_purchased_pack_data = pack_data
 	user_currency = new_currency
 	update_currency_display()
-	display_packs()
-	show_message("✅ ¡Compra exitosa!\nTe quedan %d monedas" % user_currency)
-	open_purchased_pack()
+	_refresh_affordability()
 
-func open_purchased_pack():
-	"""Abre el sobre recién comprado y muestra las cartas recibidas"""
-	if last_purchased_pack_id.is_empty():
+	if _open_after_purchase:
+		_open_pack(user_pack_id)
+	else:
+		_busy = false
+		loading_label.hide()
+		toast.show_message("«%s» guardado en «Mis sobres»" % pack_data.get("name", "Sobre"))
+		PacksManager.fetch_user_packs()
+
+
+# ============================================================================
+# SOBRES SIN ABRIR
+# ============================================================================
+
+func _on_user_packs_loaded(user_packs: Array) -> void:
+	for child in my_packs_row.get_children():
+		child.queue_free()
+
+	var owned := user_packs.filter(func(p): return int(p.get("quantity", 0)) > 0)
+	my_packs_panel.visible = not owned.is_empty()
+	for user_pack in owned:
+		my_packs_row.add_child(_create_owned_pack(user_pack))
+
+
+func _create_owned_pack(user_pack: Dictionary) -> Control:
+	var pack: Dictionary = user_pack.get("Pack", {}) if user_pack.get("Pack") is Dictionary else {}
+
+	var card := PanelContainer.new()
+	card.theme_type_variation = &"ItemCard"
+	var row := HBoxContainer.new()
+	row.add_theme_constant_override("separation", 12)
+	card.add_child(row)
+
+	var image := TextureRect.new()
+	image.texture = PackArt.texture_for(pack)
+	image.custom_minimum_size = Vector2(80, 112)
+	image.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	row.add_child(image)
+
+	var info := VBoxContainer.new()
+	info.alignment = BoxContainer.ALIGNMENT_CENTER
+	info.add_theme_constant_override("separation", 6)
+	row.add_child(info)
+
+	var name_label := Label.new()
+	name_label.text = pack.get("name", "Sobre")
+	name_label.theme_type_variation = &"SectionTitle"
+	info.add_child(name_label)
+
+	var quantity := Label.new()
+	quantity.text = "× %d" % int(user_pack.get("quantity", 0))
+	quantity.theme_type_variation = &"StatValue"
+	info.add_child(quantity)
+
+	var open_button := Button.new()
+	open_button.text = "Abrir"
+	open_button.theme_type_variation = &"PlayButton"
+	open_button.add_theme_font_size_override("font_size", 16)
+	open_button.pressed.connect(func(): _open_pack(str(user_pack.get("id", ""))))
+	info.add_child(open_button)
+	return card
+
+
+func _open_pack(user_pack_id: String) -> void:
+	if user_pack_id.is_empty():
 		return
-	PacksManager.open_pack(last_purchased_pack_id)
+	_busy = true
+	_opening_user_pack_id = user_pack_id
+	loading_label.show()
+	loading_label.text = "Abriendo sobre…"
+	PacksManager.open_pack(user_pack_id)
+
 
 func _on_pack_opened(user_pack_id: String, pack_name: String, cards: Array, new_currency: int):
-	if user_pack_id != last_purchased_pack_id:
+	if user_pack_id != _opening_user_pack_id:
 		return
+	_busy = false
+	_opening_user_pack_id = ""
+	loading_label.hide()
 	if new_currency != user_currency:
 		user_currency = new_currency
 		update_currency_display()
-	if pack_opening_result:
-		pack_opening_result.show_cards(pack_name, cards)
-	last_purchased_pack_id = ""
-	last_purchased_pack_data.clear()
+	pack_opening_result.show_cards(pack_name, cards)
+	PacksManager.fetch_user_packs()
+
 
 func _on_pack_result_closed():
-	"""Cuando se cierra la vista de resultados, no hacer nada especial en la tienda"""
 	pass
 
-func show_opened_cards(pack_data: Dictionary):
-	"""Muestra un diálogo con las cartas recibidas del sobre"""
-	var cards = pack_data.get("cards", [])
-	var pack_name = pack_data.get("pack_name", "Sobre")
-	
-	var dialog = AcceptDialog.new()
-	dialog.title = "¡" + pack_name + " abierto!"
-	dialog.size = Vector2(500, 600)
+
+func _on_error(message: String) -> void:
+	# Si la compra o la apertura fallan, desbloquear la tienda y avisar
+	_busy = false
+	_opening_user_pack_id = ""
+	loading_label.hide()
+	toast.show_message(message, true)
+	# Un sobre pagado cuya apertura falló sigue en «Mis sobres»
+	PacksManager.fetch_user_packs()
+
+
+# ============================================================================
+# PROBABILIDADES
+# ============================================================================
+
+func show_probabilities(pack_data: Dictionary):
+	var dialog := AcceptDialog.new()
+	dialog.title = "Probabilidades · %s" % pack_data.get("name", "")
+	dialog.ok_button_text = "Entendido"
+
+	var vbox := VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	vbox.custom_minimum_size = Vector2(380, 0)
+
+	var intro := Label.new()
+	intro.text = "Probabilidad de cada carta del sobre:"
+	vbox.add_child(intro)
+
+	for rarity in ["common", "rare", "epic", "legendary"]:
+		var hbox := HBoxContainer.new()
+		hbox.add_theme_constant_override("separation", 10)
+
+		var name_label := Label.new()
+		name_label.text = PackArt.rarity_label(rarity)
+		name_label.custom_minimum_size = Vector2(100, 0)
+		name_label.add_theme_color_override("font_color", PackArt.rarity_color(rarity))
+		hbox.add_child(name_label)
+
+		var progress := ProgressBar.new()
+		progress.custom_minimum_size = Vector2(200, 22)
+		progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		progress.value = RARITY_PROBABILITIES[rarity]
+		progress.show_percentage = false
+		var fill := StyleBoxFlat.new()
+		fill.bg_color = PackArt.rarity_color(rarity)
+		progress.add_theme_stylebox_override("fill", fill)
+		hbox.add_child(progress)
+
+		var percent := Label.new()
+		percent.text = "%d%%" % RARITY_PROBABILITIES[rarity]
+		percent.custom_minimum_size = Vector2(40, 0)
+		hbox.add_child(percent)
+		vbox.add_child(hbox)
+
+	var guaranteed = pack_data.get("guaranteed_rarity")
+	if guaranteed:
+		var note := Label.new()
+		note.text = "Garantizado: al menos una carta %s. Si no sale antes, la última lo será." % PackArt.rarity_label(str(guaranteed)).to_lower()
+		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		note.add_theme_color_override("font_color", PackArt.rarity_color(str(guaranteed)))
+		vbox.add_child(note)
+
+	dialog.add_child(vbox)
+	dialog.visibility_changed.connect(func(): if not dialog.visible: dialog.queue_free())
 	add_child(dialog)
-	
-	# Crear texto con las cartas recibidas
-	var text = "🎉 Cartas recibidas:\n\n"
-	for card in cards:
-		var rarity_emoji = get_rarity_emoji(card.rarity)
-		var foil_text = " ✨FOIL" if card.get("is_foil", false) else ""
-		text += rarity_emoji + " " + card.name + " (" + card.rarity + ")" + foil_text + "\n"
-	
-	if pack_data.has("summary"):
-		var summary = pack_data.summary
-		var by_rarity = summary.get("by_rarity", summary)
-		text += "\n📊 Resumen:\n"
-		if by_rarity.get("common", 0) > 0 or by_rarity.get("comun", 0) > 0:
-			text += "Comunes: " + str(by_rarity.get("common", by_rarity.get("comun", 0))) + "\n"
-		if by_rarity.get("rare", 0) > 0 or by_rarity.get("rara", 0) > 0:
-			text += "Raras: " + str(by_rarity.get("rare", by_rarity.get("rara", 0))) + "\n"
-		if by_rarity.get("epic", 0) > 0 or by_rarity.get("epica", 0) > 0:
-			text += "Épicas: " + str(by_rarity.get("epic", by_rarity.get("epica", 0))) + "\n"
-		if by_rarity.get("legendary", 0) > 0 or by_rarity.get("legendaria", 0) > 0:
-			text += "Legendarias: " + str(by_rarity.get("legendary", by_rarity.get("legendaria", 0))) + "\n"
-	
-	dialog.dialog_text = text
 	dialog.popup_centered()
 
-func get_rarity_emoji(rarity: String) -> String:
-	match rarity:
-		"legendary", "legendaria":
-			return "💎"
-		"epic", "epica":
-			return "🔮"
-		"rare", "rara":
-			return "⭐"
-		_:
-			return "🃏"
+
+# ============================================================================
+# MONEDAS
+# ============================================================================
+
+func _on_currency_changed(new_amount: int):
+	user_currency = new_amount
+	update_currency_display()
+	_refresh_affordability()
+
 
 func update_currency_display():
-	currency_label.text = "💰 %d Monedas" % user_currency
-
-func show_message(text: String):
-	var dialog = AcceptDialog.new()
-	dialog.dialog_text = text
-	add_child(dialog)
-	dialog.popup_centered()
-
-func show_error(text: String):
-	var dialog = AcceptDialog.new()
-	dialog.title = "Error"
-	dialog.dialog_text = text
-	add_child(dialog)
-	dialog.popup_centered()
-
-func get_rarity_color(rarity: String) -> Color:
-	match rarity:
-		"common", "comun":
-			return Color(0.75, 0.75, 0.75)
-		"rare", "rara":
-			return Color(0.29, 0.56, 0.89)
-		"epic", "epica":
-			return Color(0.61, 0.35, 0.71)
-		"legendary", "legendaria":
-			return Color(1.0, 0.84, 0.0)
-		_:
-			return Color.WHITE
-
-func _rarity_label_es(rarity: String) -> String:
-	match rarity:
-		"common", "comun":
-			return "Común"
-		"rare", "rara":
-			return "Rara"
-		"epic", "epica":
-			return "Épica"
-		"legendary", "legendaria":
-			return "Legendaria"
-		_:
-			return rarity.capitalize()
+	currency_label.text = PackArt.format_coins(user_currency)
+	coin_icon.pivot_offset = coin_icon.size / 2.0
+	var tween := create_tween()
+	tween.tween_property(coin_icon, "scale", Vector2(1.25, 1.25), 0.12).set_trans(Tween.TRANS_BACK)
+	tween.tween_property(coin_icon, "scale", Vector2.ONE, 0.2)

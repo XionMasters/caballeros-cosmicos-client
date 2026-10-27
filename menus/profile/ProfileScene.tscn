@@ -1,7 +1,41 @@
-[gd_scene load_steps=2 format=3 uid="uid://bqax3y702c5d1"]
+[gd_scene format=3 uid="uid://bqax3y702c5d1"]
 
 [ext_resource type="Script" uid="uid://pxhnb3ko3qe" path="res://menus/profile/ProfileScene.gd" id="1_profile"]
+[ext_resource type="Theme" path="res://menus/lobby/lobby_theme.tres" id="2_theme"]
+[ext_resource type="Script" path="res://menus/login/LoginBackground.gd" id="3_background"]
+[ext_resource type="Script" path="res://menus/login/ZodiacRing.gd" id="4_ring"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/back.svg" id="5_back"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/trophy.svg" id="6_trophy"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/defeat.svg" id="7_defeat"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/battle.svg" id="8_battle"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/flame.svg" id="9_flame"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/collection.svg" id="10_collection"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/profile.svg" id="11_profile"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/emblem.svg" id="12_emblem"]
+[ext_resource type="Script" path="res://ui/ToastNotice.gd" id="13_toast"]
 
+[sub_resource type="StyleBoxFlat" id="AvatarMask"]
+bg_color = Color(1, 1, 1, 1)
+corner_radius_top_left = 120
+corner_radius_top_right = 120
+corner_radius_bottom_right = 120
+corner_radius_bottom_left = 120
+corner_detail = 16
+
+[sub_resource type="StyleBoxFlat" id="AvatarBorder"]
+draw_center = false
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 0.86, 0.52, 1)
+corner_radius_top_left = 120
+corner_radius_top_right = 120
+corner_radius_bottom_right = 120
+corner_radius_bottom_left = 120
+corner_detail = 16
+shadow_color = Color(1, 0.75, 0.3, 0.45)
+shadow_size = 16
 
 [node name="ProfileScene" type="Control"]
 layout_mode = 3
@@ -10,179 +44,480 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme = ExtResource("2_theme")
 script = ExtResource("1_profile")
 
-[node name="Background" type="ColorRect" parent="."]
+[node name="Background" type="Control" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.1, 0.1, 0.15, 1)
+mouse_filter = 2
+script = ExtResource("3_background")
 
-[node name="MarginContainer" type="MarginContainer" parent="."]
+[node name="Root" type="MarginContainer" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 40
-theme_override_constants/margin_top = 40
-theme_override_constants/margin_right = 40
-theme_override_constants/margin_bottom = 40
-
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer"]
-layout_mode = 2
-
-[node name="TopBar" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="BackButton" type="Button" parent="MarginContainer/VBoxContainer/TopBar"]
-custom_minimum_size = Vector2(120, 50)
-layout_mode = 2
-text = "â† Volver"
-
-[node name="Spacer" type="Control" parent="MarginContainer/VBoxContainer/TopBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="Title" type="Label" parent="MarginContainer/VBoxContainer/TopBar"]
-layout_mode = 2
-text = "ðŸ‘¤ Mi Perfil"
-horizontal_alignment = 1
-vertical_alignment = 1
-
-[node name="Spacer2" type="Control" parent="MarginContainer/VBoxContainer/TopBar"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="ContentContainer" type="HBoxContainer" parent="MarginContainer/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="LeftPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentContainer"]
-custom_minimum_size = Vector2(400, 0)
-layout_mode = 2
-
-[node name="CurrentAvatarPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel"]
-layout_mode = 2
-
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/CurrentAvatarPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
+theme_override_constants/margin_left = 24
+theme_override_constants/margin_top = 18
+theme_override_constants/margin_right = 24
 theme_override_constants/margin_bottom = 20
 
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/CurrentAvatarPanel/MarginContainer"]
+[node name="Layout" type="VBoxContainer" parent="Root"]
 layout_mode = 2
-alignment = 1
+theme_override_constants/separation = 16
 
-[node name="AvatarLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/CurrentAvatarPanel/MarginContainer/VBoxContainer"]
+[node name="Header" type="PanelContainer" parent="Root/Layout"]
 layout_mode = 2
-text = "Avatar Actual"
-horizontal_alignment = 1
+theme_type_variation = &"HeaderPanel"
 
-[node name="CurrentAvatar" type="TextureRect" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/CurrentAvatarPanel/MarginContainer/VBoxContainer"]
-custom_minimum_size = Vector2(300, 300)
+[node name="Row" type="HBoxContainer" parent="Root/Layout/Header"]
 layout_mode = 2
-size_flags_horizontal = 4
+theme_override_constants/separation = 14
+
+[node name="BackButton" type="Button" parent="Root/Layout/Header/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(130, 48)
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Volver al menú principal"
+theme_override_constants/icon_max_width = 22
+text = "Volver"
+icon = ExtResource("5_back")
+expand_icon = true
+
+[node name="Emblem" type="TextureRect" parent="Root/Layout/Header/Row"]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+texture = ExtResource("12_emblem")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Username" type="Label" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/CurrentAvatarPanel/MarginContainer/VBoxContainer"]
+[node name="Title" type="Label" parent="Root/Layout/Header/Row"]
 layout_mode = 2
-text = "Usuario"
-horizontal_alignment = 1
+theme_type_variation = &"TitleLabel"
+text = "MI PERFIL"
 
-[node name="HSeparator2" type="HSeparator" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel"]
-layout_mode = 2
-
-[node name="StatsPanel" type="PanelContainer" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="MarginContainer" type="MarginContainer" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/StatsPanel"]
-layout_mode = 2
-theme_override_constants/margin_left = 20
-theme_override_constants/margin_top = 20
-theme_override_constants/margin_right = 20
-theme_override_constants/margin_bottom = 20
-
-[node name="VBoxContainer" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/StatsPanel/MarginContainer"]
-layout_mode = 2
-
-[node name="StatsTitle" type="Label" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/StatsPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "ðŸ“Š EstadÃ­sticas"
-horizontal_alignment = 1
-
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/StatsPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="WinsLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/StatsPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "Victorias: 0"
-
-[node name="LossesLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/StatsPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "Derrotas: 0"
-
-[node name="TotalLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/StatsPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "Total partidas: 0"
-
-[node name="WinRateLabel" type="Label" parent="MarginContainer/VBoxContainer/ContentContainer/LeftPanel/StatsPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-text = "% Victorias: 0%"
-
-[node name="VSeparator" type="VSeparator" parent="MarginContainer/VBoxContainer/ContentContainer"]
-layout_mode = 2
-
-[node name="RightPanel" type="VBoxContainer" parent="MarginContainer/VBoxContainer/ContentContainer"]
+[node name="Spacer" type="Control" parent="Root/Layout/Header/Row"]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="AvatarsTitle" type="Label" parent="MarginContainer/VBoxContainer/ContentContainer/RightPanel"]
+[node name="LoadingLabel" type="Label" parent="Root/Layout/Header/Row"]
+unique_name_in_owner = true
 layout_mode = 2
-text = "ðŸ–¼ï¸ GalerÃ­a de Avatares"
-horizontal_alignment = 1
+theme_type_variation = &"Subtitle"
+text = "Cargando…"
 
-[node name="HSeparator" type="HSeparator" parent="MarginContainer/VBoxContainer/ContentContainer/RightPanel"]
-layout_mode = 2
-
-[node name="AvatarsScroll" type="ScrollContainer" parent="MarginContainer/VBoxContainer/ContentContainer/RightPanel"]
+[node name="Body" type="HBoxContainer" parent="Root/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_constants/separation = 16
 
-[node name="AvatarsGrid" type="GridContainer" parent="MarginContainer/VBoxContainer/ContentContainer/RightPanel/AvatarsScroll"]
+[node name="LeftColumn" type="VBoxContainer" parent="Root/Layout/Body"]
+custom_minimum_size = Vector2(400, 0)
 layout_mode = 2
-size_flags_horizontal = 3
-columns = 4
+theme_override_constants/separation = 16
 
-[node name="LoadingLabel" type="Label" parent="."]
-visible = false
+[node name="IdentityPanel" type="PanelContainer" parent="Root/Layout/Body/LeftColumn"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/IdentityPanel"]
+layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="AvatarStage" type="Control" parent="Root/Layout/Body/LeftColumn/IdentityPanel/VBox"]
+custom_minimum_size = Vector2(0, 260)
+layout_mode = 2
+
+[node name="Ring" type="Control" parent="Root/Layout/Body/LeftColumn/IdentityPanel/VBox/AvatarStage"]
+unique_name_in_owner = true
+modulate = Color(1, 1, 1, 0.75)
 layout_mode = 1
 anchors_preset = 8
 anchor_left = 0.5
 anchor_top = 0.5
 anchor_right = 0.5
 anchor_bottom = 0.5
-offset_left = -100.0
-offset_top = -20.0
-offset_right = 100.0
-offset_bottom = 20.0
+offset_left = -128.0
+offset_top = -128.0
+offset_right = 128.0
+offset_bottom = 128.0
 grow_horizontal = 2
 grow_vertical = 2
-text = "Cargando..."
+mouse_filter = 2
+script = ExtResource("4_ring")
+
+[node name="AvatarMask" type="Panel" parent="Root/Layout/Body/LeftColumn/IdentityPanel/VBox/AvatarStage"]
+clip_children = 1
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -90.0
+offset_top = -90.0
+offset_right = 90.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("AvatarMask")
+
+[node name="CurrentAvatar" type="TextureRect" parent="Root/Layout/Body/LeftColumn/IdentityPanel/VBox/AvatarStage/AvatarMask"]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+texture = ExtResource("11_profile")
+expand_mode = 1
+stretch_mode = 6
+
+[node name="AvatarBorder" type="Panel" parent="Root/Layout/Body/LeftColumn/IdentityPanel/VBox/AvatarStage"]
+layout_mode = 1
+anchors_preset = 8
+anchor_left = 0.5
+anchor_top = 0.5
+anchor_right = 0.5
+anchor_bottom = 0.5
+offset_left = -90.0
+offset_top = -90.0
+offset_right = 90.0
+offset_bottom = 90.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("AvatarBorder")
+
+[node name="Username" type="Label" parent="Root/Layout/Body/LeftColumn/IdentityPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"TitleLabel"
+text = "Caballero"
 horizontal_alignment = 1
 
+[node name="AvatarName" type="Label" parent="Root/Layout/Body/LeftColumn/IdentityPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.52, 0.9)
+text = "—"
+horizontal_alignment = 1
+
+[node name="MemberSince" type="Label" parent="Root/Layout/Body/LeftColumn/IdentityPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+horizontal_alignment = 1
+
+[node name="StatsPanel" type="PanelContainer" parent="Root/Layout/Body/LeftColumn"]
+layout_mode = 2
+
+[node name="VBox" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="StatsTitle" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox"]
+layout_mode = 2
+theme_type_variation = &"SectionTitle"
+text = "Estadísticas"
+
+[node name="StatsGrid" type="GridContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox"]
+layout_mode = 2
+theme_override_constants/h_separation = 10
+theme_override_constants/v_separation = 10
+columns = 2
+
+[node name="WinsTile" type="PanelContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"StatTile"
+
+[node name="Row" type="HBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/WinsTile"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/WinsTile/Row"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("6_trophy")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Texts" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/WinsTile/Row"]
+layout_mode = 2
+theme_override_constants/separation = -4
+
+[node name="WinsValue" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/WinsTile/Row/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StatValue"
+text = "0"
+
+[node name="Caption" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/WinsTile/Row/Texts"]
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Victorias"
+
+[node name="LossesTile" type="PanelContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"StatTile"
+
+[node name="Row" type="HBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/LossesTile"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/LossesTile/Row"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("7_defeat")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Texts" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/LossesTile/Row"]
+layout_mode = 2
+theme_override_constants/separation = -4
+
+[node name="LossesValue" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/LossesTile/Row/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StatValue"
+text = "0"
+
+[node name="Caption" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/LossesTile/Row/Texts"]
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Derrotas"
+
+[node name="TotalTile" type="PanelContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"StatTile"
+
+[node name="Row" type="HBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/TotalTile"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/TotalTile/Row"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("8_battle")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Texts" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/TotalTile/Row"]
+layout_mode = 2
+theme_override_constants/separation = -4
+
+[node name="TotalValue" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/TotalTile/Row/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StatValue"
+text = "0"
+
+[node name="Caption" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/TotalTile/Row/Texts"]
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Partidas"
+
+[node name="StreakTile" type="PanelContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_type_variation = &"StatTile"
+
+[node name="Row" type="HBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/StreakTile"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Icon" type="TextureRect" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/StreakTile/Row"]
+custom_minimum_size = Vector2(36, 36)
+layout_mode = 2
+size_flags_vertical = 4
+texture = ExtResource("9_flame")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Texts" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/StreakTile/Row"]
+layout_mode = 2
+theme_override_constants/separation = -4
+
+[node name="StreakValue" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/StreakTile/Row/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"StatValue"
+text = "0"
+
+[node name="StreakCaption" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/StatsGrid/StreakTile/Row/Texts"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Mejor racha"
+
+[node name="WinRateRow" type="HBoxContainer" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Caption" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/WinRateRow"]
+layout_mode = 2
+text = "Victorias"
+
+[node name="WinRateBar" type="ProgressBar" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/WinRateRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+show_percentage = false
+
+[node name="WinRateLabel" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox/WinRateRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(56, 0)
+layout_mode = 2
+theme_override_colors/font_color = Color(1, 0.86, 0.52, 1)
+text = "0%"
+horizontal_alignment = 2
+
+[node name="PracticeLabel" type="Label" parent="Root/Layout/Body/LeftColumn/StatsPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+autowrap_mode = 3
+
+[node name="CollectionPanel" type="PanelContainer" parent="Root/Layout/Body/LeftColumn"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="VBox" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/CollectionPanel"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="Header" type="HBoxContainer" parent="Root/Layout/Body/LeftColumn/CollectionPanel/VBox"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="Root/Layout/Body/LeftColumn/CollectionPanel/VBox/Header"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+texture = ExtResource("10_collection")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="Title" type="Label" parent="Root/Layout/Body/LeftColumn/CollectionPanel/VBox/Header"]
+layout_mode = 2
+theme_type_variation = &"SectionTitle"
+text = "Colección"
+
+[node name="CollectionBar" type="ProgressBar" parent="Root/Layout/Body/LeftColumn/CollectionPanel/VBox"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 22)
+layout_mode = 2
+show_percentage = false
+
+[node name="CollectionLabel" type="Label" parent="Root/Layout/Body/LeftColumn/CollectionPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+text = "0 / 0 cartas distintas"
+
+[node name="CollectionDetail" type="Label" parent="Root/Layout/Body/LeftColumn/CollectionPanel/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+autowrap_mode = 3
+
+[node name="Tabs" type="TabContainer" parent="Root/Layout/Body"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+current_tab = 0
+
+[node name="Avatares" type="VBoxContainer" parent="Root/Layout/Body/Tabs"]
+layout_mode = 2
+theme_override_constants/separation = 10
+metadata/_tab_index = 0
+
+[node name="AvatarsHint" type="Label" parent="Root/Layout/Body/Tabs/Avatares"]
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Elige el avatar que verán los demás caballeros. Los bloqueados se consiguen con cartas legendarias y logros."
+autowrap_mode = 3
+
+[node name="AvatarsScroll" type="ScrollContainer" parent="Root/Layout/Body/Tabs/Avatares"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="AvatarsGrid" type="GridContainer" parent="Root/Layout/Body/Tabs/Avatares/AvatarsScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 4
+
+[node name="Dorsos" type="VBoxContainer" parent="Root/Layout/Body/Tabs"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+metadata/_tab_index = 1
+
+[node name="DeckBacksHint" type="Label" parent="Root/Layout/Body/Tabs/Dorsos"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+autowrap_mode = 3
+
+[node name="DeckBacksScroll" type="ScrollContainer" parent="Root/Layout/Body/Tabs/Dorsos"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="DeckBacksGrid" type="GridContainer" parent="Root/Layout/Body/Tabs/Dorsos/DeckBacksScroll"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_constants/h_separation = 14
+theme_override_constants/v_separation = 14
+columns = 4
+
+[node name="Historial" type="VBoxContainer" parent="Root/Layout/Body/Tabs"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 10
+metadata/_tab_index = 2
+
+[node name="HistoryHint" type="Label" parent="Root/Layout/Body/Tabs/Historial"]
+layout_mode = 2
+theme_type_variation = &"Subtitle"
+text = "Tus últimas partidas terminadas."
+
+[node name="HistoryList" type="VBoxContainer" parent="Root/Layout/Body/Tabs/Historial"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Toast" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+script = ExtResource("13_toast")
+
 [node name="ConfirmDialog" type="ConfirmationDialog" parent="."]
+unique_name_in_owner = true
+title = "Confirmar"
 initial_position = 2
-size = Vector2i(400, 150)
-dialog_text = "Â¿Cambiar a este avatar?"
+size = Vector2i(420, 150)
+ok_button_text = "Sí, cambiar"
+cancel_button_text = "Cancelar"
+dialog_text = "¿Cambiar a este avatar?"

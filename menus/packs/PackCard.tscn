@@ -1,61 +1,89 @@
-[gd_scene load_steps=2 format=3 uid="uid://c8qm2v5n7x1pk"]
+[gd_scene format=3 uid="uid://c8qm2v5n7x1pk"]
 
 [ext_resource type="Script" uid="uid://bb04vo4m6jygs" path="res://menus/packs/PackCard.gd" id="1_packcard_script"]
-
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/coin.svg" id="2_coin"]
 
 [node name="PackCard" type="PanelContainer"]
-custom_minimum_size = Vector2(200, 300)
+custom_minimum_size = Vector2(230, 0)
+theme_type_variation = &"ItemCard"
 script = ExtResource("1_packcard_script")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="PackName" type="Label" parent="VBoxContainer"]
-layout_mode = 2
-text = "Sobre BÃ¡sico"
-horizontal_alignment = 1
-
 [node name="PackImage" type="TextureRect" parent="VBoxContainer"]
-custom_minimum_size = Vector2(180, 180)
+custom_minimum_size = Vector2(150, 210)
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 4
+mouse_filter = 2
 expand_mode = 1
 stretch_mode = 5
 
+[node name="PackName" type="Label" parent="VBoxContainer"]
+layout_mode = 2
+theme_type_variation = &"SectionTitle"
+theme_override_font_sizes/font_size = 20
+text = "Sobre"
+horizontal_alignment = 1
+
 [node name="PackDescription" type="Label" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
-theme_override_font_sizes/font_size = 12
+theme_type_variation = &"Subtitle"
+horizontal_alignment = 1
 autowrap_mode = 3
-text = "Descripción del sobre"
 
-[node name="CardCount" type="Label" parent="VBoxContainer"]
+[node name="Chips" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 6
+alignment = 1
+
+[node name="CardCountChip" type="PanelContainer" parent="VBoxContainer/Chips"]
+layout_mode = 2
+theme_type_variation = &"Chip"
+
+[node name="CardCount" type="Label" parent="VBoxContainer/Chips/CardCountChip"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
 text = "5 cartas"
-horizontal_alignment = 1
 
-[node name="GuaranteedRarity" type="Label" parent="VBoxContainer"]
+[node name="GuaranteedChip" type="PanelContainer" parent="VBoxContainer/Chips"]
 layout_mode = 2
-horizontal_alignment = 1
-visible = false
-text = "✨ Garantiza: Rara"
+theme_type_variation = &"Chip"
 
-[node name="ProbabilitiesButton" type="Button" parent="VBoxContainer"]
+[node name="GuaranteedRarity" type="Label" parent="VBoxContainer/Chips/GuaranteedChip"]
 layout_mode = 2
-text = "📊 Ver Probabilidades"
+theme_override_font_sizes/font_size = 14
+text = "Garantiza: Rara"
 
 [node name="PriceContainer" type="HBoxContainer" parent="VBoxContainer"]
 layout_mode = 2
+theme_override_constants/separation = 6
 alignment = 1
 
-[node name="CoinIcon" type="Label" parent="VBoxContainer/PriceContainer"]
+[node name="CoinIcon" type="TextureRect" parent="VBoxContainer/PriceContainer"]
+custom_minimum_size = Vector2(24, 24)
 layout_mode = 2
-text = "ðŸ’°"
+size_flags_vertical = 4
+texture = ExtResource("2_coin")
+expand_mode = 1
+stretch_mode = 5
 
 [node name="Price" type="Label" parent="VBoxContainer/PriceContainer"]
 layout_mode = 2
+theme_type_variation = &"StatValue"
+theme_override_font_sizes/font_size = 24
 text = "100"
 
 [node name="BuyButton" type="Button" parent="VBoxContainer"]
+custom_minimum_size = Vector2(0, 46)
 layout_mode = 2
+theme_type_variation = &"PlayButton"
+theme_override_font_sizes/font_size = 18
 text = "Comprar"
+
+[node name="ProbabilitiesButton" type="Button" parent="VBoxContainer"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 14
+text = "Ver probabilidades"

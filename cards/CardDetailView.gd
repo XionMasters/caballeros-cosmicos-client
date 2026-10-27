@@ -66,7 +66,8 @@ func update_stats_display(card: CardData):
 	var constellation_label = stats_container.get_node("ConstellationLabel")
 	
 	# Tipos que tienen estadísticas de combate
-	var combat_types = ["knight", "guerrero", "ayudante"]
+	# Tipos ya normalizados por CardData._normalize_type
+	var combat_types = ["knight", "helper"]
 	
 	if card.type in combat_types:
 		# Mostrar todas las estadísticas de combate
@@ -86,7 +87,7 @@ func update_stats_display(card: CardData):
 		else:
 			constellation_label.hide()
 	
-	elif card.type == "tecnica" or card.type == "hechizo":
+	elif card.type == "technique":
 		# Técnicas solo muestran costo
 		health_label.hide()
 		attack_label.hide()
@@ -95,7 +96,7 @@ func update_stats_display(card: CardData):
 		cost_label.show()
 		constellation_label.hide()
 	
-	elif card.type == "escenario":
+	elif card.type == "stage":
 		# Escenarios no tienen estadísticas de combate
 		health_label.hide()
 		attack_label.hide()
@@ -103,7 +104,7 @@ func update_stats_display(card: CardData):
 		cost_label.hide()
 		constellation_label.hide()
 	
-	elif card.type == "objeto" or card.type == "artefacto":
+	elif card.type == "item":
 		# Objetos solo muestran costo si lo tienen
 		health_label.hide()
 		attack_label.hide()

@@ -8,6 +8,16 @@ extends Control
 @onready var toggle_mode_button = $CenterContainer/LoginPanel/VBoxContainer/ToggleModeButton
 @onready var error_label = $CenterContainer/LoginPanel/VBoxContainer/ErrorLabel
 @onready var loading_label = $CenterContainer/LoginPanel/VBoxContainer/LoadingLabel
+@onready var background = $Background
+@onready var login_panel: PanelContainer = $CenterContainer/LoginPanel
+@onready var title_label: Label = $CenterContainer/LoginPanel/VBoxContainer/Title
+@onready var subtitle_label: Label = $CenterContainer/LoginPanel/VBoxContainer/Subtitle
+
+# Paleta "armadura de oro sobre el cosmos"
+const GOLD := Color(1.0, 0.8, 0.36)
+const GOLD_LIGHT := Color(1.0, 0.92, 0.65)
+const GOLD_DARK := Color(0.55, 0.38, 0.12)
+const NIGHT := Color(0.05, 0.04, 0.12)
 
 var is_login_mode: bool = true
 
@@ -34,14 +44,12 @@ func _ready():
 	
 	update_mode_ui()
 	apply_translations()
-	
+	_apply_styles()
+	_play_intro()
+
 	# Conectar cambios de idioma
 	LocalizationManager.language_changed.connect(_on_language_changed)
-	
-	print("🔍 Login mode: ", is_login_mode)
-	print("🔍 Register button visible: ", register_button.visible)
-	print("🔍 Login button visible: ", login_button.visible)
-	
+
 	if AuthManager.is_logged_in():
 		go_to_main_menu()
 
@@ -55,6 +63,7 @@ func _on_login_pressed():
 	
 	show_loading(true)
 	error_label.text = ""
+	_ignite_cosmos()
 	AuthManager.login(email, password)
 
 func _on_register_pressed():
@@ -80,7 +89,7 @@ func _on_register_pressed():
 	
 	show_loading(true)
 	error_label.text = ""
-	print("📡 Enviando registro a AuthManager...")
+	_ignite_cosmos()
 	AuthManager.register(email, password, username)
 
 func _on_toggle_mode_pressed():
@@ -130,8 +139,12 @@ func _on_password_submitted(_text: String):
 		_on_register_pressed()
 
 func show_error(msg: String):
-	error_label.text = "❌ " + msg
-	error_label.add_theme_color_override("font_color", Color.RED)
+	error_label.text = msg
+	# Pequeña sacudida del panel para llamar la atención
+	var origin := login_panel.position
+	var shake := create_tween()
+	for offset in [8.0, -6.0, 4.0, -2.0, 0.0]:
+		shake.tween_property(login_panel, "position:x", origin.x + offset, 0.05)
 
 func show_loading(state: bool):
 	loading_label.visible = state
@@ -173,3 +186,121 @@ func apply_translations() -> void:
 func _on_language_changed(_language: String) -> void:
 	"""Callback cuando cambia el idioma"""
 	apply_translations()
+
+
+# ============================================================================
+# ESTILO Y ANIMACIONES
+# ============================================================================
+
+func _apply_styles() -> void:
+	"""Panel y controles con estética de armadura dorada sobre el cosmos"""
+	# Panel: noche translúcida con borde y halo dorados
+	var panel_style := StyleBoxFlat.new()
+	panel_style.bg_color = Color(NIGHT, 0.82)
+	panel_style.set_border_width_all(2)
+	panel_style.border_color = Color(GOLD, 0.85)
+	panel_style.set_corner_radius_all(14)
+	panel_style.shadow_color = Color(GOLD, 0.28)
+	panel_style.shadow_size = 22
+	panel_style.set_content_margin_all(36)
+	login_panel.add_theme_stylebox_override("panel", panel_style)
+
+	# Título dorado con contorno y sombra
+	title_label.add_theme_color_override("font_color", GOLD_LIGHT)
+	title_label.add_theme_color_override("font_outline_color", GOLD_DARK)
+	title_label.add_theme_constant_override("outline_size", 6)
+	title_label.add_theme_color_override("font_shadow_color", Color(GOLD, 0.45))
+	title_label.add_theme_constant_override("shadow_offset_x", 0)
+	title_label.add_theme_constant_override("shadow_offset_y", 0)
+	title_label.add_theme_constant_override("shadow_outline_size", 14)
+	subtitle_label.add_theme_color_override("font_color", Color(0.78, 0.74, 0.95))
+
+	for input in [email_input, password_input, username_input]:
+		_style_input(input)
+	for button in [login_button, register_button]:
+		_style_primary_button(button)
+
+	toggle_mode_button.add_theme_color_override("font_color", Color(0.75, 0.78, 1.0))
+	toggle_mode_button.add_theme_color_override("font_hover_color", GOLD_LIGHT)
+
+
+func _style_input(input: LineEdit) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.09, 0.08, 0.2, 0.9)
+	normal.set_border_width_all(1)
+	normal.border_color = Color(GOLD, 0.35)
+	normal.set_corner_radius_all(8)
+	normal.content_margin_left = 14
+	normal.content_margin_right = 14
+
+	var focus := normal.duplicate() as StyleBoxFlat
+	focus.border_color = GOLD
+	focus.set_border_width_all(2)
+	focus.shadow_color = Color(GOLD, 0.3)
+	focus.shadow_size = 8
+
+	input.add_theme_stylebox_override("normal", normal)
+	input.add_theme_stylebox_override("focus", focus)
+	input.add_theme_color_override("font_color", Color(0.95, 0.93, 1.0))
+	input.add_theme_color_override("font_placeholder_color", Color(0.65, 0.62, 0.8, 0.8))
+	input.add_theme_color_override("caret_color", GOLD)
+
+
+func _style_primary_button(button: Button) -> void:
+	var normal := StyleBoxFlat.new()
+	normal.bg_color = Color(0.72, 0.52, 0.16)
+	normal.set_border_width_all(2)
+	normal.border_color = GOLD_LIGHT
+	normal.set_corner_radius_all(10)
+	normal.shadow_color = Color(GOLD, 0.35)
+	normal.shadow_size = 10
+
+	var hover := normal.duplicate() as StyleBoxFlat
+	hover.bg_color = Color(0.85, 0.63, 0.22)
+	hover.shadow_size = 16
+
+	var pressed := normal.duplicate() as StyleBoxFlat
+	pressed.bg_color = Color(0.58, 0.4, 0.12)
+	pressed.shadow_size = 4
+
+	var disabled := normal.duplicate() as StyleBoxFlat
+	disabled.bg_color = Color(0.35, 0.3, 0.25)
+	disabled.border_color = Color(GOLD, 0.3)
+	disabled.shadow_size = 0
+
+	button.add_theme_stylebox_override("normal", normal)
+	button.add_theme_stylebox_override("hover", hover)
+	button.add_theme_stylebox_override("pressed", pressed)
+	button.add_theme_stylebox_override("disabled", disabled)
+	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
+	button.add_theme_color_override("font_color", Color(0.12, 0.07, 0.02))
+	button.add_theme_color_override("font_hover_color", Color(0.08, 0.04, 0.0))
+	button.add_theme_color_override("font_pressed_color", Color(0.08, 0.04, 0.0))
+	button.add_theme_color_override("font_disabled_color", Color(0.7, 0.65, 0.55))
+
+
+func _play_intro() -> void:
+	"""Entrada: el panel aparece desde abajo y el título empieza a pulsar"""
+	login_panel.modulate.a = 0.0
+	title_label.modulate.a = 0.0
+	await get_tree().process_frame  # esperar a que el CenterContainer ubique el panel
+	if not is_inside_tree():
+		return
+
+	login_panel.pivot_offset = login_panel.size / 2.0
+	login_panel.scale = Vector2(0.94, 0.94)
+	var intro := create_tween().set_parallel()
+	intro.tween_property(login_panel, "modulate:a", 1.0, 0.7).set_trans(Tween.TRANS_SINE)
+	intro.tween_property(login_panel, "scale", Vector2.ONE, 0.8).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	intro.tween_property(title_label, "modulate:a", 1.0, 1.2).set_delay(0.3)
+	await intro.finished
+
+	# Brillo del título como cosmos que arde
+	var glow := create_tween().set_loops()
+	glow.tween_property(title_label, "modulate", Color(1.25, 1.2, 1.05), 1.6).set_trans(Tween.TRANS_SINE)
+	glow.tween_property(title_label, "modulate", Color.WHITE, 1.6).set_trans(Tween.TRANS_SINE)
+
+
+func _ignite_cosmos() -> void:
+	if background and background.has_method("ignite_cosmos"):
+		background.ignite_cosmos()

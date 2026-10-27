@@ -55,7 +55,9 @@ func create_deck(deck_name: String, description: String = ""):
 		_on_deck_created
 	)
 
-func update_deck(deck_id: String, deck_name := "", description := "", is_active := false):
+## is_active = null deja el estado activo como está (antes se mandaba false
+## por defecto y renombrar el mazo activo lo desactivaba).
+func update_deck(deck_id: String, deck_name := "", description := "", is_active: Variant = null):
 	if deck_id == "":
 		push_error("[DecksManager] ❌ deck_id requerido")
 		error_occurred.emit("deck_id requerido")
@@ -67,8 +69,8 @@ func update_deck(deck_id: String, deck_name := "", description := "", is_active 
 		body.name = deck_name
 	if description != "":
 		body.description = description
-
-	body.is_active = is_active
+	if is_active != null:
+		body.is_active = bool(is_active)
 
 	ApiClient.put_request_with_callback(
 		"/decks/%s" % deck_id,
@@ -76,6 +78,10 @@ func update_deck(deck_id: String, deck_name := "", description := "", is_active 
 		"update_deck",
 		_on_deck_updated
 	)
+
+## Marca el mazo como activo. El servidor desactiva el resto de mazos del usuario.
+func set_active_deck(deck_id: String):
+	update_deck(deck_id, "", "", true)
 
 func delete_deck(deck_id: String):
 	ApiClient.delete_request_with_callback(
@@ -231,6 +237,18 @@ func _on_deck_updated(success: bool, data: Variant, error: String):
 		return
 
 	_decks_cached = false  # Invalidar caché
+
+	# Mantener el mazo activo local alineado con el servidor
+	if data is Dictionary:
+		if data.get("is_active", false):
+			_active_deck = data
+			for deck in _decks:
+				deck["is_active"] = deck.get("id") == data.get("id")
+			if has_node("/root/UserManager"):
+				get_node("/root/UserManager").on_active_deck_changed(data.get("id", ""))
+		elif _active_deck.get("id") == data.get("id"):
+			_active_deck = {}
+
 	print("[DecksManager] ✅ Mazo actualizado")
 	deck_updated.emit(data)
 

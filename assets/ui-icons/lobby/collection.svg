@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="256" height="256" viewBox="0 0 128 128">
+  <defs>
+    <!-- userSpaceOnUse: con objectBoundingBox una línea horizontal (alto 0) no se pinta -->
+    <linearGradient id="g" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="118">
+      <stop offset="0" stop-color="#FFF4C9"/>
+      <stop offset="0.45" stop-color="#F6C55A"/>
+      <stop offset="1" stop-color="#B9791C"/>
+    </linearGradient>
+    <linearGradient id="gf" gradientUnits="userSpaceOnUse" x1="0" y1="10" x2="0" y2="118">
+      <stop offset="0" stop-color="#FFE7A3" stop-opacity="0.35"/>
+      <stop offset="1" stop-color="#C98A2A" stop-opacity="0.12"/>
+    </linearGradient>
+  </defs>
+  <g fill="none" stroke="url(#g)" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <rect x="22" y="30" width="44" height="64" rx="6" transform="rotate(-16 44 62)" fill="url(#gf)"/>
+    <rect x="62" y="30" width="44" height="64" rx="6" transform="rotate(16 84 62)" fill="url(#gf)"/>
+    <rect x="42" y="24" width="44" height="66" rx="6" fill="#20123f"/>
+    <path d="M64 43 L67.92 53.08 L78 57 L67.92 60.92 L64 71 L60.08 60.92 L50 57 L60.08 53.08 Z" fill="url(#g)" stroke="none" />
+  </g>
+</svg>

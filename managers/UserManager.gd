@@ -48,16 +48,6 @@ func fetch_profile(token: String) -> void:
 		ApiClient.get_request("/users/me", "fetch_profile", true)
 
 
-func update_profile_field(field: String, value: Variant) -> void:
-	"""Actualizar un campo del perfil en el servidor"""
-	if not current_profile:
-		push_error("[UserManager] No hay perfil cargado")
-		return
-	var body := {field: value}
-	if ApiClient:
-		ApiClient.put("/users/me", body, "update_profile_field", true)
-
-
 func get_username() -> String:
 	"""Obtener nombre de usuario"""
 	if current_profile:
@@ -102,14 +92,17 @@ func update_currency(new_amount: int) -> void:
 
 
 func set_active_deck(deck_id: String) -> void:
-	"""Establecer mazo activo"""
-	if current_profile:
+	"""Establecer mazo activo (el servidor lo guarda en el mazo, no en el perfil)"""
+	if has_node("/root/DecksManager"):
+		get_node("/root/DecksManager").set_active_deck(deck_id)
+
+
+func on_active_deck_changed(deck_id: String) -> void:
+	"""Llamado por DecksManager cuando el servidor confirma el mazo activo"""
+	if current_profile and current_profile.active_deck_id != deck_id:
 		current_profile.active_deck_id = deck_id
 		active_deck_changed.emit(deck_id)
 		profile_updated.emit(current_profile)
-	
-	# Actualizar en servidor
-	update_profile_field("active_deck_id", deck_id)
 
 
 func get_win_rate() -> float:
@@ -143,7 +136,6 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 				set_profile(profile)
 				print("[UserManager] ✅ Perfil obtenido: ", profile.username)
 				print("[UserManager] 💰 Monedas: ", profile.currency)
-				profile_loaded.emit(profile)
 			else:
 				# Verificar si es token expirado
 				if data is Dictionary and data.get("code") == "TOKEN_EXPIRED":
@@ -151,20 +143,6 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 					AuthManager.emit_auth_error("Token expirado. Por favor, vuelva a iniciar sesión.")
 				else:
 					push_error("[UserManager] Error al obtener perfil: " + error)
-		
-		"update_profile_field":
-			if success and data:
-				if current_profile:
-					current_profile.update_from_dict(data)
-					profile_updated.emit(current_profile)
-					print("[UserManager] ✅ Perfil actualizado")
-			else:
-				# Verificar si es token expirado
-				if data is Dictionary and data.get("code") == "TOKEN_EXPIRED":
-					print("[UserManager] ⚠️ Token expirado, limpiando sesión...")
-					AuthManager.emit_auth_error("Token expirado. Por favor, vuelva a iniciar sesión.")
-				else:
-					push_error("[UserManager] Error al actualizar perfil: " + error)
 		
 		_:
 			pass

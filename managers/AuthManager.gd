@@ -9,6 +9,7 @@ signal registration_failed(error: String)
 signal logout_completed()
 signal instance_conflict(username: String)  # Emitir si hay otra sesión abierta
 signal session_expired()  # Nueva señal para token expirado
+signal email_verified()  # El usuario confirmó su email
 
 var auth_token: String = ""
 var is_authenticated: bool = false
@@ -19,6 +20,8 @@ var _instance_manager: InstanceManager = null
 var _login_in_flight: bool = false
 var _register_in_flight: bool = false
 var _api: Node = null
+var _verification_dialog: EmailVerificationDialog = null
+var _checking_verification: bool = false
 
 
 func _ready() -> void:
@@ -36,7 +39,18 @@ func _ready() -> void:
 	# Conectar a respuestas de ApiClient (ya debe estar disponible como autoload)
 	if _api:
 		_api.request_completed.connect(_on_api_request_completed)
-	
+		_api.email_verification_required.connect(show_email_verification)
+
+	# Al cargar el perfil (login o auto-login), avisar si falta verificar el email
+	var user_manager = get_node_or_null("/root/UserManager")
+	if user_manager:
+		user_manager.profile_loaded.connect(_on_profile_loaded_check_verification)
+
+	# Si el servidor rechaza la sesión por WebSocket (token revocado, bloqueo...), cerrar sesión
+	var ws_manager = get_node_or_null("/root/WebSocketManager")
+	if ws_manager and ws_manager.has_signal("session_rejected"):
+		ws_manager.session_rejected.connect(_on_websocket_session_rejected)
+
 	# Auto-login si hay token guardado
 	_try_auto_login()
 
@@ -74,8 +88,18 @@ func register(email: String, password: String, username: String = "") -> void:
 		_api.post("/auth/register", body, "auth_register", false)
 
 
-func logout() -> void:
-	"""Cerrar sesión"""
+func logout(notify_server: bool = true) -> void:
+	"""Cerrar sesión. notify_server=false cuando el servidor ya invalidó la sesión."""
+	# Revocar la sesión en el servidor (el token deja de valer aunque no haya expirado).
+	# ApiClient captura el token al encolar, así que limpiarlo después es seguro.
+	if notify_server and _api and auth_token != "":
+		_api.post("/auth/logout", {}, "auth_logout", true)
+
+	# Cerrar el WebSocket para no seguir conectado (ni reconectando) con el token viejo
+	var ws_manager = get_node_or_null("/root/WebSocketManager")
+	if ws_manager:
+		ws_manager.disconnect_from_server()
+
 	auth_token = ""
 	is_authenticated = false
 	if _api:
@@ -174,6 +198,8 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 			_on_login_response(success, data, error)
 		"auth_register":
 			_on_register_response(success, data, error)
+		"auth_resend_verification":
+			_on_resend_verification_response(success, error)
 		_:
 			pass
 
@@ -371,4 +397,88 @@ func emit_auth_error(error: String) -> void:
 	print("[AuthManager] ❌ Error de autenticación: %s" % error)
 	login_failed.emit(error)
 	session_expired.emit()
-	logout()  # Forzar logout
+	logout(false)  # Forzar logout: la sesión ya no es válida en el servidor
+
+
+# ============================================================================
+# VERIFICACIÓN DE EMAIL
+# ============================================================================
+
+func show_email_verification() -> void:
+	"""Mostrar el diálogo de verificación (una sola instancia a la vez)"""
+	# Se comprueba el token (no is_logged_in): en el auto-login el perfil llega
+	# antes de marcar la sesión como autenticada
+	if auth_token == "":
+		return
+	if _verification_dialog == null:
+		_verification_dialog = EmailVerificationDialog.new()
+		_verification_dialog.resend_requested.connect(resend_verification_email)
+		_verification_dialog.check_requested.connect(check_email_verified)
+		get_tree().root.add_child(_verification_dialog)
+	if _verification_dialog.visible:
+		return
+	_verification_dialog.show_for(_current_email())
+
+
+func resend_verification_email() -> void:
+	"""Pedir al servidor un nuevo email de verificación"""
+	var email := _current_email()
+	if email == "" or not _api:
+		_set_verification_status("No se encontró el email de la cuenta. Vuelve a iniciar sesión.")
+		return
+	if _verification_dialog:
+		_verification_dialog.set_resend_enabled(false)
+	_set_verification_status("Enviando email...")
+	_api.post("/auth/resend-verification", {"email": email}, "auth_resend_verification", false)
+
+
+func check_email_verified() -> void:
+	"""Volver a pedir el perfil para ver si el email ya fue verificado"""
+	var user_manager = get_node_or_null("/root/UserManager")
+	if not user_manager or auth_token == "":
+		return
+	_checking_verification = true
+	_set_verification_status("Comprobando...")
+	user_manager.fetch_profile(auth_token)
+
+
+func _on_resend_verification_response(success: bool, error: String) -> void:
+	if success:
+		_set_verification_status("✅ Email enviado. Revisa tu bandeja de entrada (y la de spam).")
+		# Evitar spam de reenvíos: reactivar el botón al cabo de un rato
+		await get_tree().create_timer(30.0).timeout
+	else:
+		_set_verification_status("❌ No se pudo enviar el email: %s" % error)
+	if _verification_dialog:
+		_verification_dialog.set_resend_enabled(true)
+
+
+func _on_profile_loaded_check_verification(profile: UserProfile) -> void:
+	if profile.is_email_verified:
+		if _verification_dialog and _verification_dialog.visible:
+			_verification_dialog.hide()
+		if _checking_verification:
+			print("[Auth] ✅ Email verificado")
+			email_verified.emit()
+	elif _checking_verification:
+		_set_verification_status("Todavía no figura como verificado. Abre el enlace del email e inténtalo de nuevo.")
+	else:
+		show_email_verification()
+	_checking_verification = false
+
+
+func _set_verification_status(status: String) -> void:
+	if _verification_dialog:
+		_verification_dialog.set_status(status)
+
+
+func _current_email() -> String:
+	var user_manager = get_node_or_null("/root/UserManager")
+	if user_manager and user_manager.has_profile():
+		return user_manager.get_profile().email
+	return ""
+
+
+func _on_websocket_session_rejected(_code: String, message: String) -> void:
+	if is_logged_in():
+		emit_auth_error(message)

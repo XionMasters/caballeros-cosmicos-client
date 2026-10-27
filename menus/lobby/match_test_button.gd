@@ -1,7 +1,7 @@
 extends Button
 
-@onready var spinner = $Spinner   # opcional
-@onready var status_label = $StatusLabel  # opcional
+const IDLE_TEXT := "Partida de prueba"
+const LOADING_TEXT := "Preparando partida…"
 
 var _active_match_id: String = ""
 var _confirm_dialog: ConfirmationDialog = null
@@ -25,29 +25,16 @@ func _on_pressed() -> void:
 
 func _set_loading_state() -> void:
 	disabled = true
-	text = "Iniciando partida de prueba..."
-	
-	if spinner:
-		spinner.show()
-	
-	if status_label:
-		status_label.text = "Preparando entorno..."
+	text = LOADING_TEXT
 
 
 func _restore_idle_state() -> void:
 	disabled = false
-	text = "Test Match"
-	
-	if spinner:
-		spinner.hide()
-	
-	if status_label:
-		status_label.text = ""
+	text = IDLE_TEXT
 
 
 func _on_match_started(_game_state) -> void:
-	# No restauramos botón.
-	# La transición va a ocurrir.
+	# No restauramos el botón: la transición de escena va a ocurrir.
 	pass
 
 
@@ -70,9 +57,9 @@ func _show_active_match_dialog() -> void:
 
 	_confirm_dialog = ConfirmationDialog.new()
 	_confirm_dialog.title = "Partida activa encontrada"
-	_confirm_dialog.dialog_text = "Tienes una partida TEST en curso.\n¿Qués quieres hacer?"
+	_confirm_dialog.dialog_text = "Tienes una partida de prueba en curso.\n¿Qué quieres hacer?"
 	_confirm_dialog.ok_button_text = "Reanudar"
-	_confirm_dialog.cancel_button_text = "Abandonar y nueva"
+	_confirm_dialog.cancel_button_text = "Abandonar y empezar otra"
 
 	add_child(_confirm_dialog)
 

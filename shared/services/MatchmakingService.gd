@@ -102,6 +102,21 @@ func _on_server_event(event_name: String, data: Dictionary):
 			emit_signal("match_error", msg)
 
 		# -----------------------------
+		#   RECHAZO DEL SERVIDOR
+		#   search_match falla con un "error" genérico (email sin verificar,
+		#   sin mazo válido...). Sin esto el botón se quedaba "Buscando…".
+		# -----------------------------
+		"error":
+			if not is_searching:
+				return
+			is_searching = false
+			if data.get("code", "") == "EMAIL_NOT_VERIFIED":
+				emit_signal("search_cancelled")
+				AuthManager.show_email_verification()
+			else:
+				emit_signal("match_error", str(data.get("message", "No se pudo buscar partida")))
+
+		# -----------------------------
 		#   SEARCH CANCELLED (server-side)
 		# -----------------------------
 		"search_cancelled":
