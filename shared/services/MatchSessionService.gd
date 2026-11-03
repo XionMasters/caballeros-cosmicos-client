@@ -737,6 +737,31 @@ func send_move_knight(card_in_play_id: String, target_position: int) -> void:
 	WebSocketManager.send_move_knight(match_id, card_in_play_id, target_position)
 
 
+func send_technique_attack(knight_id: String, technique_id: String, defender_id: String) -> void:
+	"""Usar una técnica del campo con un caballero (defender_id vacío si golpea a todos)"""
+	if not is_in_match:
+		return
+	var match_id: String = current_match.get("id", "")
+	WebSocketManager.send_technique_attack(match_id, knight_id, technique_id, defender_id)
+
+
+func send_use_ability(card_in_play_id: String, ability_name: String, target_id: String = "") -> void:
+	"""Usar una habilidad activa de un caballero"""
+	if not is_in_match:
+		return
+	var match_id: String = current_match.get("id", "")
+	WebSocketManager.send_use_ability(match_id, card_in_play_id, ability_name, target_id)
+
+
+func send_resolve_selection(chosen_card_id: String = "", chosen_slot: int = -1) -> void:
+	"""Responder a la selección pendiente del servidor (carta o posición)"""
+	if not is_in_match or not game_state or game_state.pending_selection.is_empty():
+		return
+	var match_id: String = current_match.get("id", "")
+	var selection_id: String = str(game_state.pending_selection.get("id", ""))
+	WebSocketManager.send_resolve_selection(match_id, selection_id, chosen_card_id, chosen_slot)
+
+
 func on_gamematch_ready() -> void:
 	"""Llamada por GameMatch cuando está lista la escena y todo está renderizado
 
@@ -746,9 +771,7 @@ func on_gamematch_ready() -> void:
 	- El tablero está renderizado
 
 	Ahora enviamos mensaje WebSocket para iniciar el primer turno.
-	En TEST siempre lo envía el jugador. En PvP solo lo envía player1
-	para evitar que ambos jugadores disparen start_first_turn a la vez
-	(el servidor ya rechaza la segunda llamada si la fase ya cambió).
+	Solo en TEST: en PvP el servidor ya arranca el primer turno al emparejar.
 	"""
 	if not is_in_match:
 		print("⚠️ [MatchSessionService] No estamos en partida, saltando start_first_turn")
@@ -759,18 +782,23 @@ func on_gamematch_ready() -> void:
 	var match_id = current_match.get("id", "")
 	_is_processing_update = false
 
+	# Updates recibidos mientras cargaba la escena quedaron encolados: aplicarlos ya
+	# (si no, p. ej. el fin de turno del rival no llega hasta el siguiente update y ambos esperan)
+	if not _pending_updates.is_empty():
+		print("[MatchSessionService] 📬 Aplicando %d updates recibidos durante la carga" % _pending_updates.size())
+		_process_update_queue()
+
 	# Si es reanudación, NO llamar start_first_turn (el juego ya está en curso)
 	if _is_resuming:
 		_is_resuming = false
 		print("♻️ [MatchSessionService] Partida reanudada, saltando start_first_turn")
 		return
 
-	# En PvP solo player1 inicia el turno (evita doble disparo)
+	# En PvP el servidor ya arranca el primer turno al emparejar (startWaitingMatch):
+	# enviar start_first_turn solo devolvería MATCH_ALREADY_STARTED.
 	if not is_test_mode:
-		var local_player = game_state.player_number if game_state else 0
-		if local_player != 1:
-			print("🎮 [MatchSessionService] PvP: player%d espera que player1 inicie el turno" % local_player)
-			return
+		print("🎮 [MatchSessionService] PvP: el servidor ya inició el primer turno")
+		return
 
 	# Enviar por WebSocket para iniciar el primer turno
 	WebSocketManager.start_first_turn(match_id)

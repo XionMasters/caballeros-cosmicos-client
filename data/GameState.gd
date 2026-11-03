@@ -44,6 +44,11 @@ var last_action: Dictionary = {}
 ## Cada evento: { "type": String, "playerNumber": int, "payload": Dictionary, ... }
 var engine_events: Array = []
 
+## Selección interactiva pendiente (vacía si no hay). El servidor la crea cuando una
+## habilidad pide elegir: { id, player_number, zone, visible_card_ids?, visible_slots?, slot_owner?, ... }
+## El cliente responde con resolve_selection (chosen_card_id o, en zone "field_slot", chosen_slot).
+var pending_selection: Dictionary = {}
+
 # Cartas en juego por id
 var cards_by_id: Dictionary = {}
 var previous_snapshot: Dictionary = {}
@@ -93,8 +98,9 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 	state.current_phase = data.get("phase", data.get("current_phase", "main"))
 	state.player_id = local_player_id
 	state.active_player_number = data.get("current_player", 1)
-	state.winner_id = data.get("winner_id", "")
-	
+	state.winner_id = _string_or_empty(data.get("winner_id", ""))
+	state._set_pending_selection(data.get("pending_selection", null))
+
 	state.player_hand.clear()
 	state.player_field_knights.clear()
 	state.player_field_techniques.clear()
@@ -236,6 +242,20 @@ static func _set_in_array(array: Array, index: int, value):
 # =========================================================
 # MÉTODOS DE CONSULTA (SOLO LECTURA)
 # =========================================================
+
+static func _string_or_empty(value) -> String:
+	return "" if value == null else str(value)
+
+
+func _set_pending_selection(raw) -> void:
+	pending_selection = raw if raw is Dictionary else {}
+
+
+func has_my_pending_selection() -> bool:
+	"""True si hay una selección pendiente que debe resolver el jugador local."""
+	return not pending_selection.is_empty() \
+		and int(pending_selection.get("player_number", 0)) == player_number
+
 
 func is_my_turn() -> bool:
 	"""Verificar si es el turno del jugador local"""
@@ -438,7 +458,11 @@ func apply_update(data: Dictionary) -> void:
 		active_player_number = data["current_player"]
 
 	if data.has("winner_id"):
-		winner_id = data.get("winner_id", "")
+		# El servidor envía null mientras no hay ganador: asignar null a un String aborta la función
+		winner_id = _string_or_empty(data["winner_id"])
+
+	if data.has("pending_selection"):
+		_set_pending_selection(data["pending_selection"])
 
 	# Recursos
 	if player_number == 1:

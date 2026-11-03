@@ -45,6 +45,10 @@ extends Resource
 @export var image_url: String = ""
 @export var description: String = ""
 
+## Habilidades tal como las envía el servidor: [{ name, ability_key, type, description }]
+## El panel de acciones las usa para mostrar el nombre de las activas.
+var abilities: Array = []
+
 # ============================================================
 # HELPERS INTERNOS
 # (NO exportar estos; los usa CardInstance)
@@ -131,7 +135,11 @@ static func from_json(json: Dictionary) -> CardData:
 		card.playable_zones.clear()
 		for zone in zones_array:
 			card.playable_zones.append(str(zone))
-	
+
+	var abilities_array = json.get("abilities", [])
+	if abilities_array is Array:
+		card.abilities = abilities_array
+
 	# Knight Stats (si existen)
 	var knight = null
 	if json.has("card_knight"):

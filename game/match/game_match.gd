@@ -73,6 +73,7 @@ func _ready() -> void:
 	# 5️⃣ Render inicial
 	await _render_from_match_state()
 	_turn_controller.update_state()
+	_knight_controller.refresh_pending_selection(MatchSessionService.game_state)
 
 	# 6️⃣ Esperar precarga de imágenes
 	print("[GameMatch] ⏳ Esperando precarga de imágenes...")
@@ -141,6 +142,8 @@ func _on_match_state_updated(_match_data: Dictionary) -> void:
 		return
 	await _render_from_match_state()
 	_turn_controller.update_state()
+	# Si el servidor espera una elección del jugador (pending_selection), activarla
+	_knight_controller.refresh_pending_selection(MatchSessionService.game_state)
 
 
 func _on_phase_changed(phase: String) -> void:
@@ -151,6 +154,7 @@ func _on_phase_changed(phase: String) -> void:
 func _on_match_error_received(error_message: String) -> void:
 	print("[GameMatch] ❌ Error del servidor: %s" % error_message)
 	await _render_from_match_state()
+	_knight_controller.on_action_rejected(MatchSessionService.game_state)
 
 
 # ============================================================================

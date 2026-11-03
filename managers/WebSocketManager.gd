@@ -25,6 +25,8 @@ const AUTH_ERROR_CODES := ["NO_TOKEN", "INVALID_TOKEN", "SESSION_INVALIDATED", "
 const CLOSE_CODE_POLICY_VIOLATION := 1008
 ## Tiempo máximo para completar el handshake antes de reintentar.
 const HANDSHAKE_TIMEOUT: float = 10.0
+## Tamaño máximo de un mensaje entrante (el default de Godot, 64 KB, se queda corto en partida).
+const INBOUND_BUFFER_BYTES: int = 4 * 1024 * 1024
 
 # Config
 var ws: WebSocketPeer = null
@@ -174,6 +176,9 @@ func connect_to_server(token: String) -> void:
 	print("🔌 Conectando a WebSocket: ", GameConfig.WS_URL)
 
 	ws = WebSocketPeer.new()
+	# Un match_update completo (todas las cartas en juego + yomotsu) supera fácilmente el
+	# búfer por defecto de 64 KB: Godot cerraría la conexión con 1009 y se perderían updates
+	ws.inbound_buffer_size = INBOUND_BUFFER_BYTES
 	ws.handshake_headers = PackedStringArray(["Authorization: Bearer %s" % auth_token])
 	var err := ws.connect_to_url(GameConfig.WS_URL)
 	if err != OK:
@@ -445,6 +450,50 @@ func send_move_knight(match_id: String, card_in_play_id: String, target_position
 		"card_id": card_in_play_id,
 		"target_position": target_position
 	})
+
+func send_technique_attack(match_id: String, knight_id: String, technique_id: String, defender_id: String) -> void:
+	"""Usar una técnica (TA). defender_id vacío para técnicas que golpean a todos (target_all)."""
+	if not is_connected_to_server():
+		push_error("No conectado - no se puede enviar technique_attack")
+		return
+	var data := {
+		"match_id": match_id,
+		"knight_id": knight_id,
+		"technique_id": technique_id,
+	}
+	if defender_id != "":
+		data["defender_id"] = defender_id
+	send_match_event("technique_attack", data)
+
+func send_use_ability(match_id: String, card_in_play_id: String, ability_name: String, target_id: String = "") -> void:
+	"""Usar una habilidad activa. ability_name es el que envía el servidor en valid_actions.active_abilities."""
+	if not is_connected_to_server():
+		push_error("No conectado - no se puede enviar use_ability")
+		return
+	var data := {
+		"match_id": match_id,
+		"card_id": card_in_play_id,
+		"ability_name": ability_name,
+	}
+	if target_id != "":
+		data["target_id"] = target_id
+	send_match_event("use_ability", data)
+
+func send_resolve_selection(match_id: String, selection_id: String, chosen_card_id: String = "", chosen_slot: int = -1) -> void:
+	"""Responder a la selección pendiente: una carta (chosen_card_id) o una posición (chosen_slot)."""
+	if not is_connected_to_server():
+		push_error("No conectado - no se puede enviar resolve_selection")
+		return
+	var data := {
+		"match_id": match_id,
+		"selection_id": selection_id,
+		"action_id": _generate_action_id(),
+	}
+	if chosen_slot >= 0:
+		data["chosen_slot"] = chosen_slot
+	else:
+		data["chosen_card_id"] = chosen_card_id
+	send_event("resolve_selection", data)
 
 func start_first_turn(match_id: String) -> void:
 	"""Iniciar el primer turno de la partida

@@ -340,8 +340,11 @@ func _finish_request(req: Dictionary, success: bool, data: Variant, error: Strin
 
 	var request_id : String = req.id
 	if _callbacks.has(request_id):
-		_callbacks[request_id].call(success, data, error)
+		var callback: Callable = _callbacks[request_id]
 		_callbacks.erase(request_id)
+		# El objeto que pidió la respuesta pudo liberarse (cambio de escena)
+		if callback.is_valid():
+			callback.call(success, data, error)
 
 func _finish_image_request(req: Dictionary, image: Image) -> void:
 	if not req.has("callback"):

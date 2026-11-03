@@ -204,6 +204,9 @@ func _assign_card_back_texture(card_back: CardBack) -> void:
 		while opponent_deck.get_back_texture() == null and wait_count < max_wait:
 			var timer = parent_node.get_tree().create_timer(0.1)
 			await timer.timeout
+			# La escena pudo cerrarse mientras esperábamos (fin de partida)
+			if not is_instance_valid(opponent_deck) or not is_instance_valid(card_back):
+				return
 			wait_count += 1
 			if wait_count % 10 == 0:
 				print("[OpponentCardDealAnimator] ⏳ Esperando textura del dorso (%d x 0.1s)..." % wait_count)

@@ -483,8 +483,15 @@ func _update_stats_tooltip() -> void:
 		for child in tooltip_status_container.get_children():
 			child.queue_free()
 		for status in card_instance.status_effects:
+			# Markers internos del servidor que no son un estado visible
+			if status is Dictionary and str(status.get("type", "")) in HIDDEN_STATUS_TYPES:
+				continue
 			var pill = _create_status_pill(status)
 			tooltip_status_container.add_child(pill)
+
+
+## Tipos de status_effects que son markers internos del motor (no se muestran)
+const HIDDEN_STATUS_TYPES := ["ability_used", "phoenix_rebirth_cooldown"]
 
 
 func _create_status_pill(status: Dictionary) -> Label:
@@ -494,7 +501,9 @@ func _create_status_pill(status: Dictionary) -> Label:
 	pill.add_theme_font_size_override("font_size", 9)
 
 	var effect_type = str(status.get("type", "?"))
-	var duration = int(status.get("duration", 0))
+	# El servidor envía remaining_turns (null = permanente); "duration" es el formato antiguo
+	var raw_turns = status.get("remaining_turns", status.get("duration", null))
+	var turns_text: String = " %dt" % int(raw_turns) if raw_turns != null else ""
 
 	var pill_bg = StyleBoxFlat.new()
 	pill_bg.set_corner_radius_all(4)
@@ -505,27 +514,35 @@ func _create_status_pill(status: Dictionary) -> Label:
 
 	match effect_type.to_lower():
 		"poison", "veneno":
-			pill.text = "\u2620 %dt" % duration
+			pill.text = "\u2620%s" % turns_text
 			pill_bg.bg_color = Color(0.22, 0.60, 0.12, 0.92)
 			pill.add_theme_color_override("font_color", Color(0.90, 1.00, 0.85))
-		"paralysis", "paralisis":
-			pill.text = "\u26A1 %dt" % duration
+		"paralyzed", "paralysis", "paralisis":
+			pill.text = "\u26A1%s" % turns_text
 			pill_bg.bg_color = Color(0.78, 0.70, 0.04, 0.92)
 			pill.add_theme_color_override("font_color", Color(0.08, 0.06, 0.00))
 		"frozen", "congelado":
-			pill.text = "\u2744 %dt" % duration
+			pill.text = "\u2744%s" % turns_text
 			pill_bg.bg_color = Color(0.22, 0.52, 1.00, 0.92)
 			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
 		"burn", "quemado":
-			pill.text = "\u2605 %dt" % duration
+			pill.text = "\u2605%s" % turns_text
 			pill_bg.bg_color = Color(0.90, 0.26, 0.04, 0.92)
 			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
 		"silenced", "silenciado":
-			pill.text = "\u2298 %dt" % duration
+			pill.text = "\u2298%s" % turns_text
 			pill_bg.bg_color = Color(0.45, 0.24, 0.55, 0.92)
 			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
+		"taunt":
+			pill.text = "PROVOCA%s" % turns_text
+			pill_bg.bg_color = Color(0.75, 0.15, 0.15, 0.92)
+			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
+		"armor_unbreakable":
+			pill.text = "AR FIJA%s" % turns_text
+			pill_bg.bg_color = Color(0.55, 0.45, 0.20, 0.92)
+			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
 		_:
-			pill.text = "%s %dt" % [effect_type.substr(0, 3).to_upper(), duration]
+			pill.text = "%s%s" % [effect_type.substr(0, 3).to_upper(), turns_text]
 			pill_bg.bg_color = Color(0.32, 0.32, 0.32, 0.92)
 			pill.add_theme_color_override("font_color", Color(1.00, 1.00, 1.00))
 
