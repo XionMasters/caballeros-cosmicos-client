@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bajepaslt3x3v"]
 
 [ext_resource type="Script" uid="uid://c7yby6kd1qucd" path="res://menus/decks/DecksList.gd" id="1"]
-[ext_resource type="Theme" path="res://menus/lobby/lobby_theme.tres" id="2_theme"]
+[ext_resource type="Theme" path="res://ui/theme/cosmic_theme.tres" id="2_theme"]
 [ext_resource type="Script" path="res://menus/login/LoginBackground.gd" id="3_background"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/back.svg" id="4_back"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/decks.svg" id="5_decks"]

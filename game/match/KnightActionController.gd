@@ -300,7 +300,7 @@ func _on_knight_action_selected(action: String, source_slot: Node) -> void:
 				print("[KnightActionController] ⚔️ Ataque directo")
 				MatchSessionService.send_attack(iid, "")
 				return
-			_begin_card_mode("attack", iid, {}, target_ids, Color(1.0, 0.2, 0.2))
+			_begin_card_mode("attack", iid, {}, target_ids, UIPalette.LIFE)
 
 		"charge":
 			print("[KnightActionController] 💫 Cargando cosmos")
@@ -328,7 +328,7 @@ func _on_knight_action_selected(action: String, source_slot: Node) -> void:
 			_mode = "move"
 			_pending_source_id = iid
 			_valid_slots = move_indices
-			_start_selection(target_slots, Color(0.2, 0.6, 1.0))
+			_start_selection(target_slots, UIPalette.COSMOS)
 			print("[KnightActionController] 🔄 Selecciona slot destino")
 
 
@@ -347,7 +347,7 @@ func _on_knight_option_selected(action: String, source_slot: Node, option: Dicti
 				print("[KnightActionController] ✨ %s usa %s" % [iid, option.get("name", "")])
 				MatchSessionService.send_technique_attack(iid, technique_id, "")
 				return
-			_begin_card_mode("technique", iid, option, targets, Color(1.0, 0.6, 0.1))
+			_begin_card_mode("technique", iid, option, targets, UIPalette.POWER)
 
 		"ability":
 			var ability_name := str(option.get("ability_name", ""))
@@ -356,7 +356,7 @@ func _on_knight_option_selected(action: String, source_slot: Node, option: Dicti
 				MatchSessionService.send_use_ability(iid, ability_name)
 				return
 			# El objetivo lo valida el servidor: se ofrece cualquier caballero en campo
-			_begin_card_mode("ability_target", iid, option, _all_field_knight_ids(), Color(0.7, 0.3, 1.0))
+			_begin_card_mode("ability_target", iid, option, _all_field_knight_ids(), UIPalette.ABILITY)
 
 
 func _begin_card_mode(mode: String, source_id: String, option: Dictionary, target_ids: Array, color: Color) -> void:
@@ -386,7 +386,7 @@ func _start_server_slot_selection(gs: GameState, sel: Dictionary) -> void:
 	_mode = "server_slot"
 	_valid_slot_owner = owner
 	_valid_slots = slots
-	_start_selection(_slots_from_indices(zone, slots), Color(0.2, 1.0, 0.6))
+	_start_selection(_slots_from_indices(zone, slots), UIPalette.TARGET)
 	print("[KnightActionController] 📍 Elige una posición (%s)" % owner)
 
 
@@ -398,7 +398,7 @@ func _start_server_card_selection(gs: GameState, sel: Dictionary) -> void:
 	_valid_target_ids = ids
 	var field_slots := _slots_from_ids(_opponent_zone, ids) + _slots_from_ids(_player_zone, ids)
 	if not field_slots.is_empty() and field_slots.size() == ids.size():
-		_start_selection(field_slots, Color(0.2, 1.0, 0.6))
+		_start_selection(field_slots, UIPalette.TARGET)
 		print("[KnightActionController] 🎯 Elige una carta del campo")
 		return
 	_open_choice_panel(gs, ids)

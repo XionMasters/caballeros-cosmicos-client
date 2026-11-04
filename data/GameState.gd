@@ -658,6 +658,12 @@ func _update_cards_in_play(cards_data: Array) -> void:
 
 	if new_scenario:
 		scenario = new_scenario
+	elif scenario:
+		# Sin escenario en el payload: se limpia si es una reconstrucción completa
+		# (trae la mano) o si la carta del escenario aparece ya en otra zona.
+		var scenario_moved: bool = cards_data.any(func(c): return str(c.get("id", "")) == scenario.instance_id)
+		if has_hand_cards or scenario_moved:
+			scenario = null
 
 func _reconcile_zone_array(zone_array: Array, values_by_pos: Dictionary, fixed_size: int = 5) -> void:
 	"""Reemplaza el contenido de una zona por el estado actual del servidor"""

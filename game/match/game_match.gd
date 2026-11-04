@@ -27,6 +27,7 @@ extends Control
 @onready var end_turn_button: Button = $RootColumns/RightColumn/PlayerEmpty/EndTurnButton
 @onready var player_knight_slots_zone = $RootColumns/CenterColumn/PlayerKnights/plKnightsZone
 @onready var opponent_knight_slots_zone = $RootColumns/CenterColumn/OpponentKnights/opKnightsZone
+@onready var battle_background: Control = $BattleBackground  # BattleBackground.gd
 
 const CARD_DISPLAY_SCENE = preload("res://cards/CardDisplay.tscn")
 
@@ -179,6 +180,9 @@ func _render_all(gs: GameState, cm: Dictionary) -> void:
 		_field_renderer.clear_all_slots(opponent_knight_slots_zone)
 		_orchestrator.reset_state()
 	_last_player_number = gs.player_number
+
+	# El fondo sigue al escenario en juego (o vuelve al cosmos base si no hay ninguno)
+	battle_background.set_stage(gs.scenario)
 
 	await _orchestrator.render_state(gs, cm)
 

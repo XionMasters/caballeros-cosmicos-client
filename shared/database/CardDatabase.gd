@@ -20,6 +20,7 @@ var _total_cards_on_server: int = 0  # Cantidad real en el servidor
 var _loaded_so_far: int = 0
 var _language: String = "es"
 var _page_retry_count: Dictionary = {}  # offset -> intentos fallidos
+var _pending_language: String = ""  # Idioma pedido durante una carga en curso
 
 # ============================================================================
 # SIGNALS
@@ -42,6 +43,28 @@ func _ready() -> void:
 		var api_client = get_node("/root/ApiClient")
 		if not api_client.request_completed.is_connected(_on_api_request_completed):
 			api_client.request_completed.connect(_on_api_request_completed)
+
+
+func reload_for_language(new_lang: String) -> void:
+	"""Recargar todas las cartas cuando el usuario cambia de idioma."""
+	if is_loading:
+		# Las páginas comparten tag: lanzar otra carga ahora mezclaría las respuestas.
+		# Se aplica al terminar la carga en curso.
+		_pending_language = new_lang
+		return
+	if new_lang == _language and is_loaded:
+		return
+	is_loaded = false
+	print("[CardDatabase] 🌐 Recargando para idioma: %s" % new_lang)
+	fetch_all_cards(new_lang)
+
+
+func _apply_pending_language() -> void:
+	if _pending_language == "":
+		return
+	var lang := _pending_language
+	_pending_language = ""
+	reload_for_language(lang)
 
 
 func fetch_all_cards(lang: String = "es") -> void:
@@ -198,6 +221,7 @@ func _loading_complete() -> void:
 	
 	print("[CardDatabase] ✅ Carga completa! %d cartas en memoria" % all_cards.size())
 	cards_loaded.emit(all_cards.size())
+	_apply_pending_language()
 
 
 func _loading_failed(reason: String) -> void:
@@ -212,6 +236,7 @@ func _loading_failed(reason: String) -> void:
 	_loaded_so_far = 0
 	_total_cards_on_server = 0
 	_page_retry_count.clear()  # Limpiar reintentos
+	_apply_pending_language()
 
 
 # ============================================================================

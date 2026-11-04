@@ -7,6 +7,7 @@ extends Resource
 # IDENTIFICACIÓN Y METADATA
 # ============================================================
 @export var id: String = ""
+@export var code: String = ""           # Código estable de la carta (ej: "drowned_world")
 @export var name: String = ""
 @export var type: String = ""          # knight / technique / item / stage / helper / event
 @export var rarity: String = ""
@@ -88,6 +89,7 @@ static func from_json(json: Dictionary) -> CardData:
 	
 	# Identidad
 	card.id = _safe_string.call(json.get("id", ""), "")
+	card.code = _safe_string.call(json.get("code", json.get("card_code", "")), "")
 	card.name = _safe_string.call(json.get("name", ""), "")
 	
 	# Tipo y rareza: pueden venir en español del servidor

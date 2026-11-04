@@ -1,11 +1,14 @@
 # LoginBackground.gd
-# Fondo animado de la pantalla de login: cosmos (shader), arte del Santuario,
-# anillo zodiacal y partículas de cosmos dorado. Se construye por código.
+# Fondo animado de las pantallas de menú (login, lobby, colección, mazos, tienda, perfil):
+# cosmos (shader), ilustración del Santuario en ruinas, anillo zodiacal y partículas
+# de cosmos dorado. Se construye por código.
 extends Control
 
 const COSMOS_SHADER := preload("res://assets/shaders/cosmos_background.gdshader")
 const ZodiacRing := preload("res://menus/login/ZodiacRing.gd")
-const HERO_ART_PATH := "res://assets/images/win.png"
+const HERO_ART_PATH := "res://assets/backgrounds/sanctuary_ruins.png"
+## Opacidad de la ilustración sobre el cosmos: visible, pero sin competir con los paneles
+const HERO_ART_TINT := Color(0.82, 0.8, 1.0, 0.55)
 const GOLD := Color(1.0, 0.8, 0.36)
 
 var _cosmos: ColorRect
@@ -48,8 +51,8 @@ func _build_hero_art() -> void:
 	_hero.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_hero.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	_hero.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_COVERED
-	# Tenue y teñido hacia el cosmos para que no compita con el formulario
-	_hero.modulate = Color(0.75, 0.7, 1.0, 0.28)
+	# Teñido hacia el cosmos para que no compita con el formulario ni los paneles
+	_hero.modulate = HERO_ART_TINT
 	add_child(_hero)
 	_hero.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 

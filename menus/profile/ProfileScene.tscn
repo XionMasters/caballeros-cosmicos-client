@@ -1,7 +1,7 @@
 [gd_scene format=3 uid="uid://bqax3y702c5d1"]
 
 [ext_resource type="Script" uid="uid://pxhnb3ko3qe" path="res://menus/profile/ProfileScene.gd" id="1_profile"]
-[ext_resource type="Theme" path="res://menus/lobby/lobby_theme.tres" id="2_theme"]
+[ext_resource type="Theme" path="res://ui/theme/cosmic_theme.tres" id="2_theme"]
 [ext_resource type="Script" path="res://menus/login/LoginBackground.gd" id="3_background"]
 [ext_resource type="Script" path="res://menus/login/ZodiacRing.gd" id="4_ring"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/back.svg" id="5_back"]

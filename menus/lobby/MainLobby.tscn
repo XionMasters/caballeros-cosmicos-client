@@ -5,7 +5,7 @@
 [ext_resource type="Script" uid="uid://vnjps8vkik5w" path="res://ui/OnlineUsersList.gd" id="3_users_list"]
 [ext_resource type="PackedScene" uid="uid://b2qw4o775im4n" path="res://menus/lobby/MatchSearchButton.tscn" id="4_qffja"]
 [ext_resource type="PackedScene" uid="uid://bkwqxojyefudc" path="res://menus/lobby/MatchTestButton.tscn" id="5_fpjcq"]
-[ext_resource type="Theme" path="res://menus/lobby/lobby_theme.tres" id="6_theme"]
+[ext_resource type="Theme" path="res://ui/theme/cosmic_theme.tres" id="6_theme"]
 [ext_resource type="Script" path="res://menus/login/LoginBackground.gd" id="7_background"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/emblem.svg" id="8_emblem"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/profile.svg" id="9_profile"]

@@ -94,51 +94,51 @@ func _init_shared_styles():
 	# Borde por defecto (siempre visible)
 	if not _glow_style_cache.has("default"):
 		var default_style := StyleBoxFlat.new()
-		default_style.bg_color = Color(0, 0, 0, 0.25)
-		default_style.border_color = Color(0.4, 0.4, 0.5, 0.7)
+		default_style.bg_color = UIPalette.alpha(UIPalette.ABYSS, 0.72)
+		default_style.border_color = UIPalette.alpha(UIPalette.GOLD, 0.5)
 		default_style.border_width_left = 2
 		default_style.border_width_right = 2
 		default_style.border_width_top = 2
 		default_style.border_width_bottom = 2
-		default_style.corner_radius_top_left = 4
-		default_style.corner_radius_top_right = 4
-		default_style.corner_radius_bottom_left = 4
-		default_style.corner_radius_bottom_right = 4
+		default_style.corner_radius_top_left = 8
+		default_style.corner_radius_top_right = 8
+		default_style.corner_radius_bottom_left = 8
+		default_style.corner_radius_bottom_right = 8
 		_glow_style_cache["default"] = default_style
 	add_theme_stylebox_override("panel", _glow_style_cache["default"])
 	queue_redraw()
 
 	if _hover_style == null:
 		_hover_style = StyleBoxFlat.new()
-		_hover_style.bg_color = Color(1, 1, 1, 0.12)
-		_hover_style.border_color = Color(0, 1, 0, 0.55)
+		_hover_style.bg_color = UIPalette.alpha(UIPalette.HIGHLIGHT, 0.35)
+		_hover_style.border_color = UIPalette.alpha(UIPalette.GOLD_LIGHT, 0.7)
 		_hover_style.border_width_left = 2
 		_hover_style.border_width_right = 2
 		_hover_style.border_width_top = 2
 		_hover_style.border_width_bottom = 2
 	
-	# ✅ Verde para drop válido
+	# ✅ Cian para drop válido
 	if _valid_drag_style == null:
 		_valid_drag_style = StyleBoxFlat.new()
-		_valid_drag_style.bg_color = Color(0, 1, 0, 0.25)      # Verde translúcido
-		_valid_drag_style.border_color = Color(0, 1, 0, 1.0)   # Verde brillante
+		_valid_drag_style.bg_color = UIPalette.alpha(UIPalette.TARGET, 0.22)
+		_valid_drag_style.border_color = UIPalette.TARGET
 		_valid_drag_style.border_width_left = 3
 		_valid_drag_style.border_width_right = 3
 		_valid_drag_style.border_width_top = 3
 		_valid_drag_style.border_width_bottom = 3
-		_valid_drag_style.shadow_color = Color(0, 1, 0, 0.6)
-		_valid_drag_style.shadow_size = 4
-	
-	# ❌ Rojo para drop inválido
+		_valid_drag_style.shadow_color = UIPalette.alpha(UIPalette.TARGET, 0.55)
+		_valid_drag_style.shadow_size = 6
+
+	# ❌ Naranja para drop inválido (se distingue del cian también por luminosidad)
 	if _invalid_drag_style == null:
 		_invalid_drag_style = StyleBoxFlat.new()
-		_invalid_drag_style.bg_color = Color(1, 0, 0, 0.15)      # Rojo translúcido
-		_invalid_drag_style.border_color = Color(1, 0, 0, 1.0)   # Rojo brillante
+		_invalid_drag_style.bg_color = UIPalette.alpha(UIPalette.INVALID, 0.15)
+		_invalid_drag_style.border_color = UIPalette.INVALID
 		_invalid_drag_style.border_width_left = 3
 		_invalid_drag_style.border_width_right = 3
 		_invalid_drag_style.border_width_top = 3
 		_invalid_drag_style.border_width_bottom = 3
-		_invalid_drag_style.shadow_color = Color(1, 0, 0, 0.4)
+		_invalid_drag_style.shadow_color = UIPalette.alpha(UIPalette.INVALID, 0.4)
 		_invalid_drag_style.shadow_size = 4
 
 func _draw() -> void:
@@ -172,7 +172,7 @@ func _make_glow_style(color: Color) -> StyleBoxFlat:
 # ====================================================
 # TARGET HIGHLIGHT  (selección de objetivo)
 # ====================================================
-func set_target_highlight(active: bool, color: Color = Color(1.0, 0.2, 0.2)) -> void:
+func set_target_highlight(active: bool, color: Color = UIPalette.LIFE) -> void:
 	"""Activa/desactiva el overlay parpadeante para indicar objetivo válido.
 	Reutilizable para cualquier acción: ataque (rojo), buff (verde), mover (azul), etc."""
 	if _highlight_tween:
@@ -214,23 +214,23 @@ func _create_watermark():
 	watermark_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var text := ""
-	var color := Color(1, 1, 1, 0.9)
+	var color := UIPalette.alpha(UIPalette.TEXT, 0.9)
 	match slot_type:
 		SlotType.KNIGHT:
 			text = "K"
-			color = Color(1.0, 0.8, 0.0, 0.95)
+			color = UIPalette.alpha(UIPalette.GOLD, 0.95)
 		SlotType.TECH_OBJECT:
 			text = "T/O"
-			color = Color(0.3, 0.5, 1, 0.95)
+			color = UIPalette.alpha(UIPalette.COSMOS, 0.95)
 		SlotType.HELPER:
 			text = "H"
-			color = Color(0.2, 1, 0.4, 0.95)
+			color = UIPalette.alpha(UIPalette.HEAL, 0.95)
 		SlotType.SCENARIO:
 			text = "S"
-			color = Color(1, 0.3, 1, 0.95)
+			color = UIPalette.alpha(UIPalette.ABILITY, 0.95)
 		SlotType.OCCASION:
 			text = "O"
-			color = Color(1, 0.5, 0, 0.95)
+			color = UIPalette.alpha(UIPalette.POWER, 0.95)
 
 	watermark_label.text = text
 	watermark_label.add_theme_color_override("font_color", color)
@@ -624,7 +624,7 @@ func _normalize_card_type(raw_type: String) -> String:
 		_:
 			return value
 
-func set_glow(enabled: bool, color: Color = Color(1, 0.8, 0.1)):
+func set_glow(enabled: bool, color: Color = UIPalette.SELECTED):
 	if enabled:
 		add_theme_stylebox_override("panel", _make_glow_style(color))
 	else:

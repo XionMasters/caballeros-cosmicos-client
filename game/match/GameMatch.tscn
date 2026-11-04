@@ -11,6 +11,7 @@
 [ext_resource type="Script" uid="uid://bw5ydvi5j28b" path="res://game/deck/CardSlot.gd" id="7_u7rf6"]
 [ext_resource type="Script" uid="uid://ww1kn105pxpd" path="res://game/zones/TechniqueZone.gd" id="7_wyhu6"]
 [ext_resource type="PackedScene" uid="uid://bgymhenbjl2xc" path="res://game/zones/PilesPanel.tscn" id="8_piles"]
+[ext_resource type="Script" path="res://game/match/BattleBackground.gd" id="9_battlebg"]
 
 [node name="GameMatch" type="Control"]
 layout_mode = 3
@@ -28,7 +29,18 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-color = Color(0.15, 0.15, 0.2, 1)
+mouse_filter = 2
+color = Color(0.027, 0.02, 0.102, 1)
+
+[node name="BattleBackground" type="Control" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+script = ExtResource("9_battlebg")
 
 [node name="RootColumns" type="HBoxContainer" parent="."]
 layout_mode = 1
