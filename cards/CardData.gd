@@ -50,6 +50,9 @@ extends Resource
 ## El panel de acciones las usa para mostrar el nombre de las activas.
 var abilities: Array = []
 
+## Solo técnicas: { hit_count, hit_ce, ta_cost, compatible_tags, target_all } (card_technique del servidor)
+var technique: Dictionary = {}
+
 # ============================================================
 # HELPERS INTERNOS
 # (NO exportar estos; los usa CardInstance)
@@ -141,6 +144,10 @@ static func from_json(json: Dictionary) -> CardData:
 	var abilities_array = json.get("abilities", [])
 	if abilities_array is Array:
 		card.abilities = abilities_array
+
+	var technique_data = json.get("card_technique", null)
+	if technique_data is Dictionary:
+		card.technique = technique_data
 
 	# Knight Stats (si existen)
 	var knight = null

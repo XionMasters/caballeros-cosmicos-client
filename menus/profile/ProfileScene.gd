@@ -224,7 +224,37 @@ func _create_history_row(entry: Dictionary) -> Control:
 	date.theme_type_variation = &"Subtitle"
 	date.text = _format_date(str(entry.get("finished_at", "")))
 	row.add_child(date)
+
+	if entry.get("has_replay", false):
+		var replay_button := Button.new()
+		replay_button.text = "Ver repetición"
+		replay_button.custom_minimum_size = Vector2(150, 40)
+		replay_button.pressed.connect(_open_replay.bind(str(entry.get("match_id", "")), replay_button))
+		row.add_child(replay_button)
 	return panel
+
+
+func _open_replay(match_id: String, button: Button) -> void:
+	if match_id == "":
+		return
+	if MatchSessionService.is_in_match:
+		_show_toast("Termina tu partida antes de ver una repetición", true)
+		return
+	button.disabled = true
+	button.text = "Cargando…"
+	_request(HTTPClient.METHOD_GET, "/matches/%s/replay" % match_id, null, func(ok: bool, data):
+		if not ok or not (data is Dictionary):
+			if is_instance_valid(button):
+				button.disabled = false
+				button.text = "Ver repetición"
+			_show_toast(_error_text(data, "No se pudo cargar la repetición"), true)
+			return
+		var started: bool = await MatchSessionService.start_replay(data)
+		if not started and is_instance_valid(button):
+			button.disabled = false
+			button.text = "Ver repetición"
+			_show_toast("La repetición no está disponible", true)
+	)
 
 
 # ============================================================================

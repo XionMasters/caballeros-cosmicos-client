@@ -67,9 +67,9 @@ func render(game_state: GameState, current_match: Dictionary) -> void:
 	_opponent_deck.setup(game_state.opponent_deck_count, opponent_id)
 
 	if _player_piles:
-		_player_piles.update_yomotsu(game_state.player_graveyard_count)
+		_player_piles.update_both(game_state.player_graveyard_count, game_state.player_cositos_count)
 	if _opponent_piles:
-		_opponent_piles.update_yomotsu(game_state.opponent_graveyard_count)
+		_opponent_piles.update_both(game_state.opponent_graveyard_count, game_state.opponent_cositos_count)
 
 
 func render_fallback() -> void:

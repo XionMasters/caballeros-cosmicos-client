@@ -1,5 +1,6 @@
 # FieldRenderer.gd
-# Renderiza las zonas de caballeros del campo desde el GameState.
+# Renderiza el campo desde el GameState: caballeros, fila de técnicas/objetos,
+# ayudante, ocasión y escenario.
 # No tiene estado de juego propio — solo transforma CardInstance[] en nodos visuales.
 
 class_name FieldRenderer
@@ -9,6 +10,11 @@ const CARD_DISPLAY_SCENE = preload("res://cards/CardDisplay.tscn")
 
 var _player_zone: Node
 var _opponent_zone: Node
+
+# Posiciones de soporte (las configura GameMatch con set_support_slots)
+var _player_support: Array = []    # 5 CardSlot de la fila de técnicas/objetos propia (índice = posición)
+var _opponent_support: Array = []  # ídem del rival
+var _single_slots: Dictionary = {} # player_helper, opponent_helper, player_occasion, opponent_occasion, scenario
 
 
 func _init(player_zone: Node, opponent_zone: Node) -> void:
@@ -20,10 +26,32 @@ func _init(player_zone: Node, opponent_zone: Node) -> void:
 # API PÚBLICA
 # ============================================================================
 
+func set_support_slots(player_support: Array, opponent_support: Array, single_slots: Dictionary) -> void:
+	_player_support = player_support
+	_opponent_support = opponent_support
+	_single_slots = single_slots
+
+
 func render_field(game_state: GameState) -> void:
-	"""Sincronizar ambas zonas con el GameState actual."""
+	"""Sincronizar todo el campo con el GameState actual."""
 	_render_knight_zone(_player_zone, game_state.player_field_knights, false)
 	_render_knight_zone(_opponent_zone, game_state.opponent_field_knights, true)
+
+	_render_slot_list(_player_support, game_state.player_field_techniques, false)
+	_render_slot_list(_opponent_support, game_state.opponent_field_techniques, true)
+	_render_single(_single_slots.get("player_helper"), game_state.player_helper, false)
+	_render_single(_single_slots.get("opponent_helper"), game_state.opponent_helper, true)
+	_render_single(_single_slots.get("player_occasion"), game_state.player_occasion, false)
+	_render_single(_single_slots.get("opponent_occasion"), game_state.opponent_occasion, true)
+	# El escenario es compartido: se muestra sin interacción (el detalle sigue con clic derecho)
+	_render_single(_single_slots.get("scenario"), game_state.scenario, true)
+
+
+func clear_support_slots() -> void:
+	"""Vaciar técnicas, ayudantes, ocasiones y escenario (al cambiar de perspectiva)."""
+	for slot in _support_slots():
+		if slot.is_occupied:
+			_clear_slot_fast(slot)
 
 
 func clear_all_slots(zone: Node) -> void:
@@ -55,19 +83,48 @@ func _render_knight_zone(zone: Node, field_cards: Array[CardInstance], is_oppone
 		var slot = slots[i]
 		if not slot is CardSlot:
 			continue
-		var expected: CardInstance = cards_by_pos.get(i, null)
+		_render_single(slot, cards_by_pos.get(i, null), is_opponent)
 
-		if expected == null:
-			if slot.is_occupied:
-				_clear_slot_fast(slot)
-		else:
-			# Ya tiene la carta correcta → no redibujar
-			if slot.is_occupied and slot.card_instance and \
-					slot.card_instance.instance_id == expected.instance_id:
-				continue
-			if slot.is_occupied:
-				_clear_slot_fast(slot)
-			_place_card_in_slot(slot, expected, is_opponent)
+
+func _render_slot_list(slots: Array, cards: Array, is_opponent: bool) -> void:
+	"""Fila de posiciones indexada por posición (técnicas/objetos)."""
+	for i in range(slots.size()):
+		var expected: CardInstance = cards[i] if i < cards.size() else null
+		_render_single(slots[i], expected, is_opponent)
+
+
+func _render_single(slot, expected: CardInstance, is_opponent: bool) -> void:
+	"""Deja la posición con la carta esperada (o vacía)."""
+	if not (slot is CardSlot) or not is_instance_valid(slot):
+		return
+	if expected == null:
+		if slot.is_occupied:
+			_clear_slot_fast(slot)
+		return
+	# Ya tiene la carta correcta → no redibujar
+	if slot.is_occupied and slot.card_instance and slot.card_instance.instance_id == expected.instance_id:
+		return
+	if slot.is_occupied:
+		_clear_slot_fast(slot)
+	_place_card_in_slot(slot, expected, is_opponent)
+
+
+func _support_slots() -> Array:
+	var out: Array = []
+	for slot in _player_support + _opponent_support + _single_slots.values():
+		if slot is CardSlot and is_instance_valid(slot):
+			out.append(slot)
+	return out
+
+
+func _all_slots() -> Array:
+	var out: Array = []
+	for zone in [_player_zone, _opponent_zone]:
+		if zone:
+			for slot in zone.get_children():
+				if slot is CardSlot:
+					out.append(slot)
+	return out + _support_slots()
 
 
 func _clear_slot_fast(slot: CardSlot) -> void:
@@ -107,29 +164,19 @@ func get_zone_center(is_opponent: bool) -> Vector2:
 
 func find_card_position(instance_id: String) -> Vector2:
 	"""Devuelve la posición global del slot que contiene la carta con ese instance_id.
-	Busca en ambas zonas. Retorna Vector2.ZERO si no la encuentra."""
-	for zone in [_player_zone, _opponent_zone]:
-		if not zone:
-			continue
-		for slot in zone.get_children():
-			if not (slot is CardSlot):
-				continue
-			if slot.card_instance and slot.card_instance.instance_id == instance_id:
-				return slot.global_position + slot.size * 0.5
+	Busca en todo el campo. Retorna Vector2.ZERO si no la encuentra."""
+	for slot in _all_slots():
+		if slot.card_instance and slot.card_instance.instance_id == instance_id:
+			return slot.global_position + slot.size * 0.5
 	return Vector2.ZERO
 
 
 func find_card_node(instance_id: String) -> Control:
 	"""Devuelve el nodo CardDisplay del slot que contiene la carta con ese instance_id.
 	Retorna null si no se encuentra."""
-	for zone in [_player_zone, _opponent_zone]:
-		if not zone:
-			continue
-		for slot in zone.get_children():
-			if not (slot is CardSlot):
-				continue
-			if slot.card_instance and slot.card_instance.instance_id == instance_id:
-				return slot.card_display_node
+	for slot in _all_slots():
+		if slot.card_instance and slot.card_instance.instance_id == instance_id:
+			return slot.card_display_node
 	return null
 
 

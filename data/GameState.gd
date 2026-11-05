@@ -71,6 +71,10 @@ var opponent_occasion: CardInstance = null
 var opponent_deck_count: int = 40
 var opponent_graveyard: Array[CardInstance] = []
 
+# Cartas en la zona "cositos" de cada lado (solo el conteo)
+var player_cositos_count: int = 0
+var opponent_cositos_count: int = 0
+
 # Derivado: conteo de mano oponente (compatibilidad con código existente)
 var opponent_hand_count: int:
 	get: return opponent_hand.size()
@@ -189,7 +193,7 @@ static func from_match_payload(data: Dictionary, local_player_id: String) -> Gam
 			else:
 				_set_in_array(state.opponent_field_knights, position, card_instance)
 				print("[GameState]   → Opponent Knight slot %d: %s" % [position, card_instance.base_data.name])
-		elif zone == "field_support":
+		elif zone == "field_technique" or zone == "field_support" or zone == "field_tech_object":
 			if is_mine:
 				_set_in_array(state.player_field_techniques, position, card_instance)
 			else:
@@ -464,6 +468,25 @@ func apply_update(data: Dictionary) -> void:
 	if data.has("pending_selection"):
 		_set_pending_selection(data["pending_selection"])
 
+	# Cambio de perspectiva ANTES de repartir vida/cosmo/mazos entre "jugador" y "rival":
+	# si no, al pasar turno en una partida de prueba los paneles mostraban los valores cruzados.
+	# Solo actualizar player_number — los arrays se reconstruyen desde cards_in_play
+	if data.has("perspective_player"):
+		var new_perspective: int = int(data["perspective_player"])
+		if new_perspective != player_number:
+			print("[GameState] 🔄 Perspectiva cambia %d → %d" % [player_number, new_perspective])
+			player_number = new_perspective
+			player_hand.clear()
+			opponent_hand.clear()
+
+	# Mazos (antes solo se leían al empezar: el contador no bajaba al robar)
+	var my_deck_key := "player%d_deck_size" % player_number
+	var rival_deck_key := "player%d_deck_size" % (3 - player_number)
+	if data.has(my_deck_key):
+		player_deck_count = int(data[my_deck_key])
+	if data.has(rival_deck_key):
+		opponent_deck_count = int(data[rival_deck_key])
+
 	# Recursos
 	if player_number == 1:
 		if data.has("player1_life"):
@@ -485,16 +508,6 @@ func apply_update(data: Dictionary) -> void:
 			opponent_life = data["player1_life"]
 		if data.has("player1_cosmos"):
 			opponent_cosmos = data["player1_cosmos"]
-
-	# Cambio de perspectiva: el servidor manda perspective_player en cada update
-	# Solo actualizar player_number — los arrays se reconstruyen desde cards_in_play
-	if data.has("perspective_player"):
-		var new_perspective: int = data["perspective_player"]
-		if new_perspective != player_number:
-			print("[GameState] 🔄 Perspectiva cambia %d → %d" % [player_number, new_perspective])
-			player_number = new_perspective
-			player_hand.clear()
-			opponent_hand.clear()
 
 	# Si llegan cartas actualizadas (ej: card_played, turn_changed)
 	if data.has("cards_in_play"):
@@ -598,8 +611,13 @@ func _update_cards_in_play(cards_data: Array) -> void:
 		player_graveyard.clear()
 		opponent_graveyard.clear()
 
+	var cositos_mine := 0
+	var cositos_rival := 0
+
 	for info in cards_data:
-		var player_n = info.get("player_number")
+		# Los números del JSON llegan como float (2.0): sin int() las claves de new_helpers /
+		# new_occasions (2.0) no coinciden con player_number (2) y nunca se asignaban
+		var player_n := int(info.get("player_number", 0))
 		var zone = info.get("zone")
 		var pos = info.get("position", 0)
 
@@ -619,7 +637,8 @@ func _update_cards_in_play(cards_data: Array) -> void:
 				else:
 					new_knights_p2[pos] = card_instance
 
-			"field_tech_object", "field_support":
+			"field_technique", "field_tech_object", "field_support":
+				# El servidor envía "field_technique" (ZoneMapper.toClient); las otras son nombres antiguos
 				if is_mine:
 					new_tech_p1[pos] = card_instance
 				else:
@@ -640,21 +659,42 @@ func _update_cards_in_play(cards_data: Array) -> void:
 				else:
 					opponent_graveyard.append(card_instance)
 
+			"cositos":
+				if is_mine:
+					cositos_mine += 1
+				else:
+					cositos_rival += 1
+
+	# Cositos: el payload completo (trae la mano) incluye todas las cartas fuera del mazo
+	if has_hand_cards:
+		player_cositos_count = cositos_mine
+		opponent_cositos_count = cositos_rival
+
 	# Reconciliar zonas completas para eliminar cartas que ya no existen
 	_reconcile_zone_array(player_field_knights, new_knights_p1)
 	_reconcile_zone_array(opponent_field_knights, new_knights_p2)
 	_reconcile_zone_array(player_field_techniques, new_tech_p1)
 	_reconcile_zone_array(opponent_field_techniques, new_tech_p2)
 
+	# Ayudante y ocasión: si una reconstrucción completa (trae la mano) no los incluye,
+	# es que ya no están en el campo
 	if new_helpers.has(player_number):
 		player_helper = new_helpers[player_number]
+	elif has_hand_cards:
+		player_helper = null
 	if new_helpers.has(3 - player_number):
 		opponent_helper = new_helpers[3 - player_number]
+	elif has_hand_cards:
+		opponent_helper = null
 
 	if new_occasions.has(player_number):
 		player_occasion = new_occasions[player_number]
+	elif has_hand_cards:
+		player_occasion = null
 	if new_occasions.has(3 - player_number):
 		opponent_occasion = new_occasions[3 - player_number]
+	elif has_hand_cards:
+		opponent_occasion = null
 
 	if new_scenario:
 		scenario = new_scenario

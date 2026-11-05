@@ -40,7 +40,19 @@ func _ensure_counter() -> void:
 			_counter_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 			_counter_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 			_counter_label.label_settings = LabelSettings.new()
-			_counter_label.label_settings.font_size = 24
+			_counter_label.label_settings.font_size = 22
+			_counter_label.label_settings.font_color = UIPalette.GOLD_LIGHT
+			_counter_label.label_settings.outline_size = 6
+			_counter_label.label_settings.outline_color = Color(0, 0, 0, 0.85)
+			_counter_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			# Placa oscura detrás del número para que se lea sobre cualquier dorso
+			var plate := StyleBoxFlat.new()
+			plate.bg_color = UIPalette.alpha(UIPalette.ABYSS, 0.82)
+			plate.border_color = UIPalette.alpha(UIPalette.GOLD, 0.6)
+			plate.set_border_width_all(1)
+			plate.set_corner_radius_all(10)
+			_counter_label.add_theme_stylebox_override("normal", plate)
+			_counter_label.z_index = 100  # Encima de los dorsos (z_index = i)
 			add_child(_counter_label)
 		else:
 			_counter_label = $Counter
@@ -194,7 +206,6 @@ func _rebuild_visual() -> void:
 	# Contador visual
 	if _counter_label:
 		_counter_label.text = str(_card_count)
-		_counter_label.position = Vector2(0, 30)
 		# print("[DeckDisplay] 📊 Contador actualizado: %d" % _card_count)
 	
 	# print("[DeckDisplay] ✅ Visual reconstruida completamente: %d cartas visibles" % cards_visible)
@@ -215,8 +226,11 @@ func arrange_cards() -> void:
 	# print("[DeckDisplay] 📐 arrange_cards() - size: %s, custom_minimum_size: %s" % [size, custom_minimum_size])
 	
 	var visible_count = 0
+	var top_rect := Rect2()
 	for child in get_children():
 		if child == _counter_label:
+			continue
+		if child.is_queued_for_deletion():
 			continue
 		if child is Control:
 			# Centrar horizontalmente
@@ -226,9 +240,17 @@ func arrange_cards() -> void:
 			var offset_y = visible_count * stack_offset
 			
 			child.position = Vector2(center_x, offset_y)
-			# print("[DeckDisplay] 📍 Carta %d posicionada en (x=%f, y=%f) (size: %s)" % [visible_count, center_x, offset_y, child.size])
-			
+			top_rect = Rect2(child.position, child.size)
+
 			visible_count += 1
+
+	# Contador centrado sobre la carta superior (o en el hueco si el mazo está vacío)
+	if _counter_label:
+		var label_size := Vector2(64, 34)
+		_counter_label.size = label_size
+		if top_rect.size == Vector2.ZERO:
+			top_rect = Rect2(Vector2((size.x - label_size.x) * 0.5 if size.x > 0 else 0, 0), label_size)
+		_counter_label.position = top_rect.get_center() - label_size * 0.5
 # ============================================================
 #   GETTERS
 # ============================================================

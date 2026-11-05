@@ -30,6 +30,11 @@ extends Control
 @onready var battle_background: Control = $BattleBackground  # BattleBackground.gd
 
 const CARD_DISPLAY_SCENE = preload("res://cards/CardDisplay.tscn")
+const REPLAY_CONTROLS_SCRIPT = preload("res://game/match/ReplayControls.gd")
+const BOARD_MAT_SCRIPT = preload("res://game/match/BoardMat.gd")
+
+var _replay_controls: CanvasLayer = null  # Solo en modo repetición
+var _board_mat: Control = null            # Tapete del campo + rótulo de turno
 
 # ============================================================================
 # SUB-CONTROLADORES
@@ -71,9 +76,15 @@ func _ready() -> void:
 	# 4️⃣ Crear y configurar sub-controladores
 	_setup_controllers()
 
+	# Repetición: controles encima del tablero (que queda bloqueado)
+	if MatchSessionService.is_replay:
+		_replay_controls = REPLAY_CONTROLS_SCRIPT.new()
+		add_child(_replay_controls)
+
 	# 5️⃣ Render inicial
 	await _render_from_match_state()
 	_turn_controller.update_state()
+	_update_turn_banner()
 	_knight_controller.refresh_pending_selection(MatchSessionService.game_state)
 
 	# 6️⃣ Esperar precarga de imágenes
@@ -83,6 +94,8 @@ func _ready() -> void:
 	# 7️⃣ Avisar a MatchSessionService que la escena está lista
 	print("[GameMatch] ✅ GameMatch listo — iniciando primer turno...")
 	MatchSessionService.on_gamematch_ready()
+	if _replay_controls:
+		_replay_controls.start()
 
 
 func _input(event: InputEvent) -> void:
@@ -114,6 +127,28 @@ func _setup_controllers() -> void:
 	_knight_controller = KnightActionController.new(player_knight_slots_zone, opponent_knight_slots_zone, self)
 	_knight_controller.setup()
 
+	# Resto del campo: fila de técnicas/objetos, ayudante, ocasión y escenario
+	var player_support := _card_slots_in($RootColumns/CenterColumn/PlayerCardsZone/PlayerTechniques)
+	var opponent_support := _card_slots_in($RootColumns/CenterColumn/OpponentCardsZone/OpponentTechniques/opTechniqueZone)
+	var singles := {
+		"player_helper": $RootColumns/RightColumn/PlayerAssist/plAssist,
+		"opponent_helper": $RootColumns/RightColumn/OpponentAssist/opAssist,
+		"player_occasion": $RootColumns/RightColumn/PlayerOcasion/plOcasion,
+		"opponent_occasion": $RootColumns/RightColumn/OpponentOcasion/opOcasion,
+		"scenario": $RootColumns/RightColumn/ScenarioZone/ScenarioSlot,
+	}
+	_field_renderer.set_support_slots(player_support, opponent_support, singles)
+	_knight_controller.connect_play_slots(player_support + [singles.player_helper, singles.player_occasion, singles.scenario])
+
+	# Tapete: detrás de las cartas (justo encima del fondo)
+	_board_mat = BOARD_MAT_SCRIPT.new()
+	add_child(_board_mat)
+	move_child(_board_mat, $RootColumns.get_index())
+	_board_mat.setup(
+		[$RootColumns/CenterColumn/OpponentCardsZone/OpponentTechniques, opponent_knight_slots_zone],
+		[player_knight_slots_zone, $RootColumns/CenterColumn/PlayerCardsZone/PlayerTechniques]
+	)
+
 	# Paneles de estado
 	_status_controller = StatusPanelController.new(player_panel, opponent_panel, player_deck, opponent_deck, player_piles, opponent_piles)
 
@@ -133,16 +168,44 @@ func _setup_controllers() -> void:
 	print("[GameMatch] ✅ Todos los controladores configurados")
 
 
+func _update_turn_banner() -> void:
+	"""Rótulo de turno en el centro del tablero."""
+	var gs := MatchSessionService.game_state
+	if not _board_mat or not gs:
+		return
+	var round_text := "Ronda %d" % int(gs.current_turn)
+	if MatchSessionService.is_replay:
+		var who := int(gs.active_player_number)
+		var player_name: String = str(MatchSessionService.current_match.get("player%d_name" % who, "Jugador %d" % who))
+		_board_mat.set_turn("Turno de %s" % player_name, round_text, false)
+	elif _turn_controller.is_local_player_turn():
+		_board_mat.set_turn("Tu turno", round_text, true)
+	else:
+		_board_mat.set_turn("Turno del rival", round_text, false)
+
+
+func _card_slots_in(container: Node) -> Array:
+	"""CardSlots hijos directos de un contenedor, en orden (índice = posición en el servidor)."""
+	var slots: Array = []
+	if container:
+		for child in container.get_children():
+			if child is CardSlot:
+				slots.append(child)
+	return slots
+
+
 # ============================================================================
 # CALLBACKS DE MATCHSESSIONSERVICE
 # ============================================================================
 func _on_match_state_updated(_match_data: Dictionary) -> void:
 	var gs := MatchSessionService.game_state
-	if gs and str(gs.current_phase).to_lower() in ["game_over", "finished"]:
+	# En una repetición el último fotograma se muestra en el tablero; ReplayControls indica el final
+	if gs and str(gs.current_phase).to_lower() in ["game_over", "finished"] and not MatchSessionService.is_replay:
 		_show_battle_summary(gs.winner_id)
 		return
 	await _render_from_match_state()
 	_turn_controller.update_state()
+	_update_turn_banner()
 	# Si el servidor espera una elección del jugador (pending_selection), activarla
 	_knight_controller.refresh_pending_selection(MatchSessionService.game_state)
 
@@ -178,6 +241,7 @@ func _render_all(gs: GameState, cm: Dictionary) -> void:
 		opponent_hand_controller.reset()
 		_field_renderer.clear_all_slots(player_knight_slots_zone)
 		_field_renderer.clear_all_slots(opponent_knight_slots_zone)
+		_field_renderer.clear_support_slots()
 		_orchestrator.reset_state()
 	_last_player_number = gs.player_number
 

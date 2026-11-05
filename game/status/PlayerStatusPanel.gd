@@ -31,8 +31,9 @@ var _turn_tween: Tween = null
 func _ready() -> void:
 	# print("[PlayerStatusPanel] Inicializando panel de status")
 	
-	# Ajustar tamaño mínimo
-	custom_minimum_size = Vector2(200, 250)
+	# Tamaño mínimo = el del avatar con su nombre (200): la columna izquierda
+	# del tablero tiene que caber en los 1080 px de alto
+	custom_minimum_size = Vector2(200, 200)
 
 
 # ============================================================================

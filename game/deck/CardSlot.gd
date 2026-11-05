@@ -203,41 +203,43 @@ func set_target_highlight(active: bool, color: Color = UIPalette.LIFE) -> void:
 # WATERMARK
 # ====================================================
 func _create_watermark():
+	"""Rótulo de la posición vacía (qué tipo de carta va ahí). Se oculta al colocar una carta."""
 	watermark_label = Label.new()
 	add_child(watermark_label)
-	watermark_label.anchor_left = 0.5
-	watermark_label.anchor_top = 0.5
-	watermark_label.anchor_right = 0.5
-	watermark_label.anchor_bottom = 0.5
+	watermark_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	watermark_label.offset_left = 6
+	watermark_label.offset_right = -6
 	watermark_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	watermark_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	watermark_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	watermark_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 
 	var text := ""
-	var color := UIPalette.alpha(UIPalette.TEXT, 0.9)
+	var color := UIPalette.GOLD
 	match slot_type:
 		SlotType.KNIGHT:
-			text = "K"
-			color = UIPalette.alpha(UIPalette.GOLD, 0.95)
+			text = "Caballero"
+			color = UIPalette.GOLD
 		SlotType.TECH_OBJECT:
-			text = "T/O"
-			color = UIPalette.alpha(UIPalette.COSMOS, 0.95)
+			text = "Técnica u objeto"
+			color = UIPalette.COSMOS
 		SlotType.HELPER:
-			text = "H"
-			color = UIPalette.alpha(UIPalette.HEAL, 0.95)
+			text = "Ayudante"
+			color = UIPalette.HEAL
 		SlotType.SCENARIO:
-			text = "S"
-			color = UIPalette.alpha(UIPalette.ABILITY, 0.95)
+			text = "Escenario"
+			color = UIPalette.ABILITY
 		SlotType.OCCASION:
-			text = "O"
-			color = UIPalette.alpha(UIPalette.POWER, 0.95)
+			text = "Ocasión"
+			color = UIPalette.POWER
 
 	watermark_label.text = text
-	watermark_label.add_theme_color_override("font_color", color)
-	watermark_label.add_theme_font_size_override("font_size", 110)
-	watermark_label.add_theme_constant_override("outline_size", 6)
-	watermark_label.z_index = -1
-	watermark_label.visible = true
+	# Discreto: orienta sin competir con las cartas; más tenue en el lado del rival
+	watermark_label.add_theme_color_override("font_color", UIPalette.alpha(color, 0.38 if is_opponent else 0.6))
+	watermark_label.add_theme_font_size_override("font_size", 13)
+	watermark_label.add_theme_constant_override("shadow_offset_x", 0)
+	watermark_label.add_theme_constant_override("shadow_offset_y", 0)
+	watermark_label.visible = not is_occupied
 
 # ====================================================
 # INPUT (clics)
@@ -249,11 +251,20 @@ func _gui_input(event: InputEvent) -> void:
 		return
 
 	if event.button_index == MOUSE_BUTTON_RIGHT:
+		# Clic derecho: detalle de la carta (propia o rival)
+		if is_occupied and card_instance:
+			CardDetailManager.show_instance(card_instance)
+			accept_event()
 		if slot_type == SlotType.KNIGHT and is_occupied and not is_opponent:
 			emit_signal("knight_right_clicked", self)
 		return
 
 	if event.button_index == MOUSE_BUTTON_LEFT:
+		# Doble clic: detalle de la carta (el primer clic ya hizo su acción normal)
+		if event.double_click and is_occupied and card_instance:
+			CardDetailManager.show_instance(card_instance)
+			accept_event()
+			return
 		emit_signal("slot_clicked", self)
 		if is_occupied:
 			# Emitir info útil: card data y CardInstance si está
@@ -281,49 +292,34 @@ func _can_drop_data(_at_position: Vector2, data: Variant) -> bool:
 		print("[CardSlot:%s] ❌ es slot de oponente" % self.name)
 		return false
 
+	var incoming_inst: CardInstance = data.get("card_instance", null)
+	if incoming_inst == null and data.has("card_display"):
+		var cd: Node = data["card_display"]
+		if cd and cd.has_method("get_instance"):
+			incoming_inst = cd.get_instance()
+
+	# Lo que dice el servidor manda: valid_actions de la carta de la mano
+	# ({ can_play, play_zone, play_slots }). El cliente no calcula reglas.
+	if incoming_inst != null and incoming_inst.valid_actions.has("can_play"):
+		return _server_allows_drop(incoming_inst.valid_actions)
+
 	# If there is a validator node (MatchController/GameRules), prefer it
 	var validator := _get_validator_node()
-	if validator != null:
-		# incoming_inst: CardInstance?
-		var incoming_inst: CardInstance = data.get("card_instance", null)
-
-		# Fallback: resolve from CardDisplay
-		if incoming_inst == null and data.has("card_display"):
-			var cd: Node = data["card_display"]
-			if cd and cd.has_method("get_instance"):
-				incoming_inst = cd.get_instance()
-
-		# If validator provides can_play_card(instance, slot) call it
-		if incoming_inst != null and validator.has_method("can_play_card"):
-			return validator.can_play_card(incoming_inst, self)
+	if validator != null and incoming_inst != null and validator.has_method("can_play_card"):
+		return validator.can_play_card(incoming_inst, self)
 
 	# Fallback: simple type-based validation (fast, local)
 	if not data.has("card_type"):
 		print("[CardSlot:%s] ❌ sin card_type" % self.name)
 		return false
 
+	# Tipos normalizados (knight/technique/item/helper/stage/event): ver _validate_card_type.
+	# El escenario y la ocasión se pueden reemplazar aunque la posición esté ocupada.
 	var card_type: String = _normalize_card_type(str(data["card_type"]))
-	print("[CardSlot:%s] card_type=%s, slot_type=%s" % [self.name, card_type, slot_type])
-
-	match slot_type:
-		SlotType.KNIGHT:
-			var result = card_type == "knight" and not is_occupied
-			print("[CardSlot:%s] KNIGHT: result=%s (type_ok=%s, not_occupied=%s)" % [self.name, result, card_type == "knight", not is_occupied])
-			return result
-		SlotType.TECH_OBJECT:
-			var result = (card_type == "technique" or card_type == "object") and not is_occupied
-			print("[CardSlot:%s] TECH: result=%s" % [self.name, result])
-			return result
-		SlotType.HELPER:
-			var result = card_type == "helper" and not is_occupied
-			return result
-		SlotType.SCENARIO:
-			var result = card_type == "scenario" and not is_occupied
-			return result
-		SlotType.OCCASION:
-			return true
-
-	return false
+	var replaceable := slot_type == SlotType.SCENARIO or slot_type == SlotType.OCCASION
+	var result := _validate_card_type(card_type) and (replaceable or not is_occupied)
+	print("[CardSlot:%s] card_type=%s, slot_type=%s → %s" % [self.name, card_type, slot_type, result])
+	return result
 
 func _drop_data(_at_position: Vector2, data: Variant) -> void:
 	print("[CardSlot:%s] 🎯 _drop_data: LLAMADO" % self.name)
@@ -574,6 +570,33 @@ func _process_drop() -> void:
 	}
 	
 	card_dropped.emit(payload)
+
+
+## Zona (notación del cliente/servidor) que representa esta posición
+func get_play_zone() -> String:
+	match slot_type:
+		SlotType.KNIGHT:      return "field_knight"
+		SlotType.TECH_OBJECT: return "field_technique"
+		SlotType.HELPER:      return "field_helper"
+		SlotType.SCENARIO:    return "field_scenario"
+		SlotType.OCCASION:    return "field_occasion"
+	return ""
+
+
+func _server_allows_drop(va: Dictionary) -> bool:
+	if not va.get("can_play", false):
+		return false
+	var zone := str(va.get("play_zone", ""))
+	if zone != "" and zone != get_play_zone():
+		return false
+	var slots = va.get("play_slots", [])
+	if slots is Array and not slots.is_empty():
+		var index := get_index()
+		for s in slots:
+			if int(s) == index:
+				return true
+		return false
+	return true
 
 
 func _validate_card_type(card_type: String) -> bool:

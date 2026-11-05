@@ -21,15 +21,21 @@ signal card_placed(slot: CardSlot, card_display: Control)
 # ============================================================================
 # CICLO DE VIDA
 # ============================================================================
+## Separación máxima entre posiciones: el campo queda agrupado y centrado (como un tapete)
+## en vez de repartir las 5 cartas por todo el ancho de la pantalla.
+const MAX_SEPARATION := 44.0
+
+
 func _ready() -> void:
 	print("[CardZone] Inicializando zona")
+	alignment = BoxContainer.ALIGNMENT_CENTER
 	_collect_slots()
 	resized.connect(_recalculate_separation)
 	call_deferred("_recalculate_separation")
 
 
 func _recalculate_separation() -> void:
-	"""Calcula el espacio entre slots según el ancho disponible"""
+	"""Calcula el espacio entre slots según el ancho disponible (con tope)"""
 	var num_slots := max_cards
 	var card_w := CardSizeConfig.card_width
 	var available := size.x
@@ -37,7 +43,7 @@ func _recalculate_separation() -> void:
 	var gaps := num_slots - 1
 	var sep := 8.0  # mínimo
 	if gaps > 0 and available > total_cards:
-		sep = (available - total_cards) / gaps
+		sep = minf((available - total_cards) / gaps, MAX_SEPARATION)
 	add_theme_constant_override("separation", int(sep))
 
 

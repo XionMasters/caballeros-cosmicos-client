@@ -33,11 +33,10 @@ func setup() -> void:
 		var tex := load(img_path) as Texture2D
 		if tex:
 			_button.icon = tex
-			_button.text = ""
-		else:
-			_button.text = "▶"
-	else:
-		_button.text = "▶"
+	# Rótulo visible bajo el icono: antes solo había una flecha sin texto
+	_button.text = "Terminar turno"
+	_button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	_button.modulate = Color.WHITE
 
 	update_state()
 	print("[TurnController] ✅ End Turn configurado")

@@ -74,15 +74,18 @@ func deal_cards_to_hand(cards: Array[CardInstance], starting_delay: float = 0.0)
 		push_error("[CardDealAnimator] Configuración incompleta")
 		return
 	
-	print("[CardDealAnimator] 🎴 Robando %d cartas..." % cards.size())
-	
+	# Copia propia: el llamador puede reutilizar/vaciar su array mientras esperamos las
+	# animaciones (llegan más actualizaciones), y recorrer el suyo daría índices fuera de rango
+	var to_deal: Array[CardInstance] = cards.duplicate()
+	print("[CardDealAnimator] 🎴 Robando %d cartas..." % to_deal.size())
+
 	# Esperar delay inicial si es necesario
 	if starting_delay > 0:
 		await get_tree().create_timer(starting_delay).timeout
-	
+
 	# Animar cada carta con delay
-	for i in range(cards.size()):
-		var card_instance = cards[i]
+	for i in range(to_deal.size()):
+		var card_instance = to_deal[i]
 		# Increment pending counter BEFORE animating
 		if target_hand.has_method("_increment_pending_dealt"):
 			target_hand._increment_pending_dealt()

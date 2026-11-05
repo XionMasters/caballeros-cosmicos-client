@@ -1,6 +1,6 @@
 # PilesPanel.gd
-# Panel de pilas de descarte (Yomotsu + Cositos)
-extends Control
+# Panel de pilas de descarte (Yomotsu + Cositos): una píldora compacta del tema
+extends PanelContainer
 class_name PilesPanel
 
 # ============================================================================
@@ -19,8 +19,7 @@ var cositos_count: int = 0
 # CICLO DE VIDA
 # ============================================================================
 func _ready() -> void:
-	print("[PilesPanel] Inicializando panel de pilas")
-	custom_minimum_size = Vector2(150, 200)
+	pass
 
 
 # ============================================================================

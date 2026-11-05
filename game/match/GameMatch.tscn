@@ -69,7 +69,7 @@ theme_override_constants/separation = 12
 layout_mode = 2
 
 [node name="OpponentDeck" type="Control" parent="RootColumns/LeftColumn/LeftStack"]
-custom_minimum_size = Vector2(0, 200)
+custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 script = ExtResource("3_toc0o")
 card_back_scene = ExtResource("4_nhra7")
@@ -82,7 +82,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="PlayerDeck" type="Control" parent="RootColumns/LeftColumn/LeftStack"]
-custom_minimum_size = Vector2(0, 200)
+custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 script = ExtResource("3_toc0o")
 card_back_scene = ExtResource("4_nhra7")
@@ -301,7 +301,7 @@ slot_type = 1
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="PlayerHand" type="VBoxContainer" parent="RootColumns/CenterColumn"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0

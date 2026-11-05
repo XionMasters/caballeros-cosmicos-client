@@ -4,7 +4,7 @@
 [ext_resource type="PackedScene" uid="uid://b7qm8xrw7qaa" path="res://menus/components/AvatarDisplay.tscn" id="2_wf082"]
 
 [node name="PlayerStatusPanel" type="Control"]
-custom_minimum_size = Vector2(200, 250)
+custom_minimum_size = Vector2(200, 200)
 layout_mode = 3
 anchors_preset = 0
 script = ExtResource("1_w3xkg")

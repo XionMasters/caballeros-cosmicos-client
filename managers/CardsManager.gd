@@ -35,6 +35,10 @@ func _get_fallback_texture() -> ImageTexture:
 	_fallback_texture = ImageTexture.create_from_image(fallback_image)
 	return _fallback_texture
 
+func is_fallback_texture(texture) -> bool:
+	"""True si es la textura de respaldo (la carta no tiene imagen)."""
+	return texture != null and texture == _fallback_texture
+
 func _cache_fallback_for_card(card_id: String) -> ImageTexture:
 	var fallback = _get_fallback_texture()
 	_image_cache[card_id] = fallback

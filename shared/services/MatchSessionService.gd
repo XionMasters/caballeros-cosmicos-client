@@ -9,6 +9,7 @@ signal match_state_updated(match_data: Dictionary)
 signal match_error(error_message: String)
 signal match_ended(result: Dictionary)
 signal active_test_match_exists(match_id: String)  # Hay una partida TEST activa sin finalizar
+signal replay_ready  # GameMatch está lista para reproducir una repetición
 
 # ---------------------------------------------------------
 # Estado interno
@@ -17,6 +18,11 @@ var current_match: Dictionary = {}  # SOLO metadata: id, players, mode, result
 var game_state: GameState = null     # ESTADO REAL: cartas, vida, zonas, todo jugable
 var is_in_match: bool = false
 var is_test_mode: bool = false  # True si se solicitó test_match, False si es multiplayer normal
+
+# Repetición: GameMatch reproduce fotogramas guardados (match_update de cada acción) sin jugar.
+# is_in_match sigue en false, así que ninguna acción llega al servidor.
+var is_replay: bool = false
+var replay_data: Dictionary = {}  # { match: {...}, frames: [...] } tal como lo devuelve el servidor
 
 # Señal para cambios de fase (desacoplamiento de UI)
 signal phase_changed(phase: String)
@@ -41,6 +47,9 @@ func _ready():
 func _on_server_event(event: String, data: Dictionary) -> void:
 	if event != "pong":
 		print('Server envia: ', event)
+	# Durante una repetición el tablero solo muestra fotogramas guardados
+	if is_replay and event in ["match_update", "match_state", "card_played", "turn_changed", "match_found", "match_resumed"]:
+		return
 	match event:
 		"match_found":
 			print("🎮 match_found recibido")
@@ -773,6 +782,12 @@ func on_gamematch_ready() -> void:
 	Ahora enviamos mensaje WebSocket para iniciar el primer turno.
 	Solo en TEST: en PvP el servidor ya arranca el primer turno al emparejar.
 	"""
+	if is_replay:
+		# Repetición: liberar la cola de actualizaciones y dejar que ReplayControls reproduzca
+		_is_processing_update = false
+		replay_ready.emit()
+		return
+
 	if not is_in_match:
 		print("⚠️ [MatchSessionService] No estamos en partida, saltando start_first_turn")
 		return
@@ -802,3 +817,74 @@ func on_gamematch_ready() -> void:
 
 	# Enviar por WebSocket para iniciar el primer turno
 	WebSocketManager.start_first_turn(match_id)
+
+
+# =====================================================
+# 🎞️ REPETICIONES
+# =====================================================
+func start_replay(data: Dictionary) -> bool:
+	"""Abre una repetición (respuesta de GET /matches/:id/replay) en GameMatch.
+	El primer fotograma es el tablero inicial; ReplayControls aplica el resto en orden."""
+	if is_in_match:
+		push_warning("[MatchSessionService] No se puede ver una repetición durante una partida")
+		return false
+	var frames: Array = data.get("frames", [])
+	if frames.is_empty() or not (frames[0] is Dictionary):
+		push_warning("[MatchSessionService] Repetición sin fotogramas")
+		return false
+
+	var meta: Dictionary = data.get("match", {})
+	replay_data = data
+	is_replay = true
+	is_test_mode = false
+	_is_resuming = false
+	_pending_updates.clear()
+	_is_processing_update = true  # hasta que GameMatch avise de que está lista
+
+	game_state = GameState.from_match_payload(frames[0], AuthManager.get_user_id())
+	var p1: Dictionary = meta.get("player1", {}) if meta.get("player1") is Dictionary else {}
+	var p2: Dictionary = meta.get("player2", {}) if meta.get("player2") is Dictionary else {}
+	current_match = {
+		"id": meta.get("match_id", frames[0].get("match_id", "")),
+		"mode": "replay",
+		"player1_id": p1.get("id", ""),
+		"player1_name": p1.get("username", "Jugador 1"),
+		"player2_id": p2.get("id", ""),
+		"player2_name": p2.get("username", "Jugador 2"),
+	}
+	print("🎞️ [MatchSessionService] Repetición %s: %d fotogramas" % [current_match.id, frames.size()])
+	await _verify_and_preload_images()  # precarga y navega a GameMatch
+	return true
+
+
+func get_replay_frames() -> Array:
+	return replay_data.get("frames", [])
+
+
+func get_replay_info() -> Dictionary:
+	return replay_data.get("match", {})
+
+
+func apply_replay_frame(frame: Dictionary) -> void:
+	"""Aplica un fotograma como si fuera un match_update del servidor (misma cola y animaciones)."""
+	if is_replay:
+		_on_match_updated(frame)
+
+
+func is_update_in_progress() -> bool:
+	return _is_processing_update or not _pending_updates.is_empty()
+
+
+func restart_replay() -> void:
+	var data := replay_data
+	end_replay()
+	await start_replay(data)
+
+
+func end_replay() -> void:
+	is_replay = false
+	replay_data = {}
+	game_state = null
+	current_match = {}
+	_pending_updates.clear()
+	_is_processing_update = false

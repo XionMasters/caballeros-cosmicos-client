@@ -2,26 +2,24 @@
 
 [ext_resource type="Script" uid="uid://bwf60gq35t1w2" path="res://game/zones/PilesPanel.gd" id="1_pqrst"]
 
-[node name="PilesPanel" type="Control"]
-layout_mode = 3
-anchors_left = 0.0
-anchors_top = 0.0
-anchors_right = 0.0
-anchors_bottom = 0.0
-custom_minimum_size = Vector2(150, 200)
+[node name="PilesPanel" type="PanelContainer"]
+custom_minimum_size = Vector2(170, 0)
+size_flags_horizontal = 4
+theme_type_variation = &"Chip"
 script = ExtResource("1_pqrst")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="."]
-layout_mode = 1
-anchors_left = 0.0
-anchors_top = 0.0
-anchors_right = 1.0
-anchors_bottom = 1.0
+layout_mode = 2
+theme_override_constants/separation = 0
 
 [node name="YomotsuLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"Caption"
 text = "Yomotsu: 0"
+horizontal_alignment = 1
 
 [node name="CositosLabel" type="Label" parent="VBoxContainer"]
 layout_mode = 2
+theme_type_variation = &"Caption"
 text = "Cositos: 0"
+horizontal_alignment = 1

@@ -619,9 +619,20 @@ func _process(_delta: float) -> void:
 
 func _on_gui_input(event: InputEvent) -> void:
 	"""Handle mouse input events"""
+	# Detalle de la carta: clic derecho, o doble clic si nadie más lo gestiona
+	# (la colección y los sobres tienen su propio doble clic). En el campo lo gestiona el CardSlot.
+	if event is InputEventMouseButton and event.pressed and not (get_parent() is CardSlot):
+		if event.button_index == MOUSE_BUTTON_RIGHT:
+			_request_detail()
+			accept_event()
+			return
+		if event.button_index == MOUSE_BUTTON_LEFT and event.double_click \
+				and card_double_clicked.get_connections().is_empty():
+			_request_detail()
+
 	if not interaction_enabled:
 		return
-	
+
 	if event is InputEventMouseButton and event.button_index == MOUSE_BUTTON_LEFT:
 		if event.pressed:
 			_handle_mouse_pressed()
@@ -797,6 +808,16 @@ func _notify_slots_ended_recursive(node: Node) -> void:
 		_notify_slots_ended_recursive(child)
 
 
+func _request_detail() -> void:
+	"""Abre el detalle de esta carta (nunca de una carta oculta)."""
+	if card_instance and card_instance.hidden:
+		return
+	if card_instance and card_instance.base_data:
+		CardDetailManager.show_instance(card_instance)
+	elif card_data:
+		CardDetailManager.show_card(card_data)
+
+
 func show_card_details() -> void:
 	"""Show card details (on click without drag)"""
 	card_clicked.emit(card_data)
@@ -841,13 +862,13 @@ static func _texture_callback(display_ref: WeakRef) -> Callable:
 
 
 func _apply_loaded_texture(texture) -> void:
-	if texture == null:
-		push_error("[CardDisplay] ❌ Error cargando imagen para: %s" % card_data.id)
-		# Mostrar placeholder si la imagen no se pudo cargar
+	# Sin imagen (o la textura gris de respaldo de CardsManager): carta de texto
+	if texture == null or CardsManager.is_fallback_texture(texture):
 		if is_instance_valid(card_image):
 			_show_placeholder()
 		return
 	if is_instance_valid(card_image):
+		_remove_placeholder()
 		card_image.texture = texture
 
 func setup_from_instance(instance: CardInstance) -> void:
@@ -1131,18 +1152,62 @@ func animate_spawn(duration: float = 0.3) -> void:
 	move_tween.tween_property(self, "scale", Vector2(1.0, 1.0), duration)
 
 func _show_placeholder() -> void:
-	"""Mostrar imagen de placeholder cuando hay error al cargar la imagen"""
+	"""Carta sin imagen: una carta de texto (tipo, nombre y coste) con el borde de su rareza."""
 	if not is_instance_valid(card_image):
 		return
-	
-	# Crear una imagen placeholder de color gris
-	var placeholder = Image.create(120, 168, false, Image.FORMAT_RGB8)
-	placeholder.fill(Color(0.3, 0.3, 0.35, 1.0))  # Gris oscuro
-	
-	# Si no hay fuente disponible, solo mostrar el rectángulo gris
-	var placeholder_texture = ImageTexture.create_from_image(placeholder)
-	card_image.texture = placeholder_texture
-	print("[CardDisplay] 📦 Placeholder mostrado para: %s" % (card_data.name if card_data else "unknown"))
+	card_image.texture = null
+	_remove_placeholder()
+
+	var rarity_color := UIPalette.rarity(card_data.rarity if card_data else "")
+	var panel := PanelContainer.new()
+	panel.name = "TextPlaceholder"
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	var style := StyleBoxFlat.new()
+	style.bg_color = UIPalette.PANEL
+	style.border_color = UIPalette.alpha(rarity_color, 0.85)
+	style.set_border_width_all(2)
+	style.set_corner_radius_all(6)
+	style.content_margin_left = 6
+	style.content_margin_right = 6
+	style.content_margin_top = 6
+	style.content_margin_bottom = 6
+	panel.add_theme_stylebox_override("panel", style)
+	card_image.add_child(panel)
+
+	var box := VBoxContainer.new()
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_theme_constant_override("separation", 2)
+	panel.add_child(box)
+
+	var type_label := _placeholder_label(CardData.get_type_label(card_data.type) if card_data else "", 10, rarity_color)
+	box.add_child(type_label)
+
+	var name_label := _placeholder_label(card_data.name if card_data else "", 12, UIPalette.GOLD_LIGHT)
+	name_label.size_flags_vertical = Control.SIZE_EXPAND_FILL
+	name_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	box.add_child(name_label)
+
+	if card_data and card_data.cost > 0:
+		box.add_child(_placeholder_label("Coste %d" % card_data.cost, 10, UIPalette.COSMOS))
+
+
+func _placeholder_label(text: String, font_size: int, color: Color) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_constant_override("shadow_offset_x", 0)
+	label.add_theme_constant_override("shadow_offset_y", 0)
+	return label
+
+
+func _remove_placeholder() -> void:
+	if is_instance_valid(card_image) and card_image.has_node("TextPlaceholder"):
+		card_image.get_node("TextPlaceholder").queue_free()
 
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:

@@ -66,6 +66,14 @@ func setup() -> void:
 	print("[KnightActionController] ✅ Setup completo")
 
 
+func connect_play_slots(slots: Array) -> void:
+	"""Posiciones propias fuera de la fila de caballeros (técnicas/objetos, ayudante, ocasión,
+	escenario): al soltar una carta en ellas se envía play_card igual que con los caballeros."""
+	for slot in slots:
+		if slot is CardSlot and slot.has_signal("card_dropped") and not slot.card_dropped.is_connected(_on_card_dropped):
+			slot.card_dropped.connect(_on_card_dropped)
+
+
 func is_selecting() -> bool:
 	"""Devuelve true si hay un modo de selección de objetivo activo."""
 	return _mode != ""
