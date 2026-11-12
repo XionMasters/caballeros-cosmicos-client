@@ -4,7 +4,7 @@
 extends Control
 
 @onready var back_button: Button = %BackButton
-@onready var decks_container: VBoxContainer = %DecksContainer
+@onready var decks_container: Container = %DecksContainer
 @onready var create_deck_button: Button = %CreateDeckButton
 @onready var loading_label: Label = %LoadingLabel
 @onready var subtitle_label: Label = %Subtitle
@@ -70,7 +70,8 @@ func _on_decks_loaded(decks: Array):
 
 	if decks.is_empty():
 		var empty := Label.new()
-		empty.text = "Todavía no tienes mazos. Pulsa «+ Nuevo mazo» para crear el primero."
+		empty.text = "Todavía no tienes mazos. Pulsa «+ NUEVO MAZO» para crear el primero."
+		empty.size_flags_horizontal = Control.SIZE_EXPAND_FILL
 		empty.theme_type_variation = &"Subtitle"
 		empty.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		empty.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART

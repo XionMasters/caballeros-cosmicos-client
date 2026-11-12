@@ -207,6 +207,8 @@ static func _normalize_rarity(rarity_str: String) -> String:
 	match rarity_str.to_lower():
 		"común", "comun":
 			return "common"
+		"poco común", "poco comun", "poco_comun":
+			return "uncommon"
 		"rara":
 			return "rare"
 		"épica", "epica":
@@ -225,6 +227,7 @@ static func _normalize_rarity(rarity_str: String) -> String:
 static func get_rarity_color(r: String) -> Color:
 	match r:
 		"common": return Color(0.75, 0.75, 0.75)
+		"uncommon": return Color(0.36, 0.77, 0.42)
 		"rare": return Color(0.29, 0.56, 0.89)
 		"epic": return Color(0.61, 0.35, 0.71)
 		"legendary": return Color(1.0, 0.84, 0.0)
@@ -245,6 +248,7 @@ static func get_element_color(e: String) -> Color:
 static func get_rarity_name(r: String) -> String:
 	match r.to_lower():
 		"common": return "Common"
+		"uncommon": return "Uncommon"
 		"rare": return "Rare"
 		"epic": return "Epic"
 		"legendary": return "Legendary"

@@ -6,10 +6,22 @@ class_name HandLayout
 @export var card_width: float = 120.0
 @export var card_height: float = 168.0
 @export var max_total_width: float = 1200.0
-@export var card_spacing: float = -40.0  # Solapamiento negativo para efecto profesional
+@export var card_spacing: float = -46.0  # Solapamiento negativo para efecto profesional
 @export var card_scale: float = 1.0
 @export var hover_scale: float = 1.1
-@export var hover_offset_y: float = -30.0
+@export var hover_offset_y: float = -40.0
+
+@export_group("Abanico")
+## Grados de giro entre una carta y la siguiente (las de los extremos giran más)
+@export var fan_degrees: float = 4.0
+## Cuánto bajan las cartas de los extremos (px por posición, al cuadrado): forma el arco
+@export var arc_height: float = 7.0
+## Abanico hacia abajo (mano del rival, arriba de la pantalla)
+@export var fan_inverted: bool = false
+## Desplazamiento vertical de toda la mano (negativo: asoma desde arriba)
+@export var vertical_offset: float = 0.0
+## Escala propia (> 0 ignora la de CardSizeConfig; p. ej. dorsos pequeños del rival)
+@export var scale_override: float = 0.0
 
 var hovered_card: Control = null
 var dragging_card: Control = null
@@ -25,6 +37,9 @@ func _ready() -> void:
 		card_height = CardSizeConfig.card_height
 		card_scale = CardSizeConfig.hand_card_scale
 		hover_scale = CardSizeConfig.hand_card_hover_scale
+	if scale_override > 0.0:
+		card_scale = scale_override
+		hover_scale = scale_override
 	
 	# Establecer estilo visual de fondo
 	var panel_style = StyleBoxFlat.new()
@@ -67,33 +82,31 @@ func arrange_cards() -> void:
 	var available_width = min(size.x - 20, max_total_width)  # 20px margen
 	var start_x = max(10.0, (available_width - total_width) / 2.0 + 10.0)
 	
-	var base_y = 0.0
-	# print("[HandLayout] 📊 Layout - available_width: %.1f, total_width: %.1f, start_x: %.1f" % [available_width, total_width, start_x])
+	var base_y = vertical_offset
+	var mid := (count - 1) / 2.0
+	var direction := -1.0 if fan_inverted else 1.0
 
 	for i in range(count):
 		var card = cards[i] as Control
 		if card == hovered_card:
 			continue
 
-		# Posición base sin hover
+		# Posición base sin hover: en arco, las de los extremos más bajas y giradas
+		var k := i - mid
 		var px = start_x + i * (effective_card_width + card_spacing)
-		var py = base_y
-		
-		var parent_name: String = card.get_parent().name if card.get_parent() else "NULL"
-		#print("[HandLayout] 📍 Card %d (%s) - pos: (%.1f, %.1f), size: %s, parent: %s" % [
-			#i,
-			#card.name,
-			#px,
-			#py,
-			#card.size,
-			#parent_name
-		#])
+		var py = base_y + direction * k * k * arc_height
 
 		card.set_meta("base_pos", Vector2(px, py))
+		card.set_meta("base_rot", deg_to_rad(direction * k * fan_degrees))
 		card.set_meta("base_index", i)
-		#card.custom_minimum_size = Vector2(card_width, card_height)
 
 		_apply_layout_to_card(card)
+
+
+## Pivote de giro y escala: abajo al centro (mano propia) o arriba al centro (rival),
+## así la carta crece hacia el tablero al pasar el ratón
+func _apply_pivot(card: Control) -> void:
+	card.pivot_offset = Vector2(card_width / 2.0, 0.0 if fan_inverted else card_height)
 
 
 func _apply_layout_to_card(card: Control) -> void:
@@ -103,9 +116,10 @@ func _apply_layout_to_card(card: Control) -> void:
 	var base_pos: Vector2 = card.get_meta("base_pos", card.position)
 	var base_index: int = card.get_meta("base_index", 0)
 
+	_apply_pivot(card)
 	card.scale = Vector2.ONE * card_scale
 	card.position = base_pos
-	card.rotation = 0.0
+	card.rotation = card.get_meta("base_rot", 0.0)
 	card.z_index = base_index
 
 
@@ -129,11 +143,14 @@ func hover_card(card: Control) -> void:
 	var final_pos: Vector2 = base_pos + Vector2(0, hover_offset_y)
 
 	card.z_index = 1000
+	_apply_pivot(card)
 
+	# La carta se endereza, sube y crece para poder leerla
 	var tween: Tween = create_tween()
 	tween.set_parallel(true)
-	tween.tween_property(card, "scale", Vector2.ONE * hover_scale, 0.15)
+	tween.tween_property(card, "scale", Vector2.ONE * hover_scale, 0.15).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	tween.tween_property(card, "position", final_pos, 0.15)
+	tween.tween_property(card, "rotation", 0.0, 0.15)
 	
 	# Store tween reference for cleanup
 	card.set_meta("hover_tween", tween)
@@ -158,6 +175,7 @@ func unhover_card(card: Control) -> void:
 	tween.set_parallel(true)
 	tween.tween_property(card, "scale", Vector2.ONE * card_scale, 0.12)
 	tween.tween_property(card, "position", base_pos, 0.12)
+	tween.tween_property(card, "rotation", card.get_meta("base_rot", 0.0), 0.12)
 	tween.tween_callback(func(): card.z_index = base_index)
 	
 	# Store tween reference for cleanup
@@ -235,7 +253,7 @@ func get_next_dealt_card_position() -> Vector2:
 	
 	# Calculate position for this card
 	var local_x = start_x + next_index * (effective_card_width + card_spacing)
-	var local_y = 0.0
+	var local_y = vertical_offset
 	
 	# Convert to global position
 	return global_position + Vector2(local_x, local_y)

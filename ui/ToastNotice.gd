@@ -19,14 +19,16 @@ func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	visible = false
 
-	# Anclado abajo al centro; si el texto ocupa varias líneas crece hacia arriba
+	# Anclado abajo al centro, por encima de la barra de navegación inferior;
+	# si el texto ocupa varias líneas crece hacia arriba
 	set_anchors_preset(Control.PRESET_CENTER_BOTTOM)
 	grow_horizontal = Control.GROW_DIRECTION_BOTH
 	grow_vertical = Control.GROW_DIRECTION_BEGIN
-	offset_left = -220.0
-	offset_right = 220.0
-	offset_top = -96.0
-	offset_bottom = -40.0
+	offset_left = -260.0
+	offset_right = 260.0
+	offset_top = -196.0
+	offset_bottom = -136.0
+	z_index = 100
 
 	_label = Label.new()
 	_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER

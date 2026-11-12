@@ -7,11 +7,15 @@ extends Node
 # TAMAÑOS BASE (puedes ajustar estos valores)
 # ============================================================================
 
-## Ancho de la carta en píxeles (base)
-var card_width: float = 107.0
+## Ancho de la carta en píxeles (base). Proporción 2:3, la de las imágenes de carta (1024×1536)
+var card_width: float = 132.0
 
 ## Alto de la carta en píxeles (base)
-var card_height: float = 140.0
+var card_height: float = 198.0
+
+## Escala de las posiciones de apoyo del campo (técnica/objeto, ayudante, ocasión, escenario):
+## más pequeñas que las de caballero para que las cuatro filas quepan en 1080 px de alto
+var support_slot_scale: float = 0.8
 
 ## Aspect ratio para referencia
 var card_aspect_ratio: float  # Se calcula en _ready()
@@ -24,10 +28,10 @@ var card_aspect_ratio: float  # Se calcula en _ready()
 var hand_card_scale: float = 1.0
 
 ## Escala en mazo/pila
-var deck_card_scale: float = 1.0
+var deck_card_scale: float = 0.72
 
-## Escala en hover (mano)
-var hand_card_hover_scale: float = 1.1
+## Escala en hover (mano): la carta crece para poder leerla
+var hand_card_hover_scale: float = 1.45
 
 ## Escala en detail view (doble clic)
 var detail_view_scale: float = 2.0
@@ -65,6 +69,10 @@ func _recalculate_sizes() -> void:
 func get_card_size(scale: float = 1.0) -> Vector2:
 	"""Retorna el tamaño de una carta con escala opcional"""
 	return Vector2(card_width * scale, card_height * scale)
+
+func get_support_slot_size() -> Vector2:
+	"""Tamaño de las posiciones de apoyo del campo (técnica/objeto, ayudante, ocasión, escenario)"""
+	return get_card_size(support_slot_scale)
 
 func get_hand_card_size() -> Vector2:
 	"""Tamaño de carta en mano"""

@@ -1,22 +1,24 @@
 # Arquitectura del Sistema de Partidas
 
-> Última actualización: Marzo 2026  
+> Última actualización: 2026-11-09 (partidas contra la IA, búsqueda como superposición, código retirado)  
 > Estado: refleja el código en producción
 
 ## Flujo de Navegación Real
 
 ```
-LoginScreen → MainLobby → MatchSearch | match_test_button → GameMatch.tscn
+LoginScreen → MainLobby → (JUGAR | CONTRA LA IA | PARTIDA DE PRUEBA) → GameMatch.tscn
 ```
 
 - `menus/login/` — autenticación
 - `menus/lobby/MainLobby.tscn` — hub principal tras login
-- `menus/matchsearch/MatchSearch.tscn` — matchmaking PvP
+- `menus/lobby/MatchSearchButton.tscn` — botón JUGAR: busca rival PvP
+- `menus/matchsearch/MatchSearch.tscn` — superposición de búsqueda dentro del lobby (no es una escena a la que se navegue)
+- `menus/lobby/MatchAiButton.tscn` — partida inmediata contra la IA del servidor
 - `menus/lobby/MatchTestButton.tscn` — acceso rápido a partida TEST
 - `game/match/GameMatch.tscn` — escena de partida activa
 
-> **Nota**: `game/board/GameBoard.gd` y `GameBoard.tscn` son una versión anterior (refactor v2, ~160 líneas).
-> El controlador activo es `game/match/game_match.gd` (671 líneas). No confundirlos.
+> **Nota**: `game/board/GameBoard` (versión anterior del tablero) y `game/controllers/` se retiraron a
+> `A:\Desarrollo\ccc_codigo_muerto`. El controlador de la partida es `game/match/game_match.gd`.
 
 ---
 
@@ -52,25 +54,22 @@ _ready()
 - `_pending_move_id`: ID del caballero esperando destino
 - `_is_selecting_attack_target / _is_selecting_move_target`: modos de selección
 
-### 2. `game/controllers/` — CONTROLADORES DELEGADOS
+### 2. `game/match/` — CONTROLADORES DELEGADOS
 
-| Archivo | Responsabilidad |
-|---|---|
-| `MatchFlowController.gd` | Fetch deck → validar → crear/reanudar partida |
-| `MatchPlayController.gd` | Acciones en juego (jugar carta, fin de turno) |
-| `MatchEventBridge.gd` | Puente entre eventos WS y el tablero |
-| `MatchInitializer.gd` | Setup inicial de la escena de partida |
+`game_match.gd` delega en `FieldRenderer`, `PlayerHandController`, `OpponentHandController`,
+`StatusPanelController`, `KnightActionController` y `TurnController`. Los antiguos
+`game/controllers/` (MatchFlowController, MatchPlayController, MatchEventBridge, MatchInitializer)
+no se usaban y se retiraron.
 
 ### 3. `game/match/PlayerHandController.gd` / `OpponentHandController.gd`
 
 Gestionan la mano propia (con animaciones de robo) y la mano rival (dorsos).
 Creados por `game_match.gd` como objetos GD (no nodos), no tienen escena propia.
 
-### 4. `game/rules/GameController.gd`
+### 4. Validación en el cliente
 
-Validador ligero de UX del lado cliente. **No** aplica lógica de juego.
-Verifica condiciones mínimas (turno, agotamiento, pertenencia) antes de enviar al servidor.
-Forwardea a `MatchSessionService`.
+No hay validador de reglas en el cliente (`game/rules/GameController.gd` se retiró).
+La interfaz solo ofrece lo que permiten las `valid_actions` que calcula el servidor.
 
 ---
 
@@ -117,9 +116,8 @@ Modelos de datos de partida activa. `GameState` es snapshot del servidor; `CardI
 ### 1. Iniciar partida TEST
 ```
 MainLobby → MatchTestButton presionado
-  ↓ MatchFlowController.start_test_match()
-  ↓ DecksManager.fetch_user_decks()
-  ↓ (deck listo) WebSocketManager.request_test_match()
+  ↓ MatchSessionService.start_test_match()
+  ↓ WebSocketManager.request_test_match()
   ↓ Servidor crea partida TEST, responde con match_found + match_update
   ↓ MatchSessionService recibe match_found → SceneTransition a GameMatch.tscn
   ↓ game_match.gd._ready() → carga estado → MatchSessionService.on_gamematch_ready()
@@ -128,11 +126,33 @@ MainLobby → MatchTestButton presionado
 
 ### 2. Iniciar partida PvP
 ```
-MainLobby → MatchSearch.tscn
-  ↓ WebSocketManager.search_match()
+MainLobby → botón JUGAR (match_search_button.gd)
+  ↓ MatchmakingService.search_match() → evento search_match
+  ↓ MatchSearch (superposición) muestra la búsqueda: cronómetro, consejos, CANCELAR;
+    a los 20 s ofrece jugar contra la IA
   ↓ Servidor hace matchmaking FIFO
-  ↓ Servidor responde match_found a ambos jugadores
+  ↓ Servidor responde match_found a ambos jugadores (+ match_update con valid_actions)
+  ↓ MatchSearch muestra «¡RIVAL ENCONTRADO! TÚ VS …»
   ↓ MatchSessionService → SceneTransition a GameMatch.tscn
+```
+
+### 2b. Iniciar partida contra la IA
+```
+MainLobby → botón CONTRA LA IA (match_ai_button.gd)  — o la oferta de MatchSearch
+  ↓ MatchmakingService.request_ai_match() → señal ai_match_requested + evento request_ai_match
+  ↓ MatchSearch muestra «INVOCANDO A LA IA»
+  ↓ Servidor crea la partida directa (el jugador es el 1; empieza quien toque al azar)
+  ↓ match_found { match_id, game_state, vs_ai, ai_faction } + match_update
+  ↓ Mismo flujo que PvP; la IA juega sus turnos en el servidor y llegan como match_update
+```
+Detalles del servidor: `Server-SS/docs/JUGADOR-VS-IA.md`.
+
+### 2c. Reconectar con una partida en curso
+```
+Login → WS conectado → el servidor envía match_resumed
+  ↓ PvP o contra la IA: trae game_state → MatchSessionService entra directo a GameMatch
+    (y llega un match_update con valid_actions)
+  ↓ TEST: sin game_state → diálogo Reanudar / Abandonar (match_test_button.gd)
 ```
 
 ### 3. Jugar una carta
@@ -226,13 +246,12 @@ Jugador presiona EndTurnButton
 |------|---------|-----|
 | UI | `ui/KnightActionsPanel.gd` | Panel que inicia el modo ataque |
 | Orquestador | `game/match/game_match.gd` | Captura clicks, gestiona estado de selección |
-| Validación cliente | `game/rules/GameController.gd` | Verifica mínimos (turno, agotamiento) antes de enviar |
 | Servicio cliente | `shared/services/MatchSessionService.gd` | `send_attack()` → delega a WS |
 | Transporte | `managers/WebSocketManager.gd` | `declare_attack()` → empaqueta y envía `match_action` |
-| Enrutamiento servidor | `services/websocket/websocket-router.ts` | Recibe `match_action` tipo `ATTACK` |
-| Coordinador servidor | `services/coordinators/matchesCoordinator.ts` | Delega a `MatchCoordinator.attack()` |
-| Lógica de dominio | `engine/AttackRulesEngine.ts` | Calcula daño, valida modos, aplica resultado |
-| Modelo | `models/CardInPlay.ts` | Registro de carta en juego (HP, zona, modo) |
+| Enrutamiento servidor | `src/infrastructure/websocket/websocket-router.ts` | Recibe `match_action` tipo `ATTACK` |
+| Coordinador servidor | `src/app/matches/coordinators/matchesCoordinator.ts` | Delega a `MatchCoordinator.attack()` |
+| Lógica de dominio | `src/domain/game/AttackRulesEngine.ts` | Calcula daño, valida modos, aplica resultado |
+| Modelo | `src/infrastructure/database/models/CardInPlay.ts` | Registro de carta en juego (HP, zona, modo) |
 | Efectos visuales | `game/MatchEffectsManager.gd` | Línea de ataque + número de daño flotante |
 | Animación | `shared/effects/CombatAnimator.gd` | Dash del clon del atacante |
 | Efecto flash | `shared/effects/AttackFlash.gd` | Flash sobre la carta impactada |
@@ -260,10 +279,11 @@ Jugador presiona EndTurnButton
 |---|---|
 | Agregar nueva acción de caballero | `ui/KnightActionsPanel.gd` + `game_match._on_knight_action_selected()` |
 | Cambiar renderizado del tablero | `game/match/game_match.gd` → `_render_from_match_state()` |
-| Cambiar cómo se arma el estado del servidor | `services/match/matchState.service.ts` |
-| Agregar nuevo tipo de evento WS | `managers/WebSocketManager.gd` + `services/websocket/websocket-router.ts` |
+| Cambiar cómo se arma el estado del servidor | `src/app/matches/lifecycle/matchState.service.ts` |
+| Agregar nuevo tipo de evento WS | `managers/WebSocketManager.gd` + `src/interfaces/websocket/handlers/match.handler.ts` |
 | Cambiar animación de ataque | `shared/effects/CombatAnimator.gd` |
-| Cambiar reglas de combate | `engine/AttackRulesEngine.ts` (servidor) |
+| Cambiar reglas de combate | `src/domain/game/AttackRulesEngine.ts` (servidor) |
+| Cambiar cómo juega la IA | `src/app/matches/ai/aiDecision.ts` (servidor) |
 
 ---
 

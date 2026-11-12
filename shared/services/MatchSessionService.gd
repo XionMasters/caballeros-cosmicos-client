@@ -689,12 +689,12 @@ func request_abandon_test_match(match_id: String) -> void:
 	WebSocketManager.send_event("abandon_test_match", {"match_id": match_id})
 
 
-func play_card(card_instance_id: String, zone: String, position: int = 0) -> void:
+func play_card(card_instance_id: String, zone: String, position: int = 0, equip_target_id: String = "") -> void:
 	if not is_in_match:
 		return
 
 	var match_id: String = current_match.get("id", "")
-	WebSocketManager.play_card(match_id, card_instance_id, zone, position)
+	WebSocketManager.play_card(match_id, card_instance_id, zone, position, equip_target_id)
 
 
 func send_attack(attacker_id: String, defender_id: String) -> void:
@@ -722,12 +722,12 @@ func send_change_defensive_mode(card_in_play_id: String, mode: String) -> void:
 	WebSocketManager.send_change_defensive_mode(match_id, card_in_play_id, mode)
 
 
-func send_charge_cosmos() -> void:
-	"""Cargar cosmo — recupera 3 CP"""
+func send_charge_cosmos(knight_id: String) -> void:
+	"""Cargar cosmo: el caballero gasta su acción del turno y el jugador gana cosmo"""
 	if not is_in_match:
 		return
 	var match_id: String = current_match.get("id", "")
-	WebSocketManager.send_charge_cosmos(match_id)
+	WebSocketManager.send_charge_cosmos(match_id, knight_id)
 
 
 func send_sacrifice_knight(card_in_play_id: String) -> void:

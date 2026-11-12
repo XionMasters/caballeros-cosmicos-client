@@ -343,10 +343,13 @@ func get_default_card_back() -> ImageTexture:
 		return _card_back_texture
 	
 	# Intentar cargar desde archivo local (pre-descargado del servidor)
-	var local_path = "res://assets/cards/card_back.png"
+	var local_path = "res://assets/cards/card_back.jpg"
 	if ResourceLoader.exists(local_path):
-		_card_back_texture = load(local_path)
-		return _card_back_texture
+		# load() devuelve CompressedTexture2D: convertir al tipo que usa la caché
+		var imported: Texture2D = load(local_path)
+		if imported:
+			_card_back_texture = ImageTexture.create_from_image(imported.get_image())
+			return _card_back_texture
 	
 	# Fallback: crear una textura de color sólido mientras se carga
 	# Crear imagen 120x168 con color gris oscuro

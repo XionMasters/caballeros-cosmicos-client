@@ -1,25 +1,66 @@
-[gd_scene load_steps=2 format=3 uid="uid://xy8mdk5rntul2hc3"]
+[gd_scene format=3 uid="uid://xy8mdk5rntul2hc3"]
 
 [ext_resource type="Script" uid="uid://bwf60gq35t1w2" path="res://game/zones/PilesPanel.gd" id="1_pqrst"]
 
+[sub_resource type="StyleBoxEmpty" id="NoPanel"]
+
 [node name="PilesPanel" type="PanelContainer"]
-custom_minimum_size = Vector2(170, 0)
 size_flags_horizontal = 4
-theme_type_variation = &"Chip"
+theme_override_styles/panel = SubResource("NoPanel")
 script = ExtResource("1_pqrst")
 
-[node name="VBoxContainer" type="VBoxContainer" parent="."]
+[node name="Row" type="HBoxContainer" parent="."]
 layout_mode = 2
-theme_override_constants/separation = 0
+theme_override_constants/separation = 10
 
-[node name="YomotsuLabel" type="Label" parent="VBoxContainer"]
+[node name="YomotsuChip" type="PanelContainer" parent="Row"]
+custom_minimum_size = Vector2(112, 0)
 layout_mode = 2
-theme_type_variation = &"Caption"
-text = "Yomotsu: 0"
+tooltip_text = "Yomotsu: caballeros caídos"
+theme_type_variation = &"Chip"
+
+[node name="Box" type="VBoxContainer" parent="Row/YomotsuChip"]
+layout_mode = 2
+theme_override_constants/separation = -6
+
+[node name="YomotsuLabel" type="Label" parent="Row/YomotsuChip/Box"]
+layout_mode = 2
+theme_type_variation = &"StatValue"
+theme_override_colors/font_color = Color(0.76, 0.55, 1, 1)
+theme_override_font_sizes/font_size = 28
+text = "0"
 horizontal_alignment = 1
 
-[node name="CositosLabel" type="Label" parent="VBoxContainer"]
+[node name="Caption" type="Label" parent="Row/YomotsuChip/Box"]
 layout_mode = 2
-theme_type_variation = &"Caption"
-text = "Cositos: 0"
+theme_type_variation = &"Eyebrow"
+theme_override_colors/font_color = Color(0.66, 0.63, 0.86, 1)
+theme_override_font_sizes/font_size = 14
+text = "YOMOTSU"
+horizontal_alignment = 1
+
+[node name="CositosChip" type="PanelContainer" parent="Row"]
+custom_minimum_size = Vector2(112, 0)
+layout_mode = 2
+tooltip_text = "Cositos"
+theme_type_variation = &"Chip"
+
+[node name="Box" type="VBoxContainer" parent="Row/CositosChip"]
+layout_mode = 2
+theme_override_constants/separation = -6
+
+[node name="CositosLabel" type="Label" parent="Row/CositosChip/Box"]
+layout_mode = 2
+theme_type_variation = &"StatValue"
+theme_override_colors/font_color = Color(0.43, 0.9, 0.66, 1)
+theme_override_font_sizes/font_size = 28
+text = "0"
+horizontal_alignment = 1
+
+[node name="Caption" type="Label" parent="Row/CositosChip/Box"]
+layout_mode = 2
+theme_type_variation = &"Eyebrow"
+theme_override_colors/font_color = Color(0.66, 0.63, 0.86, 1)
+theme_override_font_sizes/font_size = 14
+text = "COSITOS"
 horizontal_alignment = 1

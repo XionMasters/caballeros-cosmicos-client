@@ -312,7 +312,7 @@ func _on_knight_action_selected(action: String, source_slot: Node) -> void:
 
 		"charge":
 			print("[KnightActionController] 💫 Cargando cosmos")
-			MatchSessionService.send_charge_cosmos()
+			MatchSessionService.send_charge_cosmos(iid)
 
 		"sacrifice":
 			print("[KnightActionController] 💀 Sacrificando %s" % iid)
@@ -481,8 +481,12 @@ func _on_card_dropped(payload: Dictionary) -> void:
 	var pos := 0
 	if target_slot and is_instance_valid(target_slot):
 		pos = target_slot.get_index()
-	print("[KnightActionController] 🃏 %s → %s[%d]" % [card_instance.instance_id, zone, pos])
-	MatchSessionService.play_card(card_instance.instance_id, zone, pos)
+	# Objetos: se sueltan sobre un caballero propio y se le equipan; el servidor decide
+	# en qué posición de la fila de técnicas/objetos queda
+	var equip_target_id: String = str(payload.get("equip_target_id", ""))
+	print("[KnightActionController] 🃏 %s → %s[%d]%s" % [card_instance.instance_id, zone, pos,
+		(" equipado a %s" % equip_target_id) if equip_target_id != "" else ""])
+	MatchSessionService.play_card(card_instance.instance_id, zone, pos, equip_target_id)
 
 
 func _slot_type_to_zone(slot_type: int) -> String:

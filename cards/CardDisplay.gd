@@ -137,14 +137,46 @@ func _setup_state_machine() -> void:
 	_set_children_mouse_filter_ignore()
 
 
+## Tamaño fijado con set_display_size() (Vector2.ZERO = tamaño de mano de CardSizeConfig)
+var _display_size_override := Vector2.ZERO
+
+
+## Cambia el tamaño de la carta fuera del tablero (p. ej. más grande en la colección).
+## Se puede llamar antes de añadirla al árbol.
+func set_display_size(new_size: Vector2) -> void:
+	_display_size_override = new_size
+	custom_minimum_size = new_size
+	if card_image:
+		card_image.custom_minimum_size = new_size
+		card_image.size = new_size
+		# Los contenedores intermedios no encogen solos: ajustarlos al nuevo tamaño
+		var node := card_image.get_parent()
+		while node and node != self:
+			if node is Control:
+				node.reset_size()
+			node = node.get_parent()
+	size = new_size
+
+
+func _base_card_size() -> Vector2:
+	if _display_size_override != Vector2.ZERO:
+		return _display_size_override
+	return CardSizeConfig.get_hand_card_size()
+
+
 func _ensure_ui_structure() -> void:
 	"""Create UI structure with image only"""
 	# Usar CardSizeConfig como autoload (validar que exista)
 	if CardSizeConfig:
-		custom_minimum_size = CardSizeConfig.get_hand_card_size()
+		custom_minimum_size = _base_card_size()
 	else:
 		custom_minimum_size = Vector2(120, 168)  # Fallback si CardSizeConfig no está listo
 	
+	# Ya creada (setup_from_instance puede llamarse antes de _ready): no duplicar la imagen
+	if card_image and is_instance_valid(card_image):
+		card_image.custom_minimum_size = _base_card_size()
+		return
+
 	if has_node("MarginContainer/VBoxContainer/CardImage"):
 		card_image = $MarginContainer/VBoxContainer/CardImage
 		highlight_overlay = $HighlightOverlay if has_node("HighlightOverlay") else null
@@ -166,7 +198,7 @@ func _ensure_ui_structure() -> void:
 	
 	card_image = TextureRect.new()
 	card_image.name = "CardImage"
-	card_image.custom_minimum_size = CardSizeConfig.get_hand_card_size()
+	card_image.custom_minimum_size = _base_card_size()
 	card_image.expand_mode = TextureRect.EXPAND_FIT_WIDTH_PROPORTIONAL
 	card_image.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
 	card_image.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -240,7 +272,7 @@ func _create_cost_badge() -> void:
 # ===== STATS OVERLAY METHODS =====
 
 func _create_stats_overlay() -> void:
-	"""Crear el Mini HUD de stats en la parte inferior de la carta"""
+	"""Crear las insignias de stats de la carta en campo (vida y cosmo)"""
 	if stats_overlay and is_instance_valid(stats_overlay):
 		return
 
@@ -248,77 +280,83 @@ func _create_stats_overlay() -> void:
 	stats_overlay.name = "StatsOverlay"
 	stats_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	stats_overlay.visible = false
-
-	# Anclado al fondo de la carta (20% inferior)
-	stats_overlay.anchor_left = 0.0
-	stats_overlay.anchor_top = 0.8
-	stats_overlay.anchor_right = 1.0
-	stats_overlay.anchor_bottom = 1.0
-	stats_overlay.offset_left = 0
-	stats_overlay.offset_top = 0
-	stats_overlay.offset_right = 0
-	stats_overlay.offset_bottom = 0
-
 	add_child(stats_overlay)
+	stats_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	stats_overlay.z_index = 50
 
-	# Panel de fondo semitransparente
-	var panel = PanelContainer.new()
-	panel.name = "StatsBg"
-	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	panel.set_anchors_preset(Control.PRESET_FULL_RECT)
+	# Dos insignias redondas en las esquinas inferiores: vida (rojo) y cosmo (azul)
+	hp_label = _make_stat_badge("HPLabel", UIPalette.LIFE)
+	cp_label = _make_stat_badge("CPLabel", UIPalette.COSMOS)
+	stats_overlay.add_child(hp_label)
+	stats_overlay.add_child(cp_label)
+	_place_stat_badge(hp_label, true)
+	_place_stat_badge(cp_label, false)
 
-	var bg_style = StyleBoxFlat.new()
-	bg_style.bg_color = Color(0.04, 0.04, 0.10, 0.90)
-	bg_style.border_color = Color(0.55, 0.45, 0.18, 0.85)
-	bg_style.border_width_top = 1
-	bg_style.corner_radius_top_left = 3
-	bg_style.corner_radius_top_right = 3
-	panel.add_theme_stylebox_override("panel", bg_style)
-	stats_overlay.add_child(panel)
 
-	# HBox centrado con los dos stats
-	var hbox = HBoxContainer.new()
-	hbox.name = "StatsHBox"
-	hbox.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hbox.alignment = BoxContainer.ALIGNMENT_CENTER
-	hbox.set_anchors_preset(Control.PRESET_FULL_RECT)
-	panel.add_child(hbox)
+const STAT_BADGE_SIZE := 42.0
 
-	# Label HP
-	hp_label = Label.new()
-	hp_label.name = "HPLabel"
-	hp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	hp_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	hp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	hp_label.add_theme_font_size_override("font_size", 11)
-	hp_label.add_theme_color_override("font_color", Color(0.4, 1.0, 0.4, 1.0))
-	hp_label.text = "\u2665 -/-"
-	hbox.add_child(hp_label)
 
-	# Separador
-	var sep = Label.new()
-	sep.name = "Separator"
-	sep.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	sep.text = "|"
-	sep.add_theme_color_override("font_color", Color(0.5, 0.45, 0.25, 0.7))
-	sep.add_theme_font_size_override("font_size", 11)
-	hbox.add_child(sep)
+func _make_stat_badge(badge_name: String, color: Color) -> Label:
+	var badge := Label.new()
+	badge.name = badge_name
+	badge.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	badge.theme_type_variation = &"StatValue"
+	badge.add_theme_font_size_override("font_size", 26)
+	badge.add_theme_constant_override("outline_size", 6)
+	badge.add_theme_color_override("font_color", Color.WHITE)
+	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	badge.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	var style := StyleBoxFlat.new()
+	style.bg_color = color.darkened(0.15)
+	style.border_color = Color(1, 1, 1, 0.9)
+	style.set_border_width_all(3)
+	style.set_corner_radius_all(int(STAT_BADGE_SIZE))
+	style.shadow_color = Color(0, 0, 0, 0.55)
+	style.shadow_size = 6
+	style.shadow_offset = Vector2(0, 2)
+	style.anti_aliasing = true
+	badge.add_theme_stylebox_override("normal", style)
+	badge.text = "-"
+	return badge
 
-	# Label CP (Cosmos Points del caballero)
-	cp_label = Label.new()
-	cp_label.name = "CPLabel"
-	cp_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	cp_label.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	cp_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	cp_label.add_theme_font_size_override("font_size", 11)
-	cp_label.add_theme_color_override("font_color", Color(0.80, 0.55, 1.0, 1.0))
-	cp_label.text = "\u25C6 -/-"
-	hbox.add_child(cp_label)
+
+func _place_stat_badge(badge: Label, left: bool) -> void:
+	# Asoma un poco por fuera de la carta, como las insignias de poder de un juego de cartas
+	var s := STAT_BADGE_SIZE
+	badge.anchor_left = 0.0 if left else 1.0
+	badge.anchor_right = badge.anchor_left
+	badge.anchor_top = 1.0
+	badge.anchor_bottom = 1.0
+	badge.offset_left = -8.0 if left else 8.0 - s
+	badge.offset_right = badge.offset_left + s
+	badge.offset_top = 6.0 - s
+	badge.offset_bottom = 6.0
+
+
+## Actualiza una insignia; si el número cambia, la insignia "salta" para que se note
+func _set_stat_badge(badge: Label, value: int, maximum: int) -> void:
+	if not badge or not is_instance_valid(badge):
+		return
+	var text := str(value)
+	var changed := badge.text != "-" and badge.text != text
+	badge.text = text
+	# Por debajo del máximo, el número pasa a ámbar; a un tercio o menos, a rojo claro
+	var ratio := float(value) / float(maximum) if maximum > 0 else 1.0
+	var color := Color.WHITE
+	if ratio <= 0.34:
+		color = Color("#FFB3A8")
+	elif ratio < 1.0:
+		color = Color("#FFE0A3")
+	badge.add_theme_color_override("font_color", color)
+	if changed:
+		badge.pivot_offset = badge.size / 2.0
+		var pop := badge.create_tween()
+		pop.tween_property(badge, "scale", Vector2(1.45, 1.45), 0.1).set_trans(Tween.TRANS_QUAD)
+		pop.tween_property(badge, "scale", Vector2.ONE, 0.22).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 func update_stats_display() -> void:
-	"""Actualizar los labels del Mini HUD desde card_instance"""
+	"""Actualizar las insignias de vida y cosmo desde card_instance"""
 	if not stats_overlay or not is_instance_valid(stats_overlay):
 		return
 
@@ -328,33 +366,8 @@ func update_stats_display() -> void:
 		return
 
 	stats_overlay.visible = true
-
-	# --- HP label con color dinámico ---
-	if hp_label and is_instance_valid(hp_label):
-		hp_label.text = "\u2665 %d/%d" % [card_instance.current_health, card_instance.max_health]
-		var ratio: float = 1.0
-		if card_instance.max_health > 0:
-			ratio = float(card_instance.current_health) / float(card_instance.max_health)
-		if ratio <= 0.33:
-			hp_label.add_theme_color_override("font_color", Color(1.0, 0.15, 0.15, 1.0))  # Rojo critico
-		elif ratio <= 0.66:
-			hp_label.add_theme_color_override("font_color", Color(1.0, 0.60, 0.15, 1.0))  # Naranja
-		else:
-			hp_label.add_theme_color_override("font_color", Color(0.35, 1.0, 0.35, 1.0))  # Verde lleno
-
-	# --- CP label (Cosmos Points) ---
-	if cp_label and is_instance_valid(cp_label):
-		cp_label.text = "\u25C6 %d/%d" % [card_instance.current_cosmos, card_instance.max_cosmos]
-		var cp_ratio: float = 1.0
-		if card_instance.max_cosmos > 0:
-			cp_ratio = float(card_instance.current_cosmos) / float(card_instance.max_cosmos)
-		if cp_ratio <= 0.33:
-			cp_label.add_theme_color_override("font_color", Color(0.50, 0.20, 0.75, 1.0))
-		elif cp_ratio <= 0.66:
-			cp_label.add_theme_color_override("font_color", Color(0.75, 0.45, 1.0, 1.0))
-		else:
-			cp_label.add_theme_color_override("font_color", Color(0.88, 0.65, 1.0, 1.0))
-
+	_set_stat_badge(hp_label, card_instance.current_health, card_instance.max_health)
+	_set_stat_badge(cp_label, card_instance.current_cosmos, card_instance.max_cosmos)
 
 # ===== STATS TOOLTIP METHODS =====
 
@@ -892,11 +905,13 @@ func setup_from_instance(instance: CardInstance) -> void:
 	setup(card_data)
 	update_visual_state()
 
+	# Cualquier carta escucha sus cambios (valid_actions → halo de jugable en la mano)
+	if not instance.stats_changed.is_connected(_on_instance_stats_changed):
+		instance.stats_changed.connect(_on_instance_stats_changed)
+
 	# Crear overlay de stats si es knight
 	if card_data.type == "knight":
 		_create_stats_overlay()
-		if not instance.stats_changed.is_connected(_on_instance_stats_changed):
-			instance.stats_changed.connect(_on_instance_stats_changed)
 		update_stats_display()
 
 func set_card_image(texture: Texture2D) -> void:
@@ -910,6 +925,7 @@ func set_card_image(texture: Texture2D) -> void:
 func _on_instance_stats_changed(_inst: CardInstance) -> void:
 	"""Llamado cuando CardInstance emite stats_changed"""
 	update_stats_display()
+	_update_play_glow()
 	# Refrescar tooltip si está visible (evitar reconstruirlo)
 	if stats_tooltip and is_instance_valid(stats_tooltip) and stats_tooltip.visible:
 		_update_stats_tooltip()
@@ -964,18 +980,69 @@ func update_visual_state() -> void:
 	if highlight_overlay:
 		highlight_overlay.visible = is_highlighted
 
+	_update_play_glow()
+
+
+# ===== CARTA JUGABLE (mano) =====
+var _play_glow: Panel = null
+var _play_glow_tween: Tween = null
+
+
+func _update_play_glow() -> void:
+	"""En la mano: halo cian si el servidor dice que se puede jugar (valid_actions.can_play),
+	y la carta algo apagada si no. Sin valid_actions (turno rival) no se marca nada."""
+	var in_hand := card_instance != null and card_instance.zone == "hand"
+	var va: Dictionary = card_instance.valid_actions if in_hand else {}
+	var known := va.has("can_play")
+	var playable := known and bool(va.get("can_play", false))
+
+	if playable and not is_disabled:
+		if _play_glow == null or not is_instance_valid(_play_glow):
+			_play_glow = Panel.new()
+			_play_glow.name = "PlayGlow"
+			_play_glow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_play_glow.show_behind_parent = true
+			var style := StyleBoxFlat.new()
+			style.bg_color = Color(0, 0, 0, 0)
+			style.border_color = UIPalette.TARGET
+			style.set_border_width_all(3)
+			style.set_corner_radius_all(12)
+			style.expand_margin_left = 3
+			style.expand_margin_top = 3
+			style.expand_margin_right = 3
+			style.expand_margin_bottom = 3
+			style.shadow_color = UIPalette.alpha(UIPalette.TARGET, 0.6)
+			style.shadow_size = 16
+			_play_glow.add_theme_stylebox_override("panel", style)
+			add_child(_play_glow)
+			_play_glow.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+		_play_glow.visible = true
+		if _play_glow_tween == null or not _play_glow_tween.is_valid():
+			_play_glow_tween = create_tween().set_loops()
+			_play_glow_tween.tween_property(_play_glow, "modulate:a", 0.45, 0.8).set_trans(Tween.TRANS_SINE)
+			_play_glow_tween.tween_property(_play_glow, "modulate:a", 1.0, 0.8).set_trans(Tween.TRANS_SINE)
+	elif _play_glow and is_instance_valid(_play_glow):
+		_play_glow.visible = false
+		if _play_glow_tween and _play_glow_tween.is_valid():
+			_play_glow_tween.kill()
+		_play_glow_tween = null
+
+	if in_hand and known and not playable and not is_disabled and not is_exhausted:
+		modulate = Color(0.72, 0.7, 0.8, 1.0)
+
 
 func bind_instance(instance: CardInstance) -> void:
 	"""Bind CardInstance to this display"""
 	card_instance = instance
 	if instance:
 		instance_id = instance.instance_id
-		# Conectar señal y actualizar stats
+		# Conectar señal y actualizar stats (y el halo de jugable)
+		if not instance.stats_changed.is_connected(_on_instance_stats_changed):
+			instance.stats_changed.connect(_on_instance_stats_changed)
 		if instance.base_data and instance.base_data.type == "knight":
 			_create_stats_overlay()
-			if not instance.stats_changed.is_connected(_on_instance_stats_changed):
-				instance.stats_changed.connect(_on_instance_stats_changed)
 			update_stats_display()
+		_update_play_glow()
 
 
 func _on_click_timeout() -> void:

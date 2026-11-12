@@ -7,8 +7,8 @@ extends Control
 const COSMOS_SHADER := preload("res://assets/shaders/cosmos_background.gdshader")
 const ZodiacRing := preload("res://menus/login/ZodiacRing.gd")
 const HERO_ART_PATH := "res://assets/backgrounds/sanctuary_ruins.png"
-## Opacidad de la ilustración sobre el cosmos: visible, pero sin competir con los paneles
-const HERO_ART_TINT := Color(0.82, 0.8, 1.0, 0.55)
+## Opacidad de la ilustración sobre el cosmos: se intuye, pero el protagonista es el cosmos
+const HERO_ART_TINT := Color(0.6, 0.66, 1.0, 0.3)
 const GOLD := Color(1.0, 0.8, 0.36)
 
 var _cosmos: ColorRect

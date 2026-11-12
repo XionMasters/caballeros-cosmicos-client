@@ -5,7 +5,9 @@ extends Control
 
 const CARD_DISPLAY_SCENE = preload("res://cards/CardDisplay.tscn")
 const TYPE_OPTIONS := ["", "knight", "technique", "item", "helper", "stage", "event"]
-const RARITY_ORDER := {"legendary": 0, "divine": 0, "epic": 1, "rare": 2, "common": 3}
+const RARITY_ORDER := {"legendary": 0, "divine": 0, "epic": 1, "rare": 2, "uncommon": 3, "common": 4}
+## Tamaño de cada carta en la cuadrícula (proporción 2:3 de las imágenes)
+const TILE_CARD_SIZE := Vector2(188, 282)
 
 @onready var back_button: Button = %BackButton
 @onready var cards_grid: HFlowContainer = %CardsGrid
@@ -151,20 +153,21 @@ func _create_tile(card: CardData) -> Control:
 	tile.add_theme_constant_override("separation", 4)
 
 	var display = CARD_DISPLAY_SCENE.instantiate()
+	display.set_display_size(TILE_CARD_SIZE)
 	tile.add_child(display)
 	display.setup(card)
 	display.card_clicked.connect(_on_card_clicked)
 
 	var badge := Label.new()
+	badge.theme_type_variation = &"Eyebrow"
 	badge.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	badge.add_theme_font_size_override("font_size", 14)
 	if owned.is_empty():
 		display.modulate = Color(0.35, 0.33, 0.45)
-		badge.text = "No la tienes"
-		badge.add_theme_color_override("font_color", Color(0.7, 0.66, 0.8, 0.8))
+		badge.text = "NO LA TIENES"
+		badge.add_theme_color_override("font_color", UIPalette.alpha(UIPalette.TEXT_MUTED, 0.8))
 	else:
-		badge.text = "× %d%s" % [owned.quantity, "  ✦ Foil" if owned.is_foil else ""]
-		badge.add_theme_color_override("font_color", Color(1, 0.86, 0.52))
+		badge.text = "× %d%s" % [owned.quantity, "  ✦ FOIL" if owned.is_foil else ""]
+		badge.add_theme_color_override("font_color", UIPalette.GOLD_LIGHT)
 	tile.add_child(badge)
 	return tile
 

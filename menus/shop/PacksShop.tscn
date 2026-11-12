@@ -8,6 +8,9 @@
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/shop.svg" id="6_shop"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/coin.svg" id="7_coin"]
 [ext_resource type="Script" path="res://ui/ToastNotice.gd" id="8_toast"]
+[ext_resource type="Script" path="res://ui/BottomNavBar.gd" id="90_navbar"]
+
+[sub_resource type="StyleBoxEmpty" id="NoPanel"]
 
 [node name="PacksShop" type="Control"]
 layout_mode = 3
@@ -39,7 +42,7 @@ grow_vertical = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_bottom = 132
 
 [node name="Layout" type="VBoxContainer" parent="Root"]
 layout_mode = 2
@@ -55,6 +58,7 @@ theme_override_constants/separation = 14
 
 [node name="BackButton" type="Button" parent="Root/Layout/Header/Row"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(130, 48)
 layout_mode = 2
 size_flags_vertical = 4
@@ -95,25 +99,27 @@ size_flags_horizontal = 3
 layout_mode = 2
 size_flags_vertical = 4
 tooltip_text = "Tus monedas"
-theme_type_variation = &"Chip"
+theme_type_variation = &"CurrencyPill"
 
 [node name="Row" type="HBoxContainer" parent="Root/Layout/Header/Row/CoinsChip"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
 [node name="CoinIcon" type="TextureRect" parent="Root/Layout/Header/Row/CoinsChip/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(28, 28)
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
+size_flags_vertical = 4
 texture = ExtResource("7_coin")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="CurrencyLabel" type="Label" parent="Root/Layout/Header/Row/CoinsChip/Row"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.86, 0.52, 1)
-theme_override_font_sizes/font_size = 20
+theme_type_variation = &"StatValue"
+theme_override_font_sizes/font_size = 34
 text = "0"
 
 [node name="MyPacksPanel" type="PanelContainer" parent="Root/Layout"]
@@ -128,7 +134,7 @@ theme_override_constants/separation = 10
 [node name="Title" type="Label" parent="Root/Layout/MyPacksPanel/VBox"]
 layout_mode = 2
 theme_type_variation = &"SectionTitle"
-text = "Mis sobres sin abrir"
+text = "MIS SOBRES SIN ABRIR"
 
 [node name="Scroll" type="ScrollContainer" parent="Root/Layout/MyPacksPanel/VBox"]
 custom_minimum_size = Vector2(0, 150)
@@ -143,6 +149,7 @@ theme_override_constants/separation = 14
 [node name="StorePanel" type="PanelContainer" parent="Root/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_styles/panel = SubResource("NoPanel")
 
 [node name="VBox" type="VBoxContainer" parent="Root/Layout/StorePanel"]
 layout_mode = 2
@@ -155,7 +162,7 @@ layout_mode = 2
 layout_mode = 2
 size_flags_horizontal = 3
 theme_type_variation = &"SectionTitle"
-text = "Sobres a la venta"
+text = "SOBRES A LA VENTA"
 
 [node name="LoadingLabel" type="Label" parent="Root/Layout/StorePanel/VBox/TitleRow"]
 unique_name_in_owner = true
@@ -175,6 +182,18 @@ size_flags_horizontal = 3
 theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 16
 alignment = 1
+
+[node name="BottomNav" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -112.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("90_navbar")
+active_tab = "shop"
 
 [node name="PackOpeningResult" parent="." instance=ExtResource("2_result")]
 unique_name_in_owner = true

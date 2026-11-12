@@ -18,11 +18,19 @@ var _banner_title: Label
 var _banner_sub: Label
 var _banner_tween: Tween
 
+# Rótulo gigante que cruza la pantalla al cambiar de turno (en su propia capa, encima de todo)
+var _swoosh_layer: CanvasLayer
+var _swoosh_band: Panel
+var _swoosh_label: Label
+var _swoosh_tween: Tween
+var _last_turn_key := ""
+
 
 func _ready() -> void:
 	mouse_filter = Control.MOUSE_FILTER_IGNORE
 	set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_build_banner()
+	_build_swoosh()
 
 
 func setup(opponent_rows: Array, player_rows: Array) -> void:
@@ -32,8 +40,17 @@ func setup(opponent_rows: Array, player_rows: Array) -> void:
 
 
 func set_turn(title: String, subtitle: String, is_mine: bool) -> void:
-	_banner_title.text = title
-	_banner_sub.text = subtitle
+	# Solo al cambiar de turno (no en cada actualización del estado)
+	var key := "%s|%s" % [title, subtitle]
+	if key != _last_turn_key:
+		var first := _last_turn_key == ""
+		_last_turn_key = key
+		if not first or is_mine:
+			_play_swoosh(title, is_mine)
+
+	_banner.theme_type_variation = &"CurrencyPill" if is_mine else &"Chip"
+	_banner_title.text = title.to_upper()
+	_banner_sub.text = subtitle.to_upper()
 	_banner_title.add_theme_color_override("font_color", UIPalette.GOLD_LIGHT if is_mine else UIPalette.TEXT_MUTED)
 	if _banner_tween and _banner_tween.is_valid():
 		_banner_tween.kill()
@@ -132,7 +149,67 @@ func _build_banner() -> void:
 	_banner_title.theme_type_variation = &"SectionTitle"
 	box.add_child(_banner_title)
 	_banner_sub = Label.new()
-	_banner_sub.theme_type_variation = &"Caption"
+	_banner_sub.theme_type_variation = &"Eyebrow"
+	_banner_sub.add_theme_font_size_override("font_size", 16)
 	_banner_sub.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	box.add_child(_banner_sub)
 	_banner.visible = false
+
+
+func _build_swoosh() -> void:
+	_swoosh_layer = CanvasLayer.new()
+	_swoosh_layer.layer = 20
+	add_child(_swoosh_layer)
+
+	_swoosh_band = Panel.new()
+	_swoosh_band.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_swoosh_band.visible = false
+	_swoosh_layer.add_child(_swoosh_band)
+
+	_swoosh_label = Label.new()
+	_swoosh_label.theme = load("res://ui/theme/cosmic_theme.tres")
+	_swoosh_label.theme_type_variation = &"HeroTitle"
+	_swoosh_label.add_theme_font_size_override("font_size", 110)
+	_swoosh_label.add_theme_constant_override("outline_size", 16)
+	_swoosh_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_swoosh_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_swoosh_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_swoosh_band.add_child(_swoosh_label)
+	_swoosh_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+
+
+func _play_swoosh(title: String, is_mine: bool) -> void:
+	"""Una franja inclinada cruza la pantalla con «¡TU TURNO!» o el turno del rival"""
+	if not _swoosh_band:
+		return
+	var view := get_viewport_rect().size
+	var accent := UIPalette.GOLD if is_mine else UIPalette.LIFE
+
+	var style := StyleBoxFlat.new()
+	style.bg_color = UIPalette.alpha(UIPalette.ABYSS, 0.88)
+	style.border_color = accent
+	style.border_width_top = 4
+	style.border_width_bottom = 4
+	style.skew = Vector2(0.25, 0)
+	style.shadow_color = UIPalette.alpha(accent, 0.45)
+	style.shadow_size = 30
+	_swoosh_band.add_theme_stylebox_override("panel", style)
+
+	_swoosh_label.text = ("¡%s!" % title.to_upper()) if is_mine else title.to_upper()
+	_swoosh_label.add_theme_color_override("font_color", UIPalette.GOLD_LIGHT if is_mine else Color.WHITE)
+	_swoosh_label.add_theme_color_override("font_shadow_color", UIPalette.alpha(accent, 0.6))
+
+	var band_size := Vector2(view.x * 1.3, 170)
+	var center := Vector2((view.x - band_size.x) / 2.0, (view.y - band_size.y) / 2.0)
+	_swoosh_band.size = band_size
+	_swoosh_band.position = center + Vector2(-view.x, 0)
+	_swoosh_band.modulate.a = 1.0
+	_swoosh_band.visible = true
+
+	if _swoosh_tween and _swoosh_tween.is_valid():
+		_swoosh_tween.kill()
+	_swoosh_tween = create_tween()
+	_swoosh_tween.tween_property(_swoosh_band, "position", center, 0.28).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_OUT)
+	_swoosh_tween.tween_interval(0.75)
+	_swoosh_tween.tween_property(_swoosh_band, "position", center + Vector2(view.x, 0), 0.26).set_trans(Tween.TRANS_CUBIC).set_ease(Tween.EASE_IN)
+	_swoosh_tween.tween_callback(func(): _swoosh_band.visible = false)

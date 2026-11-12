@@ -10,7 +10,7 @@ signal closed
 const CARD_SIZE := Vector2(400, 524)  # proporción de carta (0.764)
 
 const RARITY_LABELS := {
-	"common": "Común", "rare": "Rara", "epic": "Épica", "legendary": "Legendaria", "divine": "Divina",
+	"common": "Común", "uncommon": "Poco común", "rare": "Rara", "epic": "Épica", "legendary": "Legendaria", "divine": "Divina",
 }
 const ELEMENT_LABELS := {
 	"steel": "Acero", "fire": "Fuego", "water": "Agua", "earth": "Tierra",

@@ -2,12 +2,16 @@
 
 importer="texture"
 type="CompressedTexture2D"
-uid="uid://dnaq4d4p754sk"
-valid=false
+uid="uid://5kkaxib1cpnb"
+path="res://.godot/imported/ai.svg-334bb7d508f7cccf98f8bf5ec70eb8ed.ctex"
+metadata={
+"vram_texture": false
+}
 
 [deps]
 
-source_file="res://assets/cards/card_back.png"
+source_file="res://assets/ui-icons/lobby/ai.svg"
+dest_files=["res://.godot/imported/ai.svg-334bb7d508f7cccf98f8bf5ec70eb8ed.ctex"]
 
 [params]
 
@@ -34,3 +38,6 @@ process/hdr_as_srgb=false
 process/hdr_clamp_exposure=false
 process/size_limit=0
 detect_3d/compress_to=1
+svg/scale=1.0
+editor/scale_with_editor_scale=false
+editor/convert_colors_with_editor_theme=false

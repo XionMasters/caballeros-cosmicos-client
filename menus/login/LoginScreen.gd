@@ -13,12 +13,6 @@ extends Control
 @onready var title_label: Label = $CenterContainer/LoginPanel/VBoxContainer/Title
 @onready var subtitle_label: Label = $CenterContainer/LoginPanel/VBoxContainer/Subtitle
 
-# Paleta "armadura de oro sobre el cosmos"
-const GOLD := Color(1.0, 0.8, 0.36)
-const GOLD_LIGHT := Color(1.0, 0.92, 0.65)
-const GOLD_DARK := Color(0.55, 0.38, 0.12)
-const NIGHT := Color(0.05, 0.04, 0.12)
-
 var is_login_mode: bool = true
 
 func _ready():
@@ -172,16 +166,18 @@ func apply_translations() -> void:
 		push_error("[LoginScreen] LocalizationManager no encontrado")
 		return
 	
-	email_input.placeholder_text = LocalizationManager.tr("email")
-	password_input.placeholder_text = LocalizationManager.tr("password")
-	username_input.placeholder_text = LocalizationManager.tr("username")
-	
+	# translate() es el del gestor; tr() es el nativo de Godot y devolvería la clave tal cual
+	email_input.placeholder_text = LocalizationManager.translate("email")
+	password_input.placeholder_text = LocalizationManager.translate("password")
+	username_input.placeholder_text = LocalizationManager.translate("username")
+
+	# Ambos botones llevan su texto siempre: al cambiar de modo solo cambia cuál se ve
+	login_button.text = LocalizationManager.translate("login").to_upper()
+	register_button.text = LocalizationManager.translate("register").to_upper()
 	if is_login_mode:
-		login_button.text = LocalizationManager.tr("login")
-		toggle_mode_button.text = "¿No tienes cuenta? " + LocalizationManager.tr("register")
+		toggle_mode_button.text = "¿No tienes cuenta? " + LocalizationManager.translate("register")
 	else:
-		register_button.text = LocalizationManager.tr("register")
-		toggle_mode_button.text = "¿Ya tienes cuenta? " + LocalizationManager.tr("login")
+		toggle_mode_button.text = "¿Ya tienes cuenta? " + LocalizationManager.translate("login")
 
 func _on_language_changed(_language: String) -> void:
 	"""Callback cuando cambia el idioma"""
@@ -193,90 +189,30 @@ func _on_language_changed(_language: String) -> void:
 # ============================================================================
 
 func _apply_styles() -> void:
-	"""Panel y controles con estética de armadura dorada sobre el cosmos"""
-	# Panel: noche translúcida con borde y halo dorados
-	var panel_style := StyleBoxFlat.new()
-	panel_style.bg_color = Color(NIGHT, 0.82)
-	panel_style.set_border_width_all(2)
-	panel_style.border_color = Color(GOLD, 0.85)
-	panel_style.set_corner_radius_all(14)
-	panel_style.shadow_color = Color(GOLD, 0.28)
-	panel_style.shadow_size = 22
-	panel_style.set_content_margin_all(36)
-	login_panel.add_theme_stylebox_override("panel", panel_style)
+	"""Panel y controles con las variantes del tema global (ui/theme/build_theme.gd)"""
+	login_panel.theme_type_variation = &"BannerPanel"
+	login_panel.add_theme_stylebox_override("panel", _login_panel_style())
 
-	# Título dorado con contorno y sombra
-	title_label.add_theme_color_override("font_color", GOLD_LIGHT)
-	title_label.add_theme_color_override("font_outline_color", GOLD_DARK)
-	title_label.add_theme_constant_override("outline_size", 6)
-	title_label.add_theme_color_override("font_shadow_color", Color(GOLD, 0.45))
-	title_label.add_theme_constant_override("shadow_offset_x", 0)
-	title_label.add_theme_constant_override("shadow_offset_y", 0)
-	title_label.add_theme_constant_override("shadow_outline_size", 14)
-	subtitle_label.add_theme_color_override("font_color", Color(0.78, 0.74, 0.95))
+	# Título enorme con contorno, como el rótulo de un juego de cartas
+	title_label.theme_type_variation = &"HeroTitle"
+	title_label.add_theme_font_size_override("font_size", 60)
+	title_label.add_theme_color_override("font_color", UIPalette.GOLD_LIGHT)
+	subtitle_label.theme_type_variation = &"Eyebrow"
+	subtitle_label.add_theme_font_size_override("font_size", 20)
 
-	for input in [email_input, password_input, username_input]:
-		_style_input(input)
 	for button in [login_button, register_button]:
-		_style_primary_button(button)
+		button.theme_type_variation = &"PlayButton"
+		button.add_theme_font_size_override("font_size", 30)
 
-	toggle_mode_button.add_theme_color_override("font_color", Color(0.75, 0.78, 1.0))
-	toggle_mode_button.add_theme_color_override("font_hover_color", GOLD_LIGHT)
-
-
-func _style_input(input: LineEdit) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.09, 0.08, 0.2, 0.9)
-	normal.set_border_width_all(1)
-	normal.border_color = Color(GOLD, 0.35)
-	normal.set_corner_radius_all(8)
-	normal.content_margin_left = 14
-	normal.content_margin_right = 14
-
-	var focus := normal.duplicate() as StyleBoxFlat
-	focus.border_color = GOLD
-	focus.set_border_width_all(2)
-	focus.shadow_color = Color(GOLD, 0.3)
-	focus.shadow_size = 8
-
-	input.add_theme_stylebox_override("normal", normal)
-	input.add_theme_stylebox_override("focus", focus)
-	input.add_theme_color_override("font_color", Color(0.95, 0.93, 1.0))
-	input.add_theme_color_override("font_placeholder_color", Color(0.65, 0.62, 0.8, 0.8))
-	input.add_theme_color_override("caret_color", GOLD)
+	toggle_mode_button.flat = false
+	toggle_mode_button.theme_type_variation = &"GhostButton"
 
 
-func _style_primary_button(button: Button) -> void:
-	var normal := StyleBoxFlat.new()
-	normal.bg_color = Color(0.72, 0.52, 0.16)
-	normal.set_border_width_all(2)
-	normal.border_color = GOLD_LIGHT
-	normal.set_corner_radius_all(10)
-	normal.shadow_color = Color(GOLD, 0.35)
-	normal.shadow_size = 10
-
-	var hover := normal.duplicate() as StyleBoxFlat
-	hover.bg_color = Color(0.85, 0.63, 0.22)
-	hover.shadow_size = 16
-
-	var pressed := normal.duplicate() as StyleBoxFlat
-	pressed.bg_color = Color(0.58, 0.4, 0.12)
-	pressed.shadow_size = 4
-
-	var disabled := normal.duplicate() as StyleBoxFlat
-	disabled.bg_color = Color(0.35, 0.3, 0.25)
-	disabled.border_color = Color(GOLD, 0.3)
-	disabled.shadow_size = 0
-
-	button.add_theme_stylebox_override("normal", normal)
-	button.add_theme_stylebox_override("hover", hover)
-	button.add_theme_stylebox_override("pressed", pressed)
-	button.add_theme_stylebox_override("disabled", disabled)
-	button.add_theme_stylebox_override("focus", StyleBoxEmpty.new())
-	button.add_theme_color_override("font_color", Color(0.12, 0.07, 0.02))
-	button.add_theme_color_override("font_hover_color", Color(0.08, 0.04, 0.0))
-	button.add_theme_color_override("font_pressed_color", Color(0.08, 0.04, 0.0))
-	button.add_theme_color_override("font_disabled_color", Color(0.7, 0.65, 0.55))
+func _login_panel_style() -> StyleBoxFlat:
+	# Mismo panel protagonista del tema, con más aire interior para el formulario
+	var style := login_panel.get_theme_stylebox("panel", &"BannerPanel").duplicate() as StyleBoxFlat
+	style.set_content_margin_all(40)
+	return style
 
 
 func _play_intro() -> void:

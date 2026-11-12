@@ -22,7 +22,12 @@ func _ready():
 	send_button.pressed.connect(_send_message)
 	message_input.text_submitted.connect(_on_text_submitted)
 	
-	# Focus en el input
+	# Focus en el input (si el chat está a la vista; en el lobby vive en un panel desplegable)
+	if is_visible_in_tree():
+		message_input.grab_focus()
+
+func focus_input():
+	"""Llevar el foco al campo de mensaje (al abrir el panel del chat)"""
 	message_input.grab_focus()
 
 func load_initial_messages(messages: Array):

@@ -1,0 +1,15 @@
+[gd_scene format=3]
+
+[ext_resource type="Script" path="res://menus/lobby/match_ai_button.gd" id="1_ai"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/ai.svg" id="2_ai"]
+
+[node name="MatchAiButton" type="Button"]
+custom_minimum_size = Vector2(220, 66)
+tooltip_text = "Partida inmediata contra la IA del servidor"
+mouse_default_cursor_shape = 2
+theme_override_constants/icon_max_width = 30
+theme_override_font_sizes/font_size = 18
+text = "CONTRA LA IA"
+icon = ExtResource("2_ai")
+expand_icon = true
+script = ExtResource("1_ai")

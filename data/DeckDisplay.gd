@@ -102,6 +102,11 @@ func pop_card_back() -> void:
 		arrange_cards()
 
 func _load_card_back_texture() -> void:
+	# Mientras llega el dorso personalizado, mostrar el de por defecto (no una pila vacía)
+	if _back_texture == null:
+		_back_texture = CardsManager.get_default_card_back()
+		_rebuild_visual()
+
 	if _player_id.is_empty():
 		# print("[DeckDisplay] ℹ️ player_id vacío, usando dorso por defecto")
 		_back_texture = CardsManager.get_default_card_back()
@@ -198,9 +203,11 @@ func _rebuild_visual() -> void:
 			# Si no hay textura, CardBack mostrará su fallback visual
 			print("[DeckDisplay] ⚠️ Sin textura de dorso, usando fallback de CardBack")
 		
-		# back.position = Vector2(0, -i * stack_offset)
 		back.z_index = i
 		add_child(back)
+		# CardBack toma el tamaño de carta completa en su _ready: en la pila va reducida
+		back.custom_minimum_size = deck_card_size
+		back.size = deck_card_size
 		# print("[DeckDisplay] ✅ Carta %d agregada al árbol de nodos" % i)
 
 	# Contador visual

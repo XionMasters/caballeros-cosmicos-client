@@ -89,6 +89,7 @@ func load_translations():
 			
 			# Rareza
 			"common": "Común",
+			"uncommon": "Poco común",
 			"rare": "Rara",
 			"epic": "Épica",
 			"legendary": "Legendaria",
@@ -213,6 +214,7 @@ func load_translations():
 			
 			# Rarity
 			"common": "Common",
+			"uncommon": "Uncommon",
 			"rare": "Rare",
 			"epic": "Epic",
 			"legendary": "Legendary",
@@ -337,6 +339,7 @@ func load_translations():
 			
 			# Raridade
 			"common": "Comum",
+			"uncommon": "Incomum",
 			"rare": "Rara",
 			"epic": "Épica",
 			"legendary": "Lendária",

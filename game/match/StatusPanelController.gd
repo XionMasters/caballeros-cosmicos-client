@@ -11,6 +11,8 @@ var _player_deck: DeckDisplay
 var _opponent_deck: DeckDisplay
 var _player_piles: PilesPanel
 var _opponent_piles: PilesPanel
+## Orbe de cosmo junto a «Terminar turno» (opcional)
+var cosmo_orb: CosmoOrb = null
 
 
 func _init(
@@ -63,6 +65,9 @@ func render(game_state: GameState, current_match: Dictionary) -> void:
 		opponent_id
 	)
 
+	if cosmo_orb:
+		cosmo_orb.set_value(game_state.get_player_cosmos(pn))
+
 	_player_deck.setup(game_state.player_deck_count, player_id)
 	_opponent_deck.setup(game_state.opponent_deck_count, opponent_id)
 
@@ -76,3 +81,5 @@ func render_fallback() -> void:
 	"""Renderización mínima para el editor o cuando no hay datos de match."""
 	_player_panel.setup("Tú", 12, 1, "")
 	_opponent_panel.setup("Rival", 12, 0, "")
+	if cosmo_orb:
+		cosmo_orb.set_value(1)

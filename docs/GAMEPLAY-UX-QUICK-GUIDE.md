@@ -31,7 +31,7 @@ Diseno UX, UI y QA manual del cliente Godot.
 - Mostrar cosmos actual y maximo visible.
 - Al inicio de turno: +1 cosmos.
 - Gastar cosmos al jugar cartas o activar habilidades.
-- Si existe accion Cargar Cosmos, mostrar feedback claro de +3.
+- Cargar Cosmo es la accion de un caballero (gasta su accion del turno): mostrar feedback claro de +1 CP al jugador.
 
 ## Combate en UX
 

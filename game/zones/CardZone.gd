@@ -21,9 +21,9 @@ signal card_placed(slot: CardSlot, card_display: Control)
 # ============================================================================
 # CICLO DE VIDA
 # ============================================================================
-## Separación máxima entre posiciones: el campo queda agrupado y centrado (como un tapete)
-## en vez de repartir las 5 cartas por todo el ancho de la pantalla.
-const MAX_SEPARATION := 44.0
+## Separación máxima entre posiciones de caballero: el campo queda agrupado y centrado
+## (como un tapete) en vez de repartir las 5 cartas por todo el ancho de la pantalla.
+const MAX_SEPARATION := 46.0
 
 
 func _ready() -> void:
@@ -35,16 +35,18 @@ func _ready() -> void:
 
 
 func _recalculate_separation() -> void:
-	"""Calcula el espacio entre slots según el ancho disponible (con tope)"""
+	"""Calcula el espacio entre slots según el ancho disponible (con tope).
+	Todas las filas usan el mismo paso (ancho de caballero + separación), así las posiciones
+	de técnica, más estrechas, quedan alineadas en columna con las de caballero."""
 	var num_slots := max_cards
-	var card_w := CardSizeConfig.card_width
+	var knight_w := CardSizeConfig.card_width
+	var own_w := slots[0].get_card_size().x if not slots.is_empty() else knight_w
 	var available := size.x
-	var total_cards := num_slots * card_w
 	var gaps := num_slots - 1
-	var sep := 8.0  # mínimo
-	if gaps > 0 and available > total_cards:
-		sep = minf((available - total_cards) / gaps, MAX_SEPARATION)
-	add_theme_constant_override("separation", int(sep))
+	var knight_sep := 8.0  # mínimo
+	if gaps > 0 and available > num_slots * knight_w:
+		knight_sep = minf((available - num_slots * knight_w) / gaps, MAX_SEPARATION)
+	add_theme_constant_override("separation", int(knight_sep + knight_w - own_w))
 
 
 func _collect_slots() -> void:

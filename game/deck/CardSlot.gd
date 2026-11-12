@@ -35,15 +35,27 @@ var _highlight_tween: Tween = null
 var _current_dragging_card: Control = null       # CardDisplay que está siendo arrastrada
 var _is_mouse_over: bool = false                 # Detectar si el cursor está sobre este slot
 var _drag_valid: bool = false                    # ¿Es válido droppear aquí?
+var _equip_mode: bool = false                    # Se arrastra un objeto: se equipa soltándolo sobre un caballero
+var _drop_overlay: Panel = null                  # Resaltado encima de la carta (posiciones ocupadas)
 
-# Watermark (tipo de slot)
-var watermark_label: Label = null
+# Watermark (tipo de slot): icono + rótulo, visible solo con la posición vacía
+var watermark_label: Control = null
 
 # Shared styles (evitar instanciar repetido)
 static var _hover_style: StyleBoxFlat = null
-static var _glow_style_cache := {}  # color_str -> StyleBoxFlat
-static var _valid_drag_style: StyleBoxFlat = null   # Verde para drop válido
-static var _invalid_drag_style: StyleBoxFlat = null # Rojo para drop inválido
+static var _glow_style_cache := {}  # color_str / "default_<tipo>" -> StyleBoxFlat
+static var _valid_drag_style: StyleBoxFlat = null     # Cian: el cursor está sobre un destino válido
+static var _invalid_drag_style: StyleBoxFlat = null   # Naranja: destino no válido
+static var _available_drag_style: StyleBoxFlat = null # Cian tenue: destino válido mientras se arrastra
+
+## Icono de cada tipo de posición vacía
+const SLOT_ICONS := {
+	SlotType.KNIGHT: "res://assets/ui-icons/lobby/battle.svg",
+	SlotType.TECH_OBJECT: "res://assets/ui-icons/lobby/flame.svg",
+	SlotType.HELPER: "res://assets/ui-icons/lobby/users.svg",
+	SlotType.SCENARIO: "res://assets/ui-icons/lobby/sanctuary.svg",
+	SlotType.OCCASION: "res://assets/ui-icons/lobby/news.svg",
+}
 
 # ====================================================
 # READY
@@ -52,17 +64,81 @@ func _ready():
 	mouse_filter = Control.MOUSE_FILTER_STOP
 
 	# Tamaño fijo desde CardSizeConfig (no se estira en el HBoxContainer)
-	var card_size := Vector2(CardSizeConfig.card_width, CardSizeConfig.card_height)
+	var card_size := get_card_size()
 	custom_minimum_size = card_size
 	size = card_size
-	size_flags_horizontal = 0  # No expandir
+	size_flags_horizontal = Control.SIZE_SHRINK_CENTER  # No expandir; centrado en columnas
 	size_flags_vertical = 0
-	
+
 	_create_watermark()
 	_init_shared_styles()
 	if highlight_on_hover:
 		mouse_entered.connect(_on_mouse_entered)
 		mouse_exited.connect(_on_mouse_exited)
+
+
+## Tamaño de la carta en esta posición: las de caballero son las grandes
+func get_card_size() -> Vector2:
+	if slot_type == SlotType.KNIGHT:
+		return CardSizeConfig.get_card_size()
+	return CardSizeConfig.get_support_slot_size()
+
+
+func _slot_color() -> Color:
+	match slot_type:
+		SlotType.KNIGHT: return UIPalette.GOLD
+		SlotType.TECH_OBJECT: return UIPalette.COSMOS
+		SlotType.HELPER: return UIPalette.HEAL
+		SlotType.SCENARIO: return UIPalette.ABILITY
+		SlotType.OCCASION: return UIPalette.POWER
+	return UIPalette.GOLD
+
+
+## Estilo en reposo: cristal oscuro con el borde del color de su tipo
+func _default_style() -> StyleBoxFlat:
+	var key := "default_%d_%s" % [slot_type, is_opponent]
+	if not _glow_style_cache.has(key):
+		var s := StyleBoxFlat.new()
+		s.bg_color = UIPalette.alpha(UIPalette.ABYSS, 0.55)
+		s.border_color = UIPalette.alpha(_slot_color(), 0.22 if is_opponent else 0.38)
+		s.set_border_width_all(2)
+		s.set_corner_radius_all(12)
+		s.anti_aliasing = true
+		_glow_style_cache[key] = s
+	return _glow_style_cache[key]
+
+
+## Estilo cuando no pasa nada encima: tenue si es destino válido de un arrastre, si no el de reposo
+func _rest_style() -> StyleBoxFlat:
+	if _current_dragging_card != null and _drag_valid:
+		return _available_drag_style
+	return _default_style()
+
+
+func _set_style(style: StyleBox) -> void:
+	add_theme_stylebox_override("panel", style)
+	queue_redraw()
+	_update_drop_overlay(style)
+
+
+## Con una carta en la posición, el borde del slot queda tapado: el resaltado de
+## arrastre (equipar un objeto, reemplazar el escenario) se dibuja encima de la carta.
+func _update_drop_overlay(style: StyleBox) -> void:
+	var highlight := is_occupied and style in [_available_drag_style, _valid_drag_style, _invalid_drag_style]
+	if not highlight:
+		if _drop_overlay and is_instance_valid(_drop_overlay):
+			_drop_overlay.visible = false
+		return
+	if _drop_overlay == null or not is_instance_valid(_drop_overlay):
+		_drop_overlay = Panel.new()
+		_drop_overlay.name = "DropOverlay"
+		_drop_overlay.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		_drop_overlay.z_index = 60
+		add_child(_drop_overlay)
+		_drop_overlay.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	move_child(_drop_overlay, -1)
+	_drop_overlay.add_theme_stylebox_override("panel", style)
+	_drop_overlay.visible = true
 
 
 func _process(_delta: float) -> void:
@@ -85,61 +161,45 @@ func _process(_delta: float) -> void:
 			if _is_mouse_over:
 				_update_drag_glow()
 			else:
-				remove_theme_stylebox_override("panel")
+				_set_style(_rest_style())
 
 # ====================================================
 # SHARED STYLES
 # ====================================================
+func _make_state_style(bg: Color, border: Color, width: int, shadow: Color, shadow_size: int) -> StyleBoxFlat:
+	var s := StyleBoxFlat.new()
+	s.bg_color = bg
+	s.border_color = border
+	s.set_border_width_all(width)
+	s.set_corner_radius_all(12)
+	s.shadow_color = shadow
+	s.shadow_size = shadow_size
+	s.anti_aliasing = true
+	return s
+
+
 func _init_shared_styles():
 	# Borde por defecto (siempre visible)
-	if not _glow_style_cache.has("default"):
-		var default_style := StyleBoxFlat.new()
-		default_style.bg_color = UIPalette.alpha(UIPalette.ABYSS, 0.72)
-		default_style.border_color = UIPalette.alpha(UIPalette.GOLD, 0.5)
-		default_style.border_width_left = 2
-		default_style.border_width_right = 2
-		default_style.border_width_top = 2
-		default_style.border_width_bottom = 2
-		default_style.corner_radius_top_left = 8
-		default_style.corner_radius_top_right = 8
-		default_style.corner_radius_bottom_left = 8
-		default_style.corner_radius_bottom_right = 8
-		_glow_style_cache["default"] = default_style
-	add_theme_stylebox_override("panel", _glow_style_cache["default"])
-	queue_redraw()
+	_set_style(_default_style())
 
 	if _hover_style == null:
-		_hover_style = StyleBoxFlat.new()
-		_hover_style.bg_color = UIPalette.alpha(UIPalette.HIGHLIGHT, 0.35)
-		_hover_style.border_color = UIPalette.alpha(UIPalette.GOLD_LIGHT, 0.7)
-		_hover_style.border_width_left = 2
-		_hover_style.border_width_right = 2
-		_hover_style.border_width_top = 2
-		_hover_style.border_width_bottom = 2
-	
-	# ✅ Cian para drop válido
+		_hover_style = _make_state_style(UIPalette.alpha(UIPalette.HIGHLIGHT, 0.4),
+			UIPalette.alpha(UIPalette.GOLD_LIGHT, 0.8), 2, Color.TRANSPARENT, 0)
+
+	# Cian tenue: posición válida mientras se arrastra una carta (todas a la vez)
+	if _available_drag_style == null:
+		_available_drag_style = _make_state_style(UIPalette.alpha(UIPalette.TARGET, 0.1),
+			UIPalette.alpha(UIPalette.TARGET, 0.65), 2, UIPalette.alpha(UIPalette.TARGET, 0.25), 8)
+
+	# ✅ Cian intenso: el cursor está sobre una posición válida
 	if _valid_drag_style == null:
-		_valid_drag_style = StyleBoxFlat.new()
-		_valid_drag_style.bg_color = UIPalette.alpha(UIPalette.TARGET, 0.22)
-		_valid_drag_style.border_color = UIPalette.TARGET
-		_valid_drag_style.border_width_left = 3
-		_valid_drag_style.border_width_right = 3
-		_valid_drag_style.border_width_top = 3
-		_valid_drag_style.border_width_bottom = 3
-		_valid_drag_style.shadow_color = UIPalette.alpha(UIPalette.TARGET, 0.55)
-		_valid_drag_style.shadow_size = 6
+		_valid_drag_style = _make_state_style(UIPalette.alpha(UIPalette.TARGET, 0.26),
+			UIPalette.TARGET, 3, UIPalette.alpha(UIPalette.TARGET, 0.6), 14)
 
 	# ❌ Naranja para drop inválido (se distingue del cian también por luminosidad)
 	if _invalid_drag_style == null:
-		_invalid_drag_style = StyleBoxFlat.new()
-		_invalid_drag_style.bg_color = UIPalette.alpha(UIPalette.INVALID, 0.15)
-		_invalid_drag_style.border_color = UIPalette.INVALID
-		_invalid_drag_style.border_width_left = 3
-		_invalid_drag_style.border_width_right = 3
-		_invalid_drag_style.border_width_top = 3
-		_invalid_drag_style.border_width_bottom = 3
-		_invalid_drag_style.shadow_color = UIPalette.alpha(UIPalette.INVALID, 0.4)
-		_invalid_drag_style.shadow_size = 4
+		_invalid_drag_style = _make_state_style(UIPalette.alpha(UIPalette.INVALID, 0.15),
+			UIPalette.INVALID, 3, UIPalette.alpha(UIPalette.INVALID, 0.4), 6)
 
 func _draw() -> void:
 	"""Control no dibuja panel stylebox automáticamente, hay que hacerlo manual"""
@@ -157,15 +217,7 @@ func _make_glow_style(color: Color) -> StyleBoxFlat:
 	var key := "%f-%f-%f-%f" % [color.r, color.g, color.b, color.a]
 	if _glow_style_cache.has(key):
 		return _glow_style_cache[key]
-	var s := StyleBoxFlat.new()
-	s.bg_color = Color(color.r, color.g, color.b, 0.28)
-	s.border_color = color
-	s.border_width_left = 3
-	s.border_width_right = 3
-	s.border_width_top = 3
-	s.border_width_bottom = 3
-	s.shadow_color = color
-	s.shadow_size = 6
+	var s := _make_state_style(Color(color.r, color.g, color.b, 0.28), color, 3, color, 10)
 	_glow_style_cache[key] = s
 	return s
 
@@ -203,42 +255,46 @@ func set_target_highlight(active: bool, color: Color = UIPalette.LIFE) -> void:
 # WATERMARK
 # ====================================================
 func _create_watermark():
-	"""Rótulo de la posición vacía (qué tipo de carta va ahí). Se oculta al colocar una carta."""
-	watermark_label = Label.new()
-	add_child(watermark_label)
-	watermark_label.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	watermark_label.offset_left = 6
-	watermark_label.offset_right = -6
-	watermark_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	watermark_label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	watermark_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	watermark_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-
+	"""Icono y rótulo de la posición vacía (qué tipo de carta va ahí). Se oculta al colocar una carta."""
 	var text := ""
-	var color := UIPalette.GOLD
 	match slot_type:
-		SlotType.KNIGHT:
-			text = "Caballero"
-			color = UIPalette.GOLD
-		SlotType.TECH_OBJECT:
-			text = "Técnica u objeto"
-			color = UIPalette.COSMOS
-		SlotType.HELPER:
-			text = "Ayudante"
-			color = UIPalette.HEAL
-		SlotType.SCENARIO:
-			text = "Escenario"
-			color = UIPalette.ABILITY
-		SlotType.OCCASION:
-			text = "Ocasión"
-			color = UIPalette.POWER
-
-	watermark_label.text = text
+		SlotType.KNIGHT: text = "CABALLERO"
+		SlotType.TECH_OBJECT: text = "TÉCNICA / OBJETO"
+		SlotType.HELPER: text = "AYUDANTE"
+		SlotType.SCENARIO: text = "ESCENARIO"
+		SlotType.OCCASION: text = "OCASIÓN"
 	# Discreto: orienta sin competir con las cartas; más tenue en el lado del rival
-	watermark_label.add_theme_color_override("font_color", UIPalette.alpha(color, 0.38 if is_opponent else 0.6))
-	watermark_label.add_theme_font_size_override("font_size", 13)
-	watermark_label.add_theme_constant_override("shadow_offset_x", 0)
-	watermark_label.add_theme_constant_override("shadow_offset_y", 0)
+	var color := UIPalette.alpha(_slot_color(), 0.3 if is_opponent else 0.5)
+
+	var box := VBoxContainer.new()
+	box.alignment = BoxContainer.ALIGNMENT_CENTER
+	box.add_theme_constant_override("separation", 6)
+	box.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(box)
+	box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	watermark_label = box
+
+	var icon := TextureRect.new()
+	icon.texture = load(SLOT_ICONS.get(slot_type, SLOT_ICONS[SlotType.KNIGHT]))
+	var icon_size := 44.0 if slot_type == SlotType.KNIGHT else 32.0
+	icon.custom_minimum_size = Vector2(icon_size, icon_size)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.size_flags_horizontal = Control.SIZE_SHRINK_CENTER
+	icon.modulate = color
+	icon.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(icon)
+
+	var label := Label.new()
+	label.text = text
+	label.theme_type_variation = &"Eyebrow"
+	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_font_size_override("font_size", 14)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	box.add_child(label)
+
 	watermark_label.visible = not is_occupied
 
 # ====================================================
@@ -371,6 +427,11 @@ func place_card(card_display: Control, animate: bool = true) -> void:
 		card_display.get_parent().remove_child(card_display)
 	add_child(card_display)
 	card_display.set_anchors_preset(Control.PRESET_TOP_LEFT)
+	# La carta toma el tamaño de la posición (las de apoyo son más pequeñas que las de mano)
+	if card_display.has_method("set_display_size"):
+		card_display.set_display_size(get_card_size())
+	card_display.scale = Vector2.ONE
+	card_display.rotation = 0.0
 	card_display.reset_size()
 	# position deferred so the slot has its final size from the container layout
 	call_deferred("_reposition_card")
@@ -454,29 +515,18 @@ func _on_mouse_entered() -> void:
 		_update_drag_glow()
 	elif not is_occupied and not is_opponent:
 		# Hover normal (sin drag)
-		add_theme_stylebox_override("panel", _hover_style)
-		queue_redraw()
+		_set_style(_hover_style)
 
 
 func _on_mouse_exited() -> void:
 	_is_mouse_over = false
-	# Remover cualquier estilo de drag
-	remove_theme_stylebox_override("panel")
-	add_theme_stylebox_override("panel", _glow_style_cache["default"])
-	queue_redraw()
+	_set_style(_rest_style())
 
 
 func _update_drag_glow() -> void:
 	"""Actualizar el glow visual según validez del drag"""
-	if _drag_valid:
-		# ✅ Verde: drop válido
-		add_theme_stylebox_override("panel", _valid_drag_style)
-		print("[CardSlot:%s] 🟢 Glow VÁLIDO (drop permitido)" % self.name)
-	else:
-		# ❌ Rojo: drop inválido
-		add_theme_stylebox_override("panel", _invalid_drag_style)
-		print("[CardSlot:%s] 🔴 Glow INVÁLIDO (drop bloqueado)" % self.name)
-	queue_redraw()
+	# Cian: drop válido · naranja: drop inválido
+	_set_style(_valid_drag_style if _drag_valid else _invalid_drag_style)
 
 
 # ====================================================
@@ -490,15 +540,29 @@ func notify_card_drag_started(card_display: Control, card_data: Dictionary) -> v
 	_current_dragging_card = card_display
 	var card_type: String = card_data.get("type", "")
 	card_type = _normalize_card_type(card_type)
-	
-	# Validar si este slot acepta este tipo de carta
-	_drag_valid = _validate_card_type(card_type) and not is_occupied
-	
-	print("[CardSlot:%s] 📍 Drag iniciado: %s (válido=%s)" % [self.name, card_data.get("name", "?"), _drag_valid])
-	
-	# Aplicar glow visual solo si el cursor está sobre nosotros
+
+	# Validar si este slot acepta esta carta: manda lo que dice el servidor (valid_actions)
+	# y, si no lo dice, el tipo de carta
+	var instance: CardInstance = card_display.get_instance() if card_display.has_method("get_instance") else null
+	var equip_targets = _equip_targets_of(instance)
+	_equip_mode = equip_targets != null
+	if is_opponent:
+		_drag_valid = false
+	elif _equip_mode:
+		# Objeto: solo valen los caballeros propios a los que el servidor permite equiparlo
+		_drag_valid = slot_type == SlotType.KNIGHT and is_occupied and card_instance != null \
+			and bool(instance.valid_actions.get("can_play", false)) \
+			and equip_targets.has(card_instance.instance_id)
+	elif instance != null and instance.valid_actions.has("can_play"):
+		_drag_valid = _server_allows_drop(instance.valid_actions)
+	else:
+		_drag_valid = _validate_card_type(card_type) and (not is_occupied or slot_type == SlotType.SCENARIO)
+
+	# Todas las posiciones válidas se iluminan a la vez; la que está bajo el cursor, más fuerte
 	if _is_mouse_over:
 		_update_drag_glow()
+	else:
+		_set_style(_rest_style())
 
 
 func notify_card_drag_ended() -> void:
@@ -519,11 +583,10 @@ func notify_card_drag_ended() -> void:
 		print("[CardSlot:%s] ❌ Drop cancelado - cursor fuera del slot" % self.name)
 	
 	_current_dragging_card = null
+	_drag_valid = false
+	_equip_mode = false
 	_is_mouse_over = false
-	remove_theme_stylebox_override("panel")
-	add_theme_stylebox_override("panel", _glow_style_cache["default"])
-	queue_redraw()
-	print("[CardSlot:%s] 📍 Drag finalizado" % self.name)
+	_set_style(_default_style())
 
 
 func _process_drop() -> void:
@@ -545,16 +608,39 @@ func _process_drop() -> void:
 	
 	var card_type: String = card_data.get("type", "")
 	card_type = _normalize_card_type(card_type)
-	
+
+	# Objeto soltado sobre un caballero propio: se juega en la fila de técnicas/objetos
+	# equipado a ese caballero (el servidor elige la posición)
+	if _equip_mode:
+		if not _drag_valid or card_instance == null:
+			print("[CardSlot:%s] ❌ Este objeto no se puede equipar a este caballero" % self.name)
+			return
+		card_dropped.emit({
+			"card_display": card_display,
+			"card_instance": card_display.get_instance(),
+			"card_type": card_type,
+			"target_slot": self,
+			"slot_type": SlotType.TECH_OBJECT,
+			"slot_index": slot_index,
+			"equip_target_id": card_instance.instance_id,
+		})
+		return
+
 	# Validar tipo de carta
 	print("[CardSlot:%s] 🔍 Validando tipo %s para slot %s" % [self.name, card_type, slot_type])
-	
+
 	if not _validate_card_type(card_type):
 		print("[CardSlot:%s] ❌ Tipo de carta %s no válido para este slot" % [self.name, card_type])
 		return
 	
-	if is_occupied:
+	# El escenario se puede jugar encima del activo: el servidor lo reemplaza
+	if is_occupied and slot_type != SlotType.SCENARIO:
 		print("[CardSlot:%s] ❌ Slot ocupado" % self.name)
+		return
+
+	# Mismo criterio que el resaltado: si la posición no se iluminó, no se juega aquí
+	if not _drag_valid:
+		print("[CardSlot:%s] ❌ El servidor no permite jugar esta carta aquí" % self.name)
 		return
 	
 	# ✅ Validación pasada - emitir el drop
@@ -570,6 +656,15 @@ func _process_drop() -> void:
 	}
 	
 	card_dropped.emit(payload)
+
+
+## Objetos: ids de los caballeros a los que el servidor permite equiparlo
+## (valid_actions.equip_targets). null si la carta no es un objeto equipable.
+func _equip_targets_of(instance: CardInstance) -> Variant:
+	if instance == null:
+		return null
+	var targets = instance.valid_actions.get("equip_targets", null)
+	return targets if targets is Array else null
 
 
 ## Zona (notación del cliente/servidor) que representa esta posición
@@ -648,11 +743,7 @@ func _normalize_card_type(raw_type: String) -> String:
 			return value
 
 func set_glow(enabled: bool, color: Color = UIPalette.SELECTED):
-	if enabled:
-		add_theme_stylebox_override("panel", _make_glow_style(color))
-	else:
-		add_theme_stylebox_override("panel", _glow_style_cache.get("default"))
-	queue_redraw()
+	_set_style(_make_glow_style(color) if enabled else _default_style())
 
 # ====================================================
 # UTIL / SIGNAL FORWARD

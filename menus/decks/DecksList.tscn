@@ -6,6 +6,9 @@
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/back.svg" id="4_back"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/decks.svg" id="5_decks"]
 [ext_resource type="Script" path="res://ui/ToastNotice.gd" id="6_toast"]
+[ext_resource type="Script" path="res://ui/BottomNavBar.gd" id="90_navbar"]
+
+[sub_resource type="StyleBoxEmpty" id="NoPanel"]
 
 [node name="DecksList" type="Control"]
 layout_mode = 3
@@ -37,7 +40,7 @@ grow_vertical = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_bottom = 132
 
 [node name="Layout" type="VBoxContainer" parent="Root"]
 layout_mode = 2
@@ -53,6 +56,7 @@ theme_override_constants/separation = 14
 
 [node name="BackButton" type="Button" parent="Root/Layout/Header/Row"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(130, 48)
 layout_mode = 2
 size_flags_vertical = 4
@@ -96,12 +100,13 @@ custom_minimum_size = Vector2(200, 48)
 layout_mode = 2
 size_flags_vertical = 4
 theme_type_variation = &"PlayButton"
-theme_override_font_sizes/font_size = 18
-text = "+ Nuevo mazo"
+theme_override_font_sizes/font_size = 24
+text = "+ NUEVO MAZO"
 
 [node name="ListPanel" type="PanelContainer" parent="Root/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_styles/panel = SubResource("NoPanel")
 
 [node name="VBox" type="VBoxContainer" parent="Root/Layout/ListPanel"]
 layout_mode = 2
@@ -120,11 +125,24 @@ layout_mode = 2
 size_flags_vertical = 3
 horizontal_scroll_mode = 0
 
-[node name="DecksContainer" type="VBoxContainer" parent="Root/Layout/ListPanel/VBox/ScrollContainer"]
+[node name="DecksContainer" type="HFlowContainer" parent="Root/Layout/ListPanel/VBox/ScrollContainer"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 12
+theme_override_constants/h_separation = 22
+theme_override_constants/v_separation = 22
+
+[node name="BottomNav" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -112.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("90_navbar")
+active_tab = "decks"
 
 [node name="CreateOverlay" type="ColorRect" parent="."]
 unique_name_in_owner = true

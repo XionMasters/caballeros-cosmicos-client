@@ -1,9 +1,13 @@
 extends Control
+## Botón principal JUGAR del lobby: busca rival por WebSocket y refleja el estado
+## de la búsqueda (inactivo con halo pulsante, buscando con spinner, bloqueado).
 
 @onready var button: Button = $Button
+@onready var glow: Panel = $Glow
 @onready var icon: TextureRect = $Content/Icon
 @onready var spinner: TextureRect = $Content/Spinner
-@onready var label: Label = $Content/StatusLabel
+@onready var label: Label = $Content/Texts/StatusLabel
+@onready var hint: Label = $Content/Texts/HintLabel
 @onready var overlay: ColorRect = $Overlay
 
 var spinning := false
@@ -12,6 +16,8 @@ var _glow_tween: Tween
 
 func _ready():
 	button.pressed.connect(_on_pressed)
+	button.mouse_entered.connect(_on_hover.bind(true))
+	button.mouse_exited.connect(_on_hover.bind(false))
 
 	MatchmakingService.searching_match.connect(_on_searching)
 	MatchmakingService.search_cancelled.connect(_on_cancelled)
@@ -29,6 +35,7 @@ func _process(delta):
 
 
 func _on_pressed():
+	_punch()
 	if MatchmakingService.is_searching:
 		MatchmakingService.cancel_search()
 	else:
@@ -46,7 +53,8 @@ func _set_idle_state():
 	overlay.visible = false
 	button.disabled = false
 	button.tooltip_text = "Buscar un rival en línea"
-	label.text = "BUSCAR PARTIDA"
+	label.text = "JUGAR"
+	hint.text = "BUSCAR RIVAL EN LÍNEA"
 	_start_idle_glow()
 
 
@@ -56,8 +64,9 @@ func _set_searching_state():
 	icon.visible = false
 	overlay.visible = false
 	button.tooltip_text = "Pulsa para cancelar la búsqueda"
-	label.text = "BUSCANDO… (CANCELAR)"
-	_stop_idle_glow()
+	label.text = "BUSCANDO…"
+	hint.text = "PULSA PARA CANCELAR"
+	_start_searching_glow()
 
 
 func _set_locked_state(text: String):
@@ -67,22 +76,49 @@ func _set_locked_state(text: String):
 	overlay.visible = true
 	button.disabled = true
 	label.text = text
-	_stop_idle_glow()
+	hint.text = "PREPARANDO EL CAMPO DE BATALLA"
+	_stop_glow()
 
 
-# Pulso suave para atraer la atención al botón principal
+# Halo que respira para atraer la atención al botón principal
 func _start_idle_glow():
-	_stop_idle_glow()
+	_stop_glow()
 	_glow_tween = create_tween().set_loops()
-	_glow_tween.tween_property(button, "self_modulate", Color(1.12, 1.08, 1.0), 1.4).set_trans(Tween.TRANS_SINE)
-	_glow_tween.tween_property(button, "self_modulate", Color.WHITE, 1.4).set_trans(Tween.TRANS_SINE)
+	_glow_tween.tween_property(glow, "modulate:a", 1.0, 1.2).set_trans(Tween.TRANS_SINE)
+	_glow_tween.tween_property(glow, "modulate:a", 0.35, 1.2).set_trans(Tween.TRANS_SINE)
 
 
-func _stop_idle_glow():
+# Buscando: halo más rápido, como un latido
+func _start_searching_glow():
+	_stop_glow()
+	_glow_tween = create_tween().set_loops()
+	_glow_tween.tween_property(glow, "modulate:a", 1.0, 0.45).set_trans(Tween.TRANS_SINE)
+	_glow_tween.tween_property(glow, "modulate:a", 0.2, 0.45).set_trans(Tween.TRANS_SINE)
+
+
+func _stop_glow():
 	if _glow_tween:
 		_glow_tween.kill()
 		_glow_tween = null
-	button.self_modulate = Color.WHITE
+	glow.modulate.a = 0.0
+
+
+func _on_hover(entered: bool) -> void:
+	if button.disabled:
+		return
+	pivot_offset = size / 2.0
+	var target := Vector2(1.04, 1.04) if entered else Vector2.ONE
+	create_tween().tween_property(self, "scale", target, 0.14) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+
+
+## Pequeño "golpe" al pulsar
+func _punch() -> void:
+	pivot_offset = size / 2.0
+	var tween := create_tween()
+	tween.tween_property(self, "scale", Vector2(0.95, 0.95), 0.06)
+	tween.tween_property(self, "scale", Vector2(1.04, 1.04), 0.16) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 
 
 # -------------------------------------------------------
@@ -98,7 +134,7 @@ func _on_cancelled():
 
 
 func _on_match_found(match_data: Dictionary):
-	_set_locked_state("¡PARTIDA ENCONTRADA!")
+	_set_locked_state("¡RIVAL!")
 
 	# Delegamos completamente la sesión
 	MatchSessionService.start_pvp_session(match_data)

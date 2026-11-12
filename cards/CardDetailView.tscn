@@ -74,27 +74,27 @@ layout_mode = 2
 
 [node name="HealthLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-text = "â¤ï¸ Salud: 10"
+text = "❤️ Salud: 10"
 
 [node name="AttackLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-text = "âš”ï¸ Ataque: 5"
+text = "⚔️ Ataque: 5"
 
 [node name="DefenseLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-text = "ðŸ›¡ï¸ Defensa: 3"
+text = "🛡️ Defensa: 3"
 
 [node name="CostLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-text = "ðŸ’« Cosmos: 2"
+text = "💫 Cosmos: 2"
 
 [node name="ConstellationLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer/StatsContainer"]
 layout_mode = 2
-text = "â­ Pegaso"
+text = "⭐ Pegaso"
 
 [node name="DescriptionLabel" type="Label" parent="Panel/MarginContainer/VBoxContainer"]
 layout_mode = 2
-text = "DescripciÃ³n de la carta..."
+text = "Descripción de la carta..."
 autowrap_mode = 2
 
 [node name="AddToDeckButton" type="Button" parent="Panel/MarginContainer/VBoxContainer"]

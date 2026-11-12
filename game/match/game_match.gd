@@ -24,7 +24,8 @@ extends Control
 @onready var opponent_piles: PilesPanel = $RootColumns/LeftColumn/LeftStack/OpponentPiles
 @onready var player_hand: HandLayout = $RootColumns/CenterColumn/PlayerHand/HandLayout
 @onready var opponent_hand_container: HandLayout = $RootColumns/CenterColumn/OpponentHand/HandLayout
-@onready var end_turn_button: Button = $RootColumns/RightColumn/PlayerEmpty/EndTurnButton
+@onready var end_turn_button: Button = $RootColumns/RightColumn/PlayerEmpty/EndTurnRow/EndTurnButton
+@onready var cosmo_orb: CosmoOrb = %CosmoOrb
 @onready var player_knight_slots_zone = $RootColumns/CenterColumn/PlayerKnights/plKnightsZone
 @onready var opponent_knight_slots_zone = $RootColumns/CenterColumn/OpponentKnights/opKnightsZone
 @onready var battle_background: Control = $BattleBackground  # BattleBackground.gd
@@ -151,6 +152,7 @@ func _setup_controllers() -> void:
 
 	# Paneles de estado
 	_status_controller = StatusPanelController.new(player_panel, opponent_panel, player_deck, opponent_deck, player_piles, opponent_piles)
+	_status_controller.cosmo_orb = cosmo_orb
 
 	# Orquestador de animaciones
 	var effects_mgr := MatchEffectsManager.new()

@@ -378,16 +378,20 @@ func cancel_search() -> void:
 		return
 	send_event("cancel_search", {})
 
-func play_card(match_id: String, card_id: String, zone: String = "", position: int = 0) -> void:
+func play_card(match_id: String, card_id: String, zone: String = "", position: int = 0, equip_target_id: String = "") -> void:
 	if not is_connected_to_server():
 		push_error("No conectado - no se puede enviar play_card")
 		return
-	send_match_event("play_card", {
+	var data := {
 		"match_id": match_id,
 		"card_id": card_id,
 		"zone": zone,
 		"position": position
-	})
+	}
+	# Objetos: caballero propio al que se equipa (valid_actions.equip_targets)
+	if not equip_target_id.is_empty():
+		data["equip_target_id"] = equip_target_id
+	send_match_event("play_card", data)
 
 func declare_attack(match_id: String, attacker_id: String, defender_id: String) -> void:
 	"""Declarar ataque en una partida
@@ -423,12 +427,12 @@ func send_change_defensive_mode(match_id: String, card_in_play_id: String, mode:
 		"mode": mode
 	})
 
-func send_charge_cosmos(match_id: String) -> void:
-	"""Cargar cosmo (+3 CP para el jugador)"""
+func send_charge_cosmos(match_id: String, knight_id: String) -> void:
+	"""Cargar cosmo: el caballero knight_id gasta su acción y el jugador gana cosmo"""
 	if not is_connected_to_server():
 		push_error("No conectado - no se puede enviar charge_cosmos")
 		return
-	send_match_event("charge_cosmos", {"match_id": match_id})
+	send_match_event("charge_cosmos", {"match_id": match_id, "knight_id": knight_id})
 
 func send_sacrifice_knight(match_id: String, card_in_play_id: String) -> void:
 	"""Sacrificar un caballero propio (-1 LP)"""

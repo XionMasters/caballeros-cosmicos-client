@@ -1,7 +1,7 @@
 extends Button
 
-const IDLE_TEXT := "Partida de prueba"
-const LOADING_TEXT := "Preparando partida…"
+const IDLE_TEXT := "PARTIDA DE PRUEBA"
+const LOADING_TEXT := "PREPARANDO PARTIDA…"
 
 var _active_match_id: String = ""
 var _confirm_dialog: ConfirmationDialog = null

@@ -27,15 +27,7 @@ func setup() -> void:
 		return
 
 	_button.pressed.connect(_on_end_turn_pressed)
-
-	var img_path := "res://assets/ui-icons/end_turn_button.png"
-	if ResourceLoader.exists(img_path):
-		var tex := load(img_path) as Texture2D
-		if tex:
-			_button.icon = tex
-	# Rótulo visible bajo el icono: antes solo había una flecha sin texto
-	_button.text = "Terminar turno"
-	_button.vertical_icon_alignment = VERTICAL_ALIGNMENT_TOP
+	# Estilo y tamaño vienen de la escena (variación PlayButton del tema)
 	_button.modulate = Color.WHITE
 
 	update_state()
@@ -48,6 +40,7 @@ func update_state() -> void:
 		return
 	var my_turn := is_local_player_turn()
 	_button.disabled = not my_turn
+	_button.text = "TERMINAR\nTURNO" if my_turn else "TURNO\nRIVAL"
 	_update_turn_indicator(my_turn)
 
 	var phase_dbg := str(MatchSessionService.game_state.current_phase) \

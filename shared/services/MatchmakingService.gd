@@ -8,6 +8,7 @@ signal searching_match
 signal search_cancelled
 signal match_found(match_data: Dictionary)
 signal match_error(message: String)
+signal ai_match_requested  # Se pidió partida contra la IA (la UI muestra la espera)
 signal connected_to_server
 signal disconnected_from_server
 
@@ -67,6 +68,19 @@ func search_match():
 	emit_signal("searching_match")
 
 	WebSocketManager.send_event("search_match", {})
+
+
+## Partida inmediata contra la IA del servidor. Si estaba buscando rival, el servidor
+## saca al jugador de la cola. Responde con match_found (o match_error).
+func request_ai_match():
+	if not WebSocketManager.is_connected_to_server():
+		emit_signal("match_error", "No conectado al servidor")
+		return
+	if is_searching:
+		cancel_search()
+	print("🤖 enviando request_ai_match")
+	emit_signal("ai_match_requested")
+	WebSocketManager.send_event("request_ai_match", {})
 
 
 func cancel_search():

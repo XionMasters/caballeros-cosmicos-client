@@ -7,11 +7,13 @@
 [ext_resource type="PackedScene" uid="uid://bkm3xrw8qaa" path="res://cards/CardBack.tscn" id="4_nhra7"]
 [ext_resource type="Script" uid="uid://43lk65ww7agb" path="res://game/match/MatchOptionsMenu.gd" id="5_match"]
 [ext_resource type="Script" uid="uid://dp3elij3xnl56" path="res://game/zones/CardZone.gd" id="6_d43fj"]
-[ext_resource type="Texture2D" uid="uid://dkraalehxqaon" path="res://assets/ui-icons/Designer.png" id="7_4gpco"]
 [ext_resource type="Script" uid="uid://bw5ydvi5j28b" path="res://game/deck/CardSlot.gd" id="7_u7rf6"]
 [ext_resource type="Script" uid="uid://ww1kn105pxpd" path="res://game/zones/TechniqueZone.gd" id="7_wyhu6"]
 [ext_resource type="PackedScene" uid="uid://bgymhenbjl2xc" path="res://game/zones/PilesPanel.tscn" id="8_piles"]
 [ext_resource type="Script" path="res://game/match/BattleBackground.gd" id="9_battlebg"]
+[ext_resource type="Script" path="res://game/match/CosmoOrb.gd" id="10_orb"]
+
+[sub_resource type="StyleBoxEmpty" id="NoPanel"]
 
 [node name="GameMatch" type="Control"]
 layout_mode = 3
@@ -47,12 +49,13 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_right = -20.0
 grow_horizontal = 2
 grow_vertical = 2
 theme_override_constants/separation = 0
 
 [node name="LeftColumn" type="Control" parent="RootColumns"]
-custom_minimum_size = Vector2(200, 0)
+custom_minimum_size = Vector2(296, 0)
 layout_direction = 1
 layout_mode = 2
 size_flags_horizontal = 4
@@ -61,15 +64,19 @@ size_flags_horizontal = 4
 layout_mode = 1
 anchors_preset = 9
 anchor_bottom = 1.0
-offset_right = 200.0
+offset_left = 18.0
+offset_top = 16.0
+offset_right = 296.0
+offset_bottom = -16.0
 grow_vertical = 2
 theme_override_constants/separation = 12
 
 [node name="OpponentPanel" parent="RootColumns/LeftColumn/LeftStack" instance=ExtResource("2_cacvx")]
 layout_mode = 2
+is_opponent = true
 
 [node name="OpponentDeck" type="Control" parent="RootColumns/LeftColumn/LeftStack"]
-custom_minimum_size = Vector2(0, 160)
+custom_minimum_size = Vector2(110, 160)
 layout_mode = 2
 script = ExtResource("3_toc0o")
 card_back_scene = ExtResource("4_nhra7")
@@ -82,7 +89,7 @@ layout_mode = 2
 size_flags_vertical = 3
 
 [node name="PlayerDeck" type="Control" parent="RootColumns/LeftColumn/LeftStack"]
-custom_minimum_size = Vector2(0, 160)
+custom_minimum_size = Vector2(110, 160)
 layout_mode = 2
 script = ExtResource("3_toc0o")
 card_back_scene = ExtResource("4_nhra7")
@@ -99,7 +106,7 @@ size_flags_horizontal = 3
 theme_override_constants/separation = 0
 
 [node name="OpponentHand" type="VBoxContainer" parent="RootColumns/CenterColumn"]
-custom_minimum_size = Vector2(0, 120)
+custom_minimum_size = Vector2(0, 84)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
@@ -107,6 +114,12 @@ size_flags_vertical = 0
 [node name="HandLayout" type="Control" parent="RootColumns/CenterColumn/OpponentHand"]
 layout_mode = 2
 script = ExtResource("3_kk4i8")
+card_spacing = -30.0
+fan_degrees = 3.0
+arc_height = 4.0
+fan_inverted = true
+vertical_offset = -42.0
+scale_override = 0.6
 
 [node name="OpponentCardsZone" type="VBoxContainer" parent="RootColumns/CenterColumn"]
 layout_mode = 2
@@ -161,7 +174,7 @@ is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="OpponentKnights" type="VBoxContainer" parent="RootColumns/CenterColumn"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 198)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
@@ -175,35 +188,35 @@ script = ExtResource("6_d43fj")
 metadata/_custom_type_script = "uid://dp3elij3xnl56"
 
 [node name="opKnightsSlot-1" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="opKnightsSlot-2" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="opKnightsSlot-3" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="opKnightsSlot-4" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="opKnightsSlot-5" type="Control" parent="RootColumns/CenterColumn/OpponentKnights/opKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 is_opponent = true
@@ -215,7 +228,7 @@ size_flags_horizontal = 3
 size_flags_vertical = 3
 
 [node name="PlayerKnights" type="VBoxContainer" parent="RootColumns/CenterColumn"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 198)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
@@ -229,37 +242,37 @@ script = ExtResource("6_d43fj")
 metadata/_custom_type_script = "uid://dp3elij3xnl56"
 
 [node name="plKnightsSlot-1" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="plKnightsSlot-2" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="plKnightsSlot-3" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="plKnightsSlot-4" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="plKnightsSlot-5" type="Control" parent="RootColumns/CenterColumn/PlayerKnights/plKnightsZone"]
-custom_minimum_size = Vector2(107, 140)
+custom_minimum_size = Vector2(132, 198)
 layout_mode = 2
 script = ExtResource("7_u7rf6")
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="PlayerCardsZone" type="VBoxContainer" parent="RootColumns/CenterColumn"]
-custom_minimum_size = Vector2(0, 200)
+custom_minimum_size = Vector2(0, 160)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
@@ -301,7 +314,7 @@ slot_type = 1
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="PlayerHand" type="VBoxContainer" parent="RootColumns/CenterColumn"]
-custom_minimum_size = Vector2(0, 150)
+custom_minimum_size = Vector2(0, 170)
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 0
@@ -309,9 +322,11 @@ size_flags_vertical = 0
 [node name="HandLayout" type="Control" parent="RootColumns/CenterColumn/PlayerHand"]
 layout_mode = 2
 script = ExtResource("3_kk4i8")
+hover_offset_y = -110.0
+vertical_offset = 28.0
 
 [node name="spRightColumn" type="VBoxContainer" parent="RootColumns"]
-custom_minimum_size = Vector2(100, 0)
+custom_minimum_size = Vector2(24, 0)
 layout_mode = 2
 
 [node name="RightColumn" type="VBoxContainer" parent="RootColumns"]
@@ -322,6 +337,7 @@ theme_override_constants/separation = 0
 [node name="TopRightPanel" type="PanelContainer" parent="RootColumns/RightColumn"]
 custom_minimum_size = Vector2(0, 64)
 layout_mode = 2
+theme_override_styles/panel = SubResource("NoPanel")
 
 [node name="HBoxContainer" type="HBoxContainer" parent="RootColumns/RightColumn/TopRightPanel"]
 layout_mode = 2
@@ -330,18 +346,22 @@ alignment = 2
 
 [node name="MenuButton" type="MenuButton" parent="RootColumns/RightColumn/TopRightPanel/HBoxContainer"]
 layout_mode = 2
+custom_minimum_size = Vector2(56, 56)
+tooltip_text = "Opciones de la partida"
+theme_type_variation = &"IconButton"
+theme_override_font_sizes/font_size = 28
 text = "⋮"
 flat = false
 script = ExtResource("5_match")
 
 [node name="OpponentEmpty" type="VBoxContainer" parent="RootColumns/RightColumn"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 3
 
 [node name="OpponentOcasion" type="VBoxContainer" parent="RootColumns/RightColumn"]
-custom_minimum_size = Vector2(150, 120)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
@@ -354,7 +374,7 @@ is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="OpponentAssist" type="VBoxContainer" parent="RootColumns/RightColumn"]
-custom_minimum_size = Vector2(150, 120)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
@@ -367,7 +387,7 @@ is_opponent = true
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="ScenarioZone" type="VBoxContainer" parent="RootColumns/RightColumn"]
-custom_minimum_size = Vector2(150, 120)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
@@ -384,7 +404,7 @@ size_flags_horizontal = 2
 size_flags_vertical = 3
 
 [node name="PlayerAssist" type="VBoxContainer" parent="RootColumns/RightColumn"]
-custom_minimum_size = Vector2(150, 120)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
@@ -396,7 +416,7 @@ slot_type = 2
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="PlayerOcasion" type="VBoxContainer" parent="RootColumns/RightColumn"]
-custom_minimum_size = Vector2(150, 120)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 0
@@ -408,17 +428,32 @@ slot_type = 4
 metadata/_custom_type_script = "uid://bw5ydvi5j28b"
 
 [node name="PlayerEmpty" type="VBoxContainer" parent="RootColumns/RightColumn"]
-custom_minimum_size = Vector2(150, 0)
+custom_minimum_size = Vector2(240, 0)
 layout_mode = 2
 size_flags_horizontal = 2
 size_flags_vertical = 3
 
-[node name="EndTurnButton" type="Button" parent="RootColumns/RightColumn/PlayerEmpty"]
-modulate = Color(1, 1, 1, 0.8)
-custom_minimum_size = Vector2(42, 42)
+[node name="EndTurnRow" type="HBoxContainer" parent="RootColumns/RightColumn/PlayerEmpty"]
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_vertical = 10
+theme_override_constants/separation = 10
+
+[node name="CosmoOrb" type="Control" parent="RootColumns/RightColumn/PlayerEmpty/EndTurnRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(88, 88)
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Tu cosmo"
+script = ExtResource("10_orb")
+
+[node name="EndTurnButton" type="Button" parent="RootColumns/RightColumn/PlayerEmpty/EndTurnRow"]
+custom_minimum_size = Vector2(140, 84)
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
 tooltip_text = "Pasar turno al rival"
-icon = ExtResource("7_4gpco")
-icon_alignment = 1
-expand_icon = true
+mouse_default_cursor_shape = 2
+theme_type_variation = &"PlayButton"
+theme_override_font_sizes/font_size = 24
+text = "TERMINAR
+TURNO"

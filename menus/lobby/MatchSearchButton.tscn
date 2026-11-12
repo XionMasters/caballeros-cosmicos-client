@@ -4,22 +4,48 @@
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/battle.svg" id="2_battle"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/spinner.svg" id="3_spinner"]
 
+[sub_resource type="StyleBoxFlat" id="Glow"]
+bg_color = Color(1, 0.784, 0.239, 0)
+corner_radius_top_left = 18
+corner_radius_top_right = 18
+corner_radius_bottom_right = 18
+corner_radius_bottom_left = 18
+skew = Vector2(0.18, 0)
+shadow_color = Color(1, 0.75, 0.2, 0.55)
+shadow_size = 34
+
 [node name="MatchSearchButton" type="Control"]
-custom_minimum_size = Vector2(280, 66)
+custom_minimum_size = Vector2(540, 124)
 layout_mode = 3
 anchors_preset = 0
-offset_right = 280.0
-offset_bottom = 66.0
+offset_right = 540.0
+offset_bottom = 124.0
 script = ExtResource("1_lwrlp")
+
+[node name="Glow" type="Panel" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 6.0
+offset_top = 6.0
+offset_right = -6.0
+offset_bottom = -2.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("Glow")
 
 [node name="Button" type="Button" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 2
 tooltip_text = "Buscar un rival en línea"
+mouse_default_cursor_shape = 2
 theme_type_variation = &"PlayButton"
 
 [node name="Content" type="HBoxContainer" parent="."]
@@ -27,38 +53,51 @@ layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_bottom = -8.0
 grow_horizontal = 2
 grow_vertical = 2
 mouse_filter = 2
-theme_override_constants/separation = 12
+theme_override_constants/separation = 18
 alignment = 1
 
 [node name="Icon" type="TextureRect" parent="Content"]
-custom_minimum_size = Vector2(38, 38)
+custom_minimum_size = Vector2(54, 54)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
-self_modulate = Color(0.25, 0.1, 0.02, 1)
+self_modulate = Color(0.17, 0.075, 0, 1)
 texture = ExtResource("2_battle")
 expand_mode = 1
 stretch_mode = 5
 
 [node name="Spinner" type="TextureRect" parent="Content"]
 visible = false
-custom_minimum_size = Vector2(34, 34)
+custom_minimum_size = Vector2(48, 48)
 layout_mode = 2
 size_flags_vertical = 4
 mouse_filter = 2
-self_modulate = Color(0.25, 0.1, 0.02, 1)
+self_modulate = Color(0.17, 0.075, 0, 1)
 texture = ExtResource("3_spinner")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="StatusLabel" type="Label" parent="Content"]
+[node name="Texts" type="VBoxContainer" parent="Content"]
+layout_mode = 2
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = -10
+
+[node name="StatusLabel" type="Label" parent="Content/Texts"]
 layout_mode = 2
 theme_type_variation = &"PlayLabel"
-text = "BUSCAR PARTIDA"
+theme_override_font_sizes/font_size = 58
+text = "JUGAR"
 vertical_alignment = 1
+
+[node name="HintLabel" type="Label" parent="Content/Texts"]
+layout_mode = 2
+theme_type_variation = &"PlayHint"
+text = "BUSCAR RIVAL EN LÍNEA"
 
 [node name="Overlay" type="ColorRect" parent="."]
 visible = false

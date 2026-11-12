@@ -5,28 +5,50 @@
 [ext_resource type="Script" uid="uid://vnjps8vkik5w" path="res://ui/OnlineUsersList.gd" id="3_users_list"]
 [ext_resource type="PackedScene" uid="uid://b2qw4o775im4n" path="res://menus/lobby/MatchSearchButton.tscn" id="4_qffja"]
 [ext_resource type="PackedScene" uid="uid://bkwqxojyefudc" path="res://menus/lobby/MatchTestButton.tscn" id="5_fpjcq"]
+[ext_resource type="PackedScene" path="res://menus/lobby/MatchAiButton.tscn" id="24_ai_button"]
+[ext_resource type="PackedScene" path="res://menus/matchsearch/MatchSearch.tscn" id="25_match_search"]
 [ext_resource type="Theme" path="res://ui/theme/cosmic_theme.tres" id="6_theme"]
 [ext_resource type="Script" path="res://menus/login/LoginBackground.gd" id="7_background"]
-[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/emblem.svg" id="8_emblem"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/profile.svg" id="9_profile"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/coin.svg" id="10_coin"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/logout.svg" id="11_logout"]
-[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/news.svg" id="12_news"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/users.svg" id="13_users"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/chat.svg" id="14_chat"]
-[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/sanctuary.svg" id="15_sanctuary"]
-[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/collection.svg" id="16_collection"]
-[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/decks.svg" id="17_decks"]
-[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/shop.svg" id="18_shop"]
 [ext_resource type="Script" path="res://ui/ToastNotice.gd" id="19_toast"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/lock.svg" id="20_lock"]
+[ext_resource type="Script" path="res://ui/BottomNavBar.gd" id="21_navbar"]
+[ext_resource type="Shader" path="res://assets/shaders/circle_mask.gdshader" id="22_circle"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/back.svg" id="23_close"]
+[ext_resource type="Texture2D" path="res://assets/ui-icons/packs/gold.svg" id="24_pack"]
 
-[sub_resource type="Gradient" id="BannerShadeGradient"]
-offsets = PackedFloat32Array(0, 0.45, 1)
-colors = PackedColorArray(0.02, 0.01, 0.07, 0, 0.02, 0.01, 0.07, 0.15, 0.02, 0.01, 0.07, 0.92)
+[sub_resource type="ShaderMaterial" id="AvatarMask"]
+shader = ExtResource("22_circle")
+shader_parameter/smoothness = 0.04
+shader_parameter/circle_size = 1.0
 
-[sub_resource type="GradientTexture2D" id="BannerShade"]
-gradient = SubResource("BannerShadeGradient")
+[sub_resource type="StyleBoxFlat" id="AvatarRing"]
+bg_color = Color(0.09, 0.05, 0.27, 1)
+border_width_left = 4
+border_width_top = 4
+border_width_right = 4
+border_width_bottom = 4
+border_color = Color(1, 0.784, 0.239, 1)
+corner_radius_top_left = 48
+corner_radius_top_right = 48
+corner_radius_bottom_right = 48
+corner_radius_bottom_left = 48
+shadow_color = Color(1, 0.784, 0.239, 0.35)
+shadow_size = 14
+anti_aliasing = true
+
+[sub_resource type="StyleBoxEmpty" id="Flat"]
+
+[sub_resource type="Gradient" id="FloorGradient"]
+offsets = PackedFloat32Array(0, 0.55, 1)
+colors = PackedColorArray(0.024, 0.012, 0.09, 0, 0.024, 0.012, 0.09, 0.35, 0.024, 0.012, 0.09, 0.92)
+
+[sub_resource type="GradientTexture2D" id="FloorShade"]
+gradient = SubResource("FloorGradient")
 fill_from = Vector2(0.5, 0)
 fill_to = Vector2(0.5, 1)
 
@@ -50,287 +72,287 @@ grow_vertical = 2
 mouse_filter = 2
 script = ExtResource("7_background")
 
-[node name="Root" type="MarginContainer" parent="."]
+[node name="FloorShade" type="TextureRect" parent="."]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
-theme_override_constants/margin_left = 24
-theme_override_constants/margin_top = 18
-theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
+mouse_filter = 2
+texture = SubResource("FloorShade")
+expand_mode = 1
 
-[node name="Layout" type="VBoxContainer" parent="Root"]
+[node name="TopBar" type="MarginContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 10
+anchor_right = 1.0
+offset_bottom = 120.0
+grow_horizontal = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 22
+theme_override_constants/margin_right = 36
+
+[node name="Row" type="HBoxContainer" parent="TopBar"]
 layout_mode = 2
 theme_override_constants/separation = 16
 
-[node name="Header" type="PanelContainer" parent="Root/Layout"]
+[node name="ProfileBadge" type="Button" parent="TopBar/Row"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(380, 96)
 layout_mode = 2
-theme_type_variation = &"HeaderPanel"
+size_flags_vertical = 0
+tooltip_text = "Ver tu perfil"
+mouse_default_cursor_shape = 2
+theme_override_styles/normal = SubResource("Flat")
+theme_override_styles/hover = SubResource("Flat")
+theme_override_styles/pressed = SubResource("Flat")
+theme_override_styles/focus = SubResource("Flat")
+flat = true
 
-[node name="HeaderContent" type="HBoxContainer" parent="Root/Layout/Header"]
-layout_mode = 2
-theme_override_constants/separation = 14
+[node name="Content" type="HBoxContainer" parent="TopBar/Row/ProfileBadge"]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/separation = 16
 
-[node name="Emblem" type="TextureRect" parent="Root/Layout/Header/HeaderContent"]
+[node name="AvatarRing" type="PanelContainer" parent="TopBar/Row/ProfileBadge/Content"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(60, 60)
-layout_mode = 2
-texture = ExtResource("8_emblem")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="TitleBox" type="VBoxContainer" parent="Root/Layout/Header/HeaderContent"]
+custom_minimum_size = Vector2(92, 92)
 layout_mode = 2
 size_flags_vertical = 4
-theme_override_constants/separation = -2
+mouse_filter = 2
+theme_override_styles/panel = SubResource("AvatarRing")
 
-[node name="Title" type="Label" parent="Root/Layout/Header/HeaderContent/TitleBox"]
+[node name="Avatar" type="TextureRect" parent="TopBar/Row/ProfileBadge/Content/AvatarRing"]
+unique_name_in_owner = true
+material = SubResource("AvatarMask")
+custom_minimum_size = Vector2(84, 84)
 layout_mode = 2
-theme_type_variation = &"TitleLabel"
-text = "SAINT SEIYA"
-
-[node name="Subtitle" type="Label" parent="Root/Layout/Header/HeaderContent/TitleBox"]
-layout_mode = 2
-theme_type_variation = &"Subtitle"
-text = "Trading Card Game Online"
-
-[node name="Spacer" type="Control" parent="Root/Layout/Header/HeaderContent"]
-layout_mode = 2
-size_flags_horizontal = 3
-
-[node name="UserChip" type="PanelContainer" parent="Root/Layout/Header/HeaderContent"]
-layout_mode = 2
+size_flags_horizontal = 4
 size_flags_vertical = 4
-theme_type_variation = &"Chip"
-
-[node name="Row" type="HBoxContainer" parent="Root/Layout/Header/HeaderContent/UserChip"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Icon" type="TextureRect" parent="Root/Layout/Header/HeaderContent/UserChip/Row"]
-custom_minimum_size = Vector2(26, 26)
-layout_mode = 2
+mouse_filter = 2
 texture = ExtResource("9_profile")
 expand_mode = 1
-stretch_mode = 5
+stretch_mode = 6
 
-[node name="UsernameLabel" type="Label" parent="Root/Layout/Header/HeaderContent/UserChip/Row"]
+[node name="Names" type="VBoxContainer" parent="TopBar/Row/ProfileBadge/Content"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 4
+mouse_filter = 2
+theme_override_constants/separation = -4
+
+[node name="UsernameLabel" type="Label" parent="TopBar/Row/ProfileBadge/Content/Names"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_override_font_sizes/font_size = 17
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 38
 text = "Caballero"
+text_overrun_behavior = 3
 
-[node name="CoinsChip" type="PanelContainer" parent="Root/Layout/Header/HeaderContent"]
+[node name="LevelLabel" type="Label" parent="TopBar/Row/ProfileBadge/Content/Names"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"Eyebrow"
+text = "NIVEL 1"
+
+[node name="Spacer" type="Control" parent="TopBar/Row"]
+layout_mode = 2
+size_flags_horizontal = 3
+mouse_filter = 2
+
+[node name="OnlineButton" type="Button" parent="TopBar/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(190, 56)
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Jugadores conectados"
+theme_type_variation = &"GhostButton"
+theme_override_constants/icon_max_width = 26
+text = "0 EN LÍNEA"
+icon = ExtResource("13_users")
+expand_icon = true
+
+[node name="CoinsChip" type="PanelContainer" parent="TopBar/Row"]
 layout_mode = 2
 size_flags_vertical = 4
 tooltip_text = "Monedas"
-theme_type_variation = &"Chip"
+theme_type_variation = &"CurrencyPill"
 
-[node name="Row" type="HBoxContainer" parent="Root/Layout/Header/HeaderContent/CoinsChip"]
+[node name="Row" type="HBoxContainer" parent="TopBar/Row/CoinsChip"]
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 10
 
-[node name="CoinIcon" type="TextureRect" parent="Root/Layout/Header/HeaderContent/CoinsChip/Row"]
+[node name="CoinIcon" type="TextureRect" parent="TopBar/Row/CoinsChip/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(26, 26)
+custom_minimum_size = Vector2(40, 40)
 layout_mode = 2
+size_flags_vertical = 4
 texture = ExtResource("10_coin")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="CoinsLabel" type="Label" parent="Root/Layout/Header/HeaderContent/CoinsChip/Row"]
+[node name="CoinsLabel" type="Label" parent="TopBar/Row/CoinsChip/Row"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(70, 0)
 layout_mode = 2
-theme_override_colors/font_color = Color(1, 0.86, 0.52, 1)
-theme_override_font_sizes/font_size = 18
+theme_type_variation = &"StatValue"
+theme_override_font_sizes/font_size = 34
 text = "0"
 
-[node name="LogoutButton" type="Button" parent="Root/Layout/Header/HeaderContent"]
+[node name="ChatButton" type="Button" parent="TopBar/Row"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(48, 48)
+custom_minimum_size = Vector2(60, 60)
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Chat y jugadores en línea"
+theme_type_variation = &"IconButton"
+theme_override_constants/icon_max_width = 30
+icon = ExtResource("14_chat")
+icon_alignment = 1
+expand_icon = true
+
+[node name="ChatBadge" type="PanelContainer" parent="TopBar/Row/ChatButton"]
+unique_name_in_owner = true
+visible = false
+layout_mode = 1
+anchors_preset = 1
+anchor_left = 1.0
+anchor_right = 1.0
+offset_left = -18.0
+offset_top = -8.0
+offset_right = 8.0
+offset_bottom = 16.0
+grow_horizontal = 0
+mouse_filter = 2
+theme_type_variation = &"Badge"
+
+[node name="ChatBadgeLabel" type="Label" parent="TopBar/Row/ChatButton/ChatBadge"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_type_variation = &"BadgeLabel"
+text = "1"
+horizontal_alignment = 1
+
+[node name="LogoutButton" type="Button" parent="TopBar/Row"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(60, 60)
 layout_mode = 2
 size_flags_vertical = 4
 tooltip_text = "Cerrar sesión"
-theme_override_constants/icon_max_width = 26
+theme_type_variation = &"IconButton"
+theme_override_constants/icon_max_width = 28
 icon = ExtResource("11_logout")
 icon_alignment = 1
 expand_icon = true
 
-[node name="Body" type="HBoxContainer" parent="Root/Layout"]
-layout_mode = 2
-size_flags_vertical = 3
-theme_override_constants/separation = 16
+[node name="Stage" type="MarginContainer" parent="."]
+layout_mode = 1
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+grow_horizontal = 2
+grow_vertical = 2
+mouse_filter = 2
+theme_override_constants/margin_left = 36
+theme_override_constants/margin_top = 132
+theme_override_constants/margin_right = 36
+theme_override_constants/margin_bottom = 136
 
-[node name="LeftColumn" type="VBoxContainer" parent="Root/Layout/Body"]
+[node name="Columns" type="HBoxContainer" parent="Stage"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = 32
+
+[node name="LeftColumn" type="VBoxContainer" parent="Stage/Columns"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(260, 0)
+custom_minimum_size = Vector2(370, 0)
 layout_mode = 2
-size_flags_horizontal = 3
-theme_override_constants/separation = 16
+theme_override_constants/separation = 14
 
-[node name="NewsPanel" type="PanelContainer" parent="Root/Layout/Body/LeftColumn"]
-layout_mode = 2
-size_flags_vertical = 3
-
-[node name="VBox" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/NewsPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Header" type="HBoxContainer" parent="Root/Layout/Body/LeftColumn/NewsPanel/VBox"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Icon" type="TextureRect" parent="Root/Layout/Body/LeftColumn/NewsPanel/VBox/Header"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-texture = ExtResource("12_news")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="NewsTitle" type="Label" parent="Root/Layout/Body/LeftColumn/NewsPanel/VBox/Header"]
+[node name="NewsTitle" type="Label" parent="Stage/Columns/LeftColumn"]
 layout_mode = 2
 theme_type_variation = &"SectionTitle"
-text = "Novedades"
+text = "NOVEDADES"
 
-[node name="HSeparator" type="HSeparator" parent="Root/Layout/Body/LeftColumn/NewsPanel/VBox"]
-layout_mode = 2
-
-[node name="NewsContent" type="RichTextLabel" parent="Root/Layout/Body/LeftColumn/NewsPanel/VBox"]
-layout_mode = 2
-size_flags_vertical = 3
-bbcode_enabled = true
-text = "[b]¡Bienvenido al Santuario![/b]
-
-[color=#f6c55a]✦ Última actualización[/color]
-• Chat en tiempo real
-• Nuevo menú principal
-• Mazos y colección conectados
-
-[color=#9fb8ff]✦ Próximamente[/color]
-• Nuevos sobres de cartas
-• Torneos semanales
-• Ranking de caballeros
-
-[color=#e7a6ff]✦ Evento especial[/color]
-Recibe monedas de bienvenida al registrarte."
-
-[node name="OnlineUsersPanel" type="PanelContainer" parent="Root/Layout/Body/LeftColumn"]
-layout_mode = 2
-size_flags_vertical = 3
-size_flags_stretch_ratio = 1.2
-
-[node name="VBoxContainer" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/OnlineUsersPanel"]
-layout_mode = 2
-theme_override_constants/separation = 8
-script = ExtResource("3_users_list")
-
-[node name="Header" type="HBoxContainer" parent="Root/Layout/Body/LeftColumn/OnlineUsersPanel/VBoxContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Icon" type="TextureRect" parent="Root/Layout/Body/LeftColumn/OnlineUsersPanel/VBoxContainer/Header"]
-custom_minimum_size = Vector2(24, 24)
-layout_mode = 2
-texture = ExtResource("13_users")
-expand_mode = 1
-stretch_mode = 5
-
-[node name="UsersTitle" type="Label" parent="Root/Layout/Body/LeftColumn/OnlineUsersPanel/VBoxContainer/Header"]
+[node name="NewsList" type="VBoxContainer" parent="Stage/Columns/LeftColumn"]
 unique_name_in_owner = true
 layout_mode = 2
-theme_type_variation = &"SectionTitle"
-text = "En línea (0)"
+theme_override_constants/separation = 12
 
-[node name="HSeparator" type="HSeparator" parent="Root/Layout/Body/LeftColumn/OnlineUsersPanel/VBoxContainer"]
-layout_mode = 2
-
-[node name="UsersScroll" type="ScrollContainer" parent="Root/Layout/Body/LeftColumn/OnlineUsersPanel/VBoxContainer"]
-layout_mode = 2
-size_flags_vertical = 3
-horizontal_scroll_mode = 0
-
-[node name="UsersList" type="VBoxContainer" parent="Root/Layout/Body/LeftColumn/OnlineUsersPanel/VBoxContainer/UsersScroll"]
+[node name="Center" type="VBoxContainer" parent="Stage/Columns"]
 unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_vertical = 3
+mouse_filter = 2
 theme_override_constants/separation = 6
 
-[node name="CenterColumn" type="VBoxContainer" parent="Root/Layout/Body"]
+[node name="DeckShowcase" type="Control" parent="Stage/Columns/Center"]
 unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.8
-theme_override_constants/separation = 16
-
-[node name="HeroBanner" type="PanelContainer" parent="Root/Layout/Body/CenterColumn"]
-unique_name_in_owner = true
-clip_contents = true
 layout_mode = 2
 size_flags_vertical = 3
-theme_type_variation = &"BannerPanel"
+tooltip_text = "Ver tus mazos"
+mouse_default_cursor_shape = 2
 
-[node name="BannerArt" type="TextureRect" parent="Root/Layout/Body/CenterColumn/HeroBanner"]
+[node name="DeckInfo" type="VBoxContainer" parent="Stage/Columns/Center"]
+layout_mode = 2
+mouse_filter = 2
+theme_override_constants/separation = -4
+
+[node name="DeckEyebrow" type="Label" parent="Stage/Columns/Center/DeckInfo"]
+layout_mode = 2
+theme_type_variation = &"Eyebrow"
+text = "MAZO ACTIVO"
+horizontal_alignment = 1
+
+[node name="DeckNameLabel" type="Label" parent="Stage/Columns/Center/DeckInfo"]
 unique_name_in_owner = true
 layout_mode = 2
-mouse_filter = 2
-texture = ExtResource("15_sanctuary")
-expand_mode = 1
-stretch_mode = 6
-
-[node name="BannerShade" type="TextureRect" parent="Root/Layout/Body/CenterColumn/HeroBanner"]
-layout_mode = 2
-mouse_filter = 2
-texture = SubResource("BannerShade")
-expand_mode = 1
-
-[node name="BannerContent" type="MarginContainer" parent="Root/Layout/Body/CenterColumn/HeroBanner"]
-layout_mode = 2
-theme_override_constants/margin_left = 32
-theme_override_constants/margin_top = 28
-theme_override_constants/margin_right = 32
-theme_override_constants/margin_bottom = 30
-
-[node name="VBox" type="VBoxContainer" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent"]
-layout_mode = 2
-theme_override_constants/separation = 10
-alignment = 2
-
-[node name="HeroTitle" type="Label" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox"]
-layout_mode = 2
-theme_type_variation = &"HeroTitle"
-text = "EL SANTUARIO TE ESPERA"
+theme_type_variation = &"TitleLabel"
+text = "Cargando mazo…"
 horizontal_alignment = 1
-autowrap_mode = 3
+text_overrun_behavior = 3
 
-[node name="HeroSubtitle" type="Label" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox"]
+[node name="DeckMetaRow" type="HBoxContainer" parent="Stage/Columns/Center/DeckInfo"]
 layout_mode = 2
+theme_override_constants/separation = 14
+alignment = 1
+
+[node name="DeckCountLabel" type="Label" parent="Stage/Columns/Center/DeckInfo/DeckMetaRow"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 4
 theme_type_variation = &"Subtitle"
-theme_override_font_sizes/font_size = 16
-text = "Enfrenta a otros caballeros en tiempo real o entrena tu mazo en una partida de prueba."
-horizontal_alignment = 1
-autowrap_mode = 3
+theme_override_font_sizes/font_size = 17
 
-[node name="Spacer" type="Control" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox"]
-custom_minimum_size = Vector2(0, 8)
+[node name="ChangeDeckButton" type="Button" parent="Stage/Columns/Center/DeckInfo/DeckMetaRow"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(0, 40)
 layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Elegir o editar tus mazos"
+theme_type_variation = &"GhostButton"
+theme_override_font_sizes/font_size = 17
+text = "CAMBIAR MAZO"
 
-[node name="VerifyNotice" type="PanelContainer" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox"]
+[node name="VerifyNotice" type="PanelContainer" parent="Stage/Columns/Center"]
 unique_name_in_owner = true
 visible = false
 layout_mode = 2
 size_flags_horizontal = 4
 theme_type_variation = &"Chip"
 
-[node name="Row" type="HBoxContainer" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox/VerifyNotice"]
+[node name="Row" type="HBoxContainer" parent="Stage/Columns/Center/VerifyNotice"]
 layout_mode = 2
 theme_override_constants/separation = 10
 
-[node name="Icon" type="TextureRect" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox/VerifyNotice/Row"]
+[node name="Icon" type="TextureRect" parent="Stage/Columns/Center/VerifyNotice/Row"]
 custom_minimum_size = Vector2(22, 22)
 layout_mode = 2
 size_flags_vertical = 4
@@ -338,152 +360,246 @@ texture = ExtResource("20_lock")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="Text" type="Label" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox/VerifyNotice/Row"]
+[node name="Text" type="Label" parent="Stage/Columns/Center/VerifyNotice/Row"]
 layout_mode = 2
 text = "Verifica tu email para jugar partidas"
 
-[node name="VerifyButton" type="Button" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox/VerifyNotice/Row"]
+[node name="VerifyButton" type="Button" parent="Stage/Columns/Center/VerifyNotice/Row"]
 unique_name_in_owner = true
 layout_mode = 2
-text = "Verificar email"
+theme_type_variation = &"AccentButton"
+theme_override_font_sizes/font_size = 18
+text = "VERIFICAR"
 
-[node name="PlayRow" type="HBoxContainer" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox"]
+[node name="PlaySpacer" type="Control" parent="Stage/Columns/Center"]
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+mouse_filter = 2
+
+[node name="PlayRow" type="HBoxContainer" parent="Stage/Columns/Center"]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_constants/separation = 0
+alignment = 1
+
+[node name="MatchButton" parent="Stage/Columns/Center/PlayRow" instance=ExtResource("4_qffja")]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(540, 124)
+layout_mode = 2
+
+[node name="TestRow" type="HBoxContainer" parent="Stage/Columns/Center"]
 layout_mode = 2
 theme_override_constants/separation = 14
 alignment = 1
 
-[node name="MatchButton" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox/PlayRow" instance=ExtResource("4_qffja")]
+[node name="AiButton" parent="Stage/Columns/Center/TestRow" instance=ExtResource("24_ai_button")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 66)
+custom_minimum_size = Vector2(263, 50)
 layout_mode = 2
 
-[node name="TestButton" parent="Root/Layout/Body/CenterColumn/HeroBanner/BannerContent/VBox/PlayRow" instance=ExtResource("5_fpjcq")]
+[node name="TestButton" parent="Stage/Columns/Center/TestRow" instance=ExtResource("5_fpjcq")]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(230, 66)
+custom_minimum_size = Vector2(263, 50)
 layout_mode = 2
+theme_type_variation = &"GhostButton"
+theme_override_constants/icon_max_width = 24
+theme_override_font_sizes/font_size = 19
 
-[node name="NavGrid" type="GridContainer" parent="Root/Layout/Body/CenterColumn"]
+[node name="RightColumn" type="VBoxContainer" parent="Stage/Columns"]
 unique_name_in_owner = true
+custom_minimum_size = Vector2(370, 0)
 layout_mode = 2
-theme_override_constants/h_separation = 16
-theme_override_constants/v_separation = 16
-columns = 4
+theme_override_constants/separation = 14
 
-[node name="LibraryButton" type="Button" parent="Root/Layout/Body/CenterColumn/NavGrid"]
-unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 168)
+[node name="RecordTitle" type="Label" parent="Stage/Columns/RightColumn"]
 layout_mode = 2
-size_flags_horizontal = 3
-tooltip_text = "Explora todas tus cartas"
-theme_type_variation = &"NavTile"
-theme_override_constants/icon_max_width = 84
-text = "Colección"
-icon = ExtResource("16_collection")
-icon_alignment = 1
-vertical_icon_alignment = 0
-expand_icon = true
+theme_type_variation = &"SectionTitle"
+text = "TU RÉCORD"
+horizontal_alignment = 2
 
-[node name="DecksButton" type="Button" parent="Root/Layout/Body/CenterColumn/NavGrid"]
+[node name="StatsGrid" type="GridContainer" parent="Stage/Columns/RightColumn"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 168)
 layout_mode = 2
-size_flags_horizontal = 3
-tooltip_text = "Construye y edita tus mazos"
-theme_type_variation = &"NavTile"
-theme_override_constants/icon_max_width = 84
-text = "Mazos"
-icon = ExtResource("17_decks")
-icon_alignment = 1
-vertical_icon_alignment = 0
-expand_icon = true
+theme_override_constants/h_separation = 12
+theme_override_constants/v_separation = 12
+columns = 2
 
-[node name="ShopButton" type="Button" parent="Root/Layout/Body/CenterColumn/NavGrid"]
+[node name="ShopPromo" type="Button" parent="Stage/Columns/RightColumn"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 168)
+custom_minimum_size = Vector2(0, 150)
 layout_mode = 2
-size_flags_horizontal = 3
 tooltip_text = "Compra y abre sobres"
+mouse_default_cursor_shape = 2
 theme_type_variation = &"NavTile"
-theme_override_constants/icon_max_width = 84
-text = "Tienda"
-icon = ExtResource("18_shop")
+theme_override_constants/icon_max_width = 64
+theme_override_font_sizes/font_size = 28
+text = "ABRIR SOBRES"
+icon = ExtResource("24_pack")
 icon_alignment = 1
 vertical_icon_alignment = 0
 expand_icon = true
 
-[node name="ProfileButton" type="Button" parent="Root/Layout/Body/CenterColumn/NavGrid"]
+[node name="SocialDrawer" type="PanelContainer" parent="."]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(0, 168)
+visible = false
+layout_mode = 1
+anchors_preset = 11
+anchor_left = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = -500.0
+offset_top = 128.0
+offset_right = -28.0
+offset_bottom = -132.0
+grow_horizontal = 0
+grow_vertical = 2
+theme_type_variation = &"BannerPanel"
+
+[node name="Margin" type="MarginContainer" parent="SocialDrawer"]
+layout_mode = 2
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 18
+
+[node name="VBox" type="VBoxContainer" parent="SocialDrawer/Margin"]
+layout_mode = 2
+theme_override_constants/separation = 14
+
+[node name="Header" type="HBoxContainer" parent="SocialDrawer/Margin/VBox"]
+layout_mode = 2
+
+[node name="Title" type="Label" parent="SocialDrawer/Margin/VBox/Header"]
 layout_mode = 2
 size_flags_horizontal = 3
-tooltip_text = "Avatar, dorsos y estadísticas"
-theme_type_variation = &"NavTile"
-theme_override_constants/icon_max_width = 84
-text = "Perfil"
-icon = ExtResource("9_profile")
+theme_type_variation = &"TitleLabel"
+theme_override_font_sizes/font_size = 34
+text = "COMUNIDAD"
+
+[node name="CloseDrawerButton" type="Button" parent="SocialDrawer/Margin/VBox/Header"]
+unique_name_in_owner = true
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+size_flags_vertical = 4
+tooltip_text = "Cerrar"
+theme_type_variation = &"IconButton"
+theme_override_constants/icon_max_width = 22
+icon = ExtResource("23_close")
 icon_alignment = 1
-vertical_icon_alignment = 0
 expand_icon = true
 
-[node name="ChatPanel" type="PanelContainer" parent="Root/Layout/Body"]
+[node name="OnlineUsersPanel" type="PanelContainer" parent="SocialDrawer/Margin/VBox"]
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 0.7
+
+[node name="VBoxContainer" type="VBoxContainer" parent="SocialDrawer/Margin/VBox/OnlineUsersPanel"]
+layout_mode = 2
+theme_override_constants/separation = 8
+script = ExtResource("3_users_list")
+
+[node name="Header" type="HBoxContainer" parent="SocialDrawer/Margin/VBox/OnlineUsersPanel/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="SocialDrawer/Margin/VBox/OnlineUsersPanel/VBoxContainer/Header"]
+custom_minimum_size = Vector2(24, 24)
+layout_mode = 2
+texture = ExtResource("13_users")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="UsersTitle" type="Label" parent="SocialDrawer/Margin/VBox/OnlineUsersPanel/VBoxContainer/Header"]
 unique_name_in_owner = true
-custom_minimum_size = Vector2(300, 0)
+layout_mode = 2
+theme_type_variation = &"SectionTitle"
+text = "En línea (0)"
+
+[node name="UsersScroll" type="ScrollContainer" parent="SocialDrawer/Margin/VBox/OnlineUsersPanel/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+horizontal_scroll_mode = 0
+
+[node name="UsersList" type="VBoxContainer" parent="SocialDrawer/Margin/VBox/OnlineUsersPanel/VBoxContainer/UsersScroll"]
+unique_name_in_owner = true
 layout_mode = 2
 size_flags_horizontal = 3
-size_flags_stretch_ratio = 1.25
+size_flags_vertical = 3
+theme_override_constants/separation = 6
+
+[node name="ChatPanel" type="PanelContainer" parent="SocialDrawer/Margin/VBox"]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_vertical = 3
+size_flags_stretch_ratio = 1.6
 script = ExtResource("2_chat_panel")
 
-[node name="MarginContainer" type="MarginContainer" parent="Root/Layout/Body/ChatPanel"]
+[node name="MarginContainer" type="MarginContainer" parent="SocialDrawer/Margin/VBox/ChatPanel"]
 layout_mode = 2
 
-[node name="VBoxContainer" type="VBoxContainer" parent="Root/Layout/Body/ChatPanel/MarginContainer"]
-layout_mode = 2
-theme_override_constants/separation = 8
-
-[node name="Header" type="HBoxContainer" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer"]
+[node name="VBoxContainer" type="VBoxContainer" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Icon" type="TextureRect" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer/Header"]
+[node name="Header" type="HBoxContainer" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="Icon" type="TextureRect" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer/VBoxContainer/Header"]
 custom_minimum_size = Vector2(24, 24)
 layout_mode = 2
 texture = ExtResource("14_chat")
 expand_mode = 1
 stretch_mode = 5
 
-[node name="ChatTitle" type="Label" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer/Header"]
+[node name="ChatTitle" type="Label" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer/VBoxContainer/Header"]
 layout_mode = 2
 theme_type_variation = &"SectionTitle"
 text = "Chat global"
 
-[node name="HSeparator" type="HSeparator" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer"]
-layout_mode = 2
-
-[node name="MessagesScroll" type="ScrollContainer" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer"]
+[node name="MessagesScroll" type="ScrollContainer" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 size_flags_vertical = 3
 follow_focus = true
 horizontal_scroll_mode = 0
 
-[node name="MessagesContainer" type="VBoxContainer" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer/MessagesScroll"]
+[node name="MessagesContainer" type="VBoxContainer" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer/VBoxContainer/MessagesScroll"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 6
 
-[node name="InputPanel" type="HBoxContainer" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer"]
+[node name="InputPanel" type="HBoxContainer" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer/VBoxContainer"]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="MessageInput" type="LineEdit" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer/InputPanel"]
+[node name="MessageInput" type="LineEdit" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer/VBoxContainer/InputPanel"]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Escribe un mensaje..."
 max_length = 500
 
-[node name="SendButton" type="Button" parent="Root/Layout/Body/ChatPanel/MarginContainer/VBoxContainer/InputPanel"]
+[node name="SendButton" type="Button" parent="SocialDrawer/Margin/VBox/ChatPanel/MarginContainer/VBoxContainer/InputPanel"]
 layout_mode = 2
-text = "Enviar"
+theme_type_variation = &"AccentButton"
+theme_override_font_sizes/font_size = 18
+text = "ENVIAR"
+
+[node name="BottomNav" type="PanelContainer" parent="."]
+unique_name_in_owner = true
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -112.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("21_navbar")
+
+[node name="MatchSearch" parent="." instance=ExtResource("25_match_search")]
+unique_name_in_owner = true
+layout_mode = 1
 
 [node name="Toast" type="PanelContainer" parent="."]
 unique_name_in_owner = true

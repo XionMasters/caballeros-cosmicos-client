@@ -6,6 +6,9 @@
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/back.svg" id="4_back"]
 [ext_resource type="Texture2D" path="res://assets/ui-icons/lobby/collection.svg" id="5_collection"]
 [ext_resource type="Script" path="res://ui/ToastNotice.gd" id="6_toast"]
+[ext_resource type="Script" path="res://ui/BottomNavBar.gd" id="90_navbar"]
+
+[sub_resource type="StyleBoxEmpty" id="NoPanel"]
 
 [sub_resource type="ButtonGroup" id="RarityGroup"]
 
@@ -39,7 +42,7 @@ grow_vertical = 2
 theme_override_constants/margin_left = 24
 theme_override_constants/margin_top = 18
 theme_override_constants/margin_right = 24
-theme_override_constants/margin_bottom = 20
+theme_override_constants/margin_bottom = 132
 
 [node name="Layout" type="VBoxContainer" parent="Root"]
 layout_mode = 2
@@ -55,6 +58,7 @@ theme_override_constants/separation = 14
 
 [node name="BackButton" type="Button" parent="Root/Layout/Header/Row"]
 unique_name_in_owner = true
+visible = false
 custom_minimum_size = Vector2(130, 48)
 layout_mode = 2
 size_flags_vertical = 4
@@ -141,31 +145,36 @@ layout_mode = 2
 toggle_mode = true
 button_pressed = true
 button_group = SubResource("RarityGroup")
-text = "Todas"
+theme_type_variation = &"FilterChip"
+text = "TODAS"
 
 [node name="common" type="Button" parent="Root/Layout/Toolbar/Row/Rarities"]
 layout_mode = 2
 toggle_mode = true
 button_group = SubResource("RarityGroup")
-text = "Común"
+theme_type_variation = &"FilterChip"
+text = "COMÚN"
 
 [node name="rare" type="Button" parent="Root/Layout/Toolbar/Row/Rarities"]
 layout_mode = 2
 toggle_mode = true
 button_group = SubResource("RarityGroup")
-text = "Rara"
+theme_type_variation = &"FilterChip"
+text = "RARA"
 
 [node name="epic" type="Button" parent="Root/Layout/Toolbar/Row/Rarities"]
 layout_mode = 2
 toggle_mode = true
 button_group = SubResource("RarityGroup")
-text = "Épica"
+theme_type_variation = &"FilterChip"
+text = "ÉPICA"
 
 [node name="legendary" type="Button" parent="Root/Layout/Toolbar/Row/Rarities"]
 layout_mode = 2
 toggle_mode = true
 button_group = SubResource("RarityGroup")
-text = "Legendaria"
+theme_type_variation = &"FilterChip"
+text = "LEGENDARIA"
 
 [node name="ShowAllToggle" type="CheckButton" parent="Root/Layout/Toolbar/Row"]
 unique_name_in_owner = true
@@ -176,6 +185,7 @@ text = "Ver catálogo completo"
 [node name="GridPanel" type="PanelContainer" parent="Root/Layout"]
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_styles/panel = SubResource("NoPanel")
 
 [node name="VBox" type="VBoxContainer" parent="Root/Layout/GridPanel"]
 layout_mode = 2
@@ -201,6 +211,18 @@ size_flags_horizontal = 3
 theme_override_constants/h_separation = 16
 theme_override_constants/v_separation = 16
 alignment = 1
+
+[node name="BottomNav" type="PanelContainer" parent="."]
+layout_mode = 1
+anchors_preset = 12
+anchor_top = 1.0
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_top = -112.0
+grow_horizontal = 2
+grow_vertical = 0
+script = ExtResource("90_navbar")
+active_tab = "collection"
 
 [node name="Toast" type="PanelContainer" parent="."]
 unique_name_in_owner = true

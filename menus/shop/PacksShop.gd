@@ -5,12 +5,14 @@ extends Control
 
 const PACK_CARD_SCENE = preload("res://menus/packs/PackCard.tscn")
 
-# Probabilidades por carta (mismos pesos que RARITY_WEIGHTS del servidor)
+# Probabilidad (%) de cada carta del sobre: rarityProbabilities() de domain/packs/PackConfig.ts
 const RARITY_PROBABILITIES = {
-	"common": 60,
-	"rare": 25,
-	"epic": 12,
-	"legendary": 3
+	"common": 49.7439,
+	"uncommon": 34.8208,
+	"rare": 13.9283,
+	"epic": 1.44093,
+	"legendary": 0.06007,
+	"divine": 0.006,
 }
 
 @onready var back_button: Button = %BackButton
@@ -100,6 +102,9 @@ func _refresh_affordability() -> void:
 # ============================================================================
 
 func buy_pack(pack_data: Dictionary):
+	if pack_data.get("coming_soon", false) == true:
+		toast.show_message("Este sobre estará disponible próximamente", true)
+		return
 	var price := int(pack_data.get("price", 0))
 	if user_currency < price:
 		toast.show_message("Te faltan %s monedas para este sobre" % PackArt.format_coins(price - user_currency), true)
@@ -193,9 +198,9 @@ func _create_owned_pack(user_pack: Dictionary) -> Control:
 	info.add_child(quantity)
 
 	var open_button := Button.new()
-	open_button.text = "Abrir"
+	open_button.text = "ABRIR"
 	open_button.theme_type_variation = &"PlayButton"
-	open_button.add_theme_font_size_override("font_size", 16)
+	open_button.add_theme_font_size_override("font_size", 22)
 	open_button.pressed.connect(func(): _open_pack(str(user_pack.get("id", ""))))
 	info.add_child(open_button)
 	return card
@@ -211,7 +216,7 @@ func _open_pack(user_pack_id: String) -> void:
 	PacksManager.open_pack(user_pack_id)
 
 
-func _on_pack_opened(user_pack_id: String, pack_name: String, cards: Array, new_currency: int):
+func _on_pack_opened(user_pack_id: String, pack_name: String, cards: Array, new_currency: int, result: Dictionary):
 	if user_pack_id != _opening_user_pack_id:
 		return
 	_busy = false
@@ -220,8 +225,11 @@ func _on_pack_opened(user_pack_id: String, pack_name: String, cards: Array, new_
 	if new_currency != user_currency:
 		user_currency = new_currency
 		update_currency_display()
-	pack_opening_result.show_cards(pack_name, cards)
+	var pack: Dictionary = result.get("pack", {}) if result.get("pack") is Dictionary else {}
+	pack_opening_result.show_cards(pack_name, cards, pack)
 	PacksManager.fetch_user_packs()
+	# El progreso de la garantía cambió: refrescar el aviso de cada sobre
+	PacksManager.fetch_available_packs()
 
 
 func _on_pack_result_closed():
@@ -255,7 +263,7 @@ func show_probabilities(pack_data: Dictionary):
 	intro.text = "Probabilidad de cada carta del sobre:"
 	vbox.add_child(intro)
 
-	for rarity in ["common", "rare", "epic", "legendary"]:
+	for rarity in UIPalette.RARITY_ORDER:
 		var hbox := HBoxContainer.new()
 		hbox.add_theme_constant_override("separation", 10)
 
@@ -268,7 +276,9 @@ func show_probabilities(pack_data: Dictionary):
 		var progress := ProgressBar.new()
 		progress.custom_minimum_size = Vector2(200, 22)
 		progress.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-		progress.value = RARITY_PROBABILITIES[rarity]
+		progress.step = 0.0
+		# Escala raíz para que las rarezas muy bajas se vean (el número da el valor exacto)
+		progress.value = sqrt(RARITY_PROBABILITIES[rarity] / 100.0) * 100.0
 		progress.show_percentage = false
 		var fill := StyleBoxFlat.new()
 		fill.bg_color = PackArt.rarity_color(rarity)
@@ -276,23 +286,37 @@ func show_probabilities(pack_data: Dictionary):
 		hbox.add_child(progress)
 
 		var percent := Label.new()
-		percent.text = "%d%%" % RARITY_PROBABILITIES[rarity]
-		percent.custom_minimum_size = Vector2(40, 0)
+		percent.text = _format_percent(RARITY_PROBABILITIES[rarity])
+		percent.custom_minimum_size = Vector2(80, 0)
+		percent.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 		hbox.add_child(percent)
 		vbox.add_child(hbox)
 
-	var guaranteed = pack_data.get("guaranteed_rarity")
-	if guaranteed:
-		var note := Label.new()
-		note.text = "Garantizado: al menos una carta %s. Si no sale antes, la última lo será." % PackArt.rarity_label(str(guaranteed)).to_lower()
-		note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-		note.add_theme_color_override("font_color", PackArt.rarity_color(str(guaranteed)))
-		vbox.add_child(note)
+	# Garantía: cada N sobres seguidos sin épica o superior, el siguiente trae una
+	var threshold := int(pack_data.get("pity_threshold", 10))
+	var note := Label.new()
+	note.text = "Si abres %d sobres seguidos sin ninguna épica o superior, el siguiente trae una épica asegurada." % threshold
+	var progress_data: Dictionary = pack_data.get("progress", {}) if pack_data.get("progress") is Dictionary else {}
+	if not progress_data.is_empty():
+		var remaining := int(progress_data.get("packs_until_guarantee", threshold))
+		note.text += "\nPara ti: " + ("el próximo sobre la trae." if remaining <= 1 else "faltan %d sobres." % remaining)
+	note.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	note.add_theme_color_override("font_color", PackArt.rarity_color("epic"))
+	vbox.add_child(note)
 
 	dialog.add_child(vbox)
 	dialog.visibility_changed.connect(func(): if not dialog.visible: dialog.queue_free())
 	add_child(dialog)
 	dialog.popup_centered()
+
+
+## 49.7439 → "49,74 %"; 0.006 → "0,006 %"
+static func _format_percent(value: float) -> String:
+	var decimals := 2 if value >= 1.0 else (3 if value >= 0.01 else 4)
+	var text := String.num(value, decimals)
+	if "." in text:
+		text = text.rstrip("0").rstrip(".")
+	return text.replace(".", ",") + " %"
 
 
 # ============================================================================

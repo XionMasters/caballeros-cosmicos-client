@@ -1,4 +1,4 @@
-# TechniqueZone.gd (CORREGIDO)
+# TechniqueZone.gd
 # Zona especializada para técnicas (5 slots de técnicas)
 extends CardZone
 class_name TechniqueZone

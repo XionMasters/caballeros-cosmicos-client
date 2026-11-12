@@ -15,12 +15,10 @@ var scene_paths = {
 	"mainlobby": "res://menus/lobby/MainLobby.tscn",
 	"mycards": "res://menus/cards/CardsCollection.tscn",
 	"profile": "res://menus/profile/ProfileScene.tscn",
-	"matchsearch": "res://menus/matchsearch/MatchSearch.tscn",
 	"shop": "res://menus/shop/PacksShop.tscn",
 	"decks": "res://menus/decks/DecksList.tscn",
 
 	"deck_builder": "res://menus/deckbuilder/DeckBuilder.tscn",
-	"game": "res://game/board/GameBoard.tscn",
 	"gamematch": "res://game/match/GameMatch.tscn",
 	"login": "res://menus/login/LoginScreen.tscn",
 	"battle_summary": "res://menus/battle_summary/BattleSummary.tscn",

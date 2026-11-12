@@ -14,7 +14,15 @@ const TEXTURES := {
 
 # El servidor guarda algunas rarezas en español; se aceptan ambas formas
 const RARITY_ALIASES := {
-	"comun": "common", "rara": "rare", "epica": "epic", "legendaria": "legendary", "divina": "divine",
+	"comun": "common", "poco_comun": "uncommon", "rara": "rare", "epica": "epic", "legendaria": "legendary", "divina": "divine",
+}
+
+## Arte de cada sobre de la tienda por su `code` (src/config/packs.config.ts del servidor)
+const TIER_BY_CODE := {
+	"santuario": "gold",
+	"santuario_black_saints": "mega",
+	"poseidon": "silver",
+	"omega": "bronze",
 }
 
 
@@ -24,7 +32,10 @@ static func normalize_rarity(rarity: String) -> String:
 
 
 static func tier_for(pack: Dictionary) -> String:
-	"""Categoría visual: por nombre si es explícito, si no por la rareza garantizada"""
+	"""Categoría visual: por code, por nombre si es explícito, si no por la rareza garantizada"""
+	var code := str(pack.get("code", "")) if pack.get("code") != null else ""
+	if TIER_BY_CODE.has(code):
+		return TIER_BY_CODE[code]
 	var name := str(pack.get("name", "")).to_lower()
 	if "mega" in name:
 		return "mega"
@@ -50,6 +61,7 @@ static func texture_for(pack: Dictionary) -> Texture2D:
 static func rarity_label(rarity: String) -> String:
 	match normalize_rarity(rarity):
 		"common": return "Común"
+		"uncommon": return "Poco común"
 		"rare": return "Rara"
 		"epic": return "Épica"
 		"legendary": return "Legendaria"
@@ -60,6 +72,7 @@ static func rarity_label(rarity: String) -> String:
 static func rarity_color(rarity: String) -> Color:
 	match normalize_rarity(rarity):
 		"common": return Color(0.8, 0.8, 0.85)
+		"uncommon": return Color(0.36, 0.77, 0.42)
 		"rare": return Color(0.45, 0.7, 1.0)
 		"epic": return Color(0.78, 0.5, 1.0)
 		"legendary": return Color(1.0, 0.82, 0.3)

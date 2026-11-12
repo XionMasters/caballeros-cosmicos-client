@@ -5,7 +5,8 @@ extends Node
 signal available_packs_loaded(packs: Array)
 signal user_packs_loaded(user_packs: Array)
 signal pack_purchased(user_pack_id: String, pack_data: Dictionary, new_currency: int)
-signal pack_opened(user_pack_id: String, pack_name: String, cards: Array, new_currency: int)
+## `result`: respuesta completa de /packs/open (pack, guarantee, progress…)
+signal pack_opened(user_pack_id: String, pack_name: String, cards: Array, new_currency: int, result: Dictionary)
 signal error_occurred(message: String)
 
 var _service: PackService = null
@@ -109,7 +110,7 @@ func _on_api_request_completed(tag: String, success: bool, data: Variant, error:
 				var new_currency: int = payload.get("currency", UserManager.get_currency())
 				if new_currency != UserManager.get_currency():
 					UserManager.update_currency(new_currency)
-				pack_opened.emit(payload.get("user_pack_id", ""), pack_name, cards, new_currency)
+				pack_opened.emit(payload.get("user_pack_id", ""), pack_name, cards, new_currency, payload)
 				return
 			else:
 				error_occurred.emit(error if error else "No se pudo abrir el sobre")
