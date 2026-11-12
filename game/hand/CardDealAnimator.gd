@@ -19,6 +19,8 @@ var card_scale: Vector2 = Vector2.ZERO  # Se inicializa en _ready() o constructo
 var deal_duration: float = 0.5
 var delay_between_cards: float = 0.15
 var target_scale: Vector2 = Vector2.ZERO  # Se inicializa en _ready() o constructor
+## Tamaño relativo con el que la carta sale del mazo (respecto de su tamaño en la mano)
+const DECK_START_RATIO := 0.7
 
 # ============================================================================
 # CONSTRUCTOR
@@ -33,30 +35,16 @@ func _init(p_card_template: PackedScene, p_hand: Control, p_deck_pos: Vector2) -
 # LIFECYCLE
 # ============================================================================
 func _ready() -> void:
-	"""Inicializar escalas desde CardSizeConfig (autoload)"""
-	if CardSizeConfig:
-		# CardSizeConfig retorna tamaños absolutos en píxeles
-		# Convertir a escalas relativas (base = 120x168)
-		var deck_size = CardSizeConfig.get_deck_card_size()
-		var hand_size = CardSizeConfig.get_hand_card_size()
-		var base_size = Vector2(120, 168)  # Tamaño base de CardDisplay
-		
-		# Calcular escalas dividiendo tamaño por base
-		if deck_size != Vector2.ZERO:
-			card_scale = deck_size / base_size
-		else:
-			card_scale = Vector2(0.7, 0.7)  # Fallback
-		
-		if hand_size != Vector2.ZERO:
-			target_scale = hand_size / base_size
-		else:
-			target_scale = Vector2.ONE  # Fallback
-		
-		print("[CardDealAnimator] 🎯 Escalas calculadas: deck=%.2fx%.2f → hand=%.2fx%.2f" % [card_scale.x, card_scale.y, target_scale.x, target_scale.y])
-	else:
-		card_scale = Vector2(0.7, 0.7)
-		target_scale = Vector2.ONE
-		print("[CardDealAnimator] ⚠️ CardSizeConfig no disponible, usando fallback")
+	"""La carta llega con la misma escala que le da la mano (HandLayout.card_scale), así no
+	cambia de tamaño al entrar. Siempre uniforme: escalas distintas en X e Y la deformarían."""
+	var hand_scale := 1.0
+	if target_hand and "card_scale" in target_hand:
+		hand_scale = float(target_hand.card_scale)
+	elif CardSizeConfig:
+		hand_scale = CardSizeConfig.hand_card_scale
+	target_scale = Vector2.ONE * hand_scale
+	# Sale del mazo algo más chica y crece hasta su tamaño en la mano
+	card_scale = target_scale * DECK_START_RATIO
 
 
 # ============================================================================
@@ -138,9 +126,8 @@ func _deal_single_card_async(card_instance: CardInstance, index: int, target_slo
 			# NO hacer reparent aquí - add_card() ya lo hace
 			push_error("[CardDealAnimator] target_hand no es CardCollection")
 			return
-	
-	card_display.scale = target_scale
-	
+	# No tocar la escala aquí: desde que entra en la mano, su tamaño lo maneja HandLayout
+
 	print("[CardDealAnimator] ✅ Carta %d robada" % (index + 1))
 
 

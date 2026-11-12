@@ -26,6 +26,8 @@ var card_scale: Vector2 = Vector2.ZERO
 var deal_duration: float = 0.5
 var delay_between_cards: float = 0.15
 var target_scale: Vector2 = Vector2.ZERO
+## Tamaño relativo con el que el dorso sale del mazo (respecto de su tamaño en la mano)
+const DECK_START_RATIO := 0.7
 
 # ============================================================================
 # CONSTRUCTOR
@@ -51,27 +53,16 @@ func _ready() -> void:
 
 
 func _initialize_scales() -> void:
-	"""Inicializar escalas desde CardSizeConfig"""
-	if CardSizeConfig:
-		var deck_size = CardSizeConfig.get_deck_card_size()
-		var hand_size = CardSizeConfig.get_hand_card_size()
-		var base_size = Vector2(120, 168)
-		
-		if deck_size != Vector2.ZERO:
-			card_scale = deck_size / base_size
-		else:
-			card_scale = Vector2(0.7, 0.7)
-		
-		if hand_size != Vector2.ZERO:
-			target_scale = hand_size / base_size
-		else:
-			target_scale = Vector2.ONE
-		
-		print("[OpponentCardDealAnimator] 🎯 Escalas inicializadas: deck=%.2fx%.2f → hand=%.2fx%.2f" % [card_scale.x, card_scale.y, target_scale.x, target_scale.y])
-	else:
-		card_scale = Vector2(0.7, 0.7)
-		target_scale = Vector2.ONE
-		print("[OpponentCardDealAnimator] ⚠️ CardSizeConfig no disponible, usando fallback")
+	"""El dorso llega con la misma escala que le da la mano del rival (HandLayout.card_scale),
+	así no cambia de tamaño al entrar. Siempre uniforme: escalas distintas en X e Y lo deformarían."""
+	var hand_scale := 1.0
+	if target_hand and "card_scale" in target_hand:
+		hand_scale = float(target_hand.card_scale)
+	elif CardSizeConfig:
+		hand_scale = CardSizeConfig.hand_card_scale
+	target_scale = Vector2.ONE * hand_scale
+	# Sale del mazo algo más chico y crece hasta su tamaño en la mano
+	card_scale = target_scale * DECK_START_RATIO
 
 
 # ============================================================================
@@ -156,8 +147,7 @@ func _deal_single_card_back_async(index: int) -> void:
 		push_error("[OpponentCardDealAnimator] target_hand no es CardCollection, es: %s" % target_hand.get_class())
 		return
 	
-	card_back.scale = target_scale
-	# print("[OpponentCardDealAnimator] 📊 CardBack después rescale - scale: %s" % card_back.scale)
+	# No tocar la escala aquí: desde que entra en la mano, su tamaño lo maneja HandLayout
 	
 	# print("[OpponentCardDealAnimator] ✅ Dorso %d robado" % (index + 1))
 
